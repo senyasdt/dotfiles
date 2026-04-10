@@ -1,0 +1,22 @@
+# порядок сегментов
+SPACESHIP_PROMPT_ORDER=(
+  host
+  user
+  dir
+  git
+  line_sep
+  char
+)
+
+# отключаем лишнее
+SPACESHIP_AWS_SHOW=false
+SPACESHIP_DOCKER_SHOW=false
+SPACESHIP_PYTHON_SHOW=false
+SPACESHIP_RUBY_SHOW=false
+SPACESHIP_NODE_SHOW=false
+SPACESHIP_GOLANG_SHOW=false
+SPACESHIP_JAVA_SHOW=false
+SPACESHIP_PACKAGE_SHOW=false
+
+# время выполнения
+SPACESHIP_EXEC_TIME_THRESHOLD=500

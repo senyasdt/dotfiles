@@ -1,0 +1,16 @@
+# Oh My Zsh
+export ZSH="$HOME/.oh-my-zsh"
+export ZSH_CUSTOM="$HOME/.config/zsh"
+ZSH_THEME="spaceship"
+
+plugins=(
+  git
+  zsh-autosuggestions
+  fzf-tab
+  fast-syntax-highlighting
+  command-not-found
+)
+
+source $ZSH/oh-my-zsh.sh
+eval "$(zoxide init zsh)"
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
