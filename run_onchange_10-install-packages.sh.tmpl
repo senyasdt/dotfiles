@@ -19,10 +19,10 @@ if command -v apt >/dev/null 2>&1; then
     $APT_CMD update
 
     {{- if eq .chezmoi.os "linux" }}
-    {{- $aptLinux := default (list) .apt.packages.linux }}
-    {{- if gt (len $aptLinux) 0 }}
+    {{- $aptPackages := default (list) (get (get .apt "packages") "linux") }}
+    {{- if gt (len $aptPackages) 0 }}
     $APT_CMD install -y \
-    {{- range $aptLinux }}
+    {{- range $aptPackages }}
       {{ . }} \
     {{- end }}
     {{- end }}
@@ -34,9 +34,12 @@ fi
 
 echo "==> Installing packages via Nix"
 
-{{- $nixCommon := default (list) .nix.packages.common }}
-{{- $nixLinux := default (list) .nix.packages.linux }}
-{{- $nixDarwin := default (list) .nix.packages.darwin }}
+{{- $nix := default (dict) .nix }}
+{{- $nixPkgs := default (dict) (get $nix "packages") }}
+
+{{- $nixCommon := default (list) (get $nixPkgs "common") }}
+{{- $nixLinux := default (list) (get $nixPkgs "linux") }}
+{{- $nixDarwin := default (list) (get $nixPkgs "darwin") }}
 
 {{- if or
       (gt (len $nixCommon) 0)
