@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+. /etc/profile.d/nix.sh || true
+
+echo "==> Installing packages via Nix"
+
+nix profile add \
+{{- range .nix.packages.common }}
+  nixpkgs#{{ . }} \
+{{- end }}
+{{ if eq .chezmoi.os "linux" }}
+  {{- range .nix.packages.linux }}
+    nixpkgs#{{ . }} \
+  {{- end }}
+{{else - if eq .chezmoi.os "darwin" -}
+  {{- range .nix.packages.darwin}}
+    nixpkgs#{{ . }} \
+  {{- end }}
+{{- end }}  

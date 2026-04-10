@@ -1,0 +1,36 @@
+nix:
+  packages:
+    common:
+      - git
+      - zsh
+      - eza
+      - ripgrep
+      - fd
+      - fzf
+      - zoxide
+      - yazi
+      - tree-sitter
+      - cargo
+      - navi
+      - tldr
+      - bat
+      - unzip
+      - file
+      - ffmpeg
+      - imagemagick
+      - poppler
+      - p7zip
+      - jq
+      - resvg
+      - ueberzugpp
+
+    linux:
+      - xclip
+
+apt:
+  packages:
+    linux:
+
+brew:
+  packages:
+    darwin:
