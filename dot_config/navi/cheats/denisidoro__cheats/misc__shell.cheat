@@ -1,0 +1,61 @@
+
+% Shell Usage 
+
+# Re-call last input with sudo
+sudo !!
+
+# Run a script as background process
+<process> &
+
+# Kill a running process
+killall <Process-name>
+
+% Shell Permissions
+
+# Use -R option to change permissions recursively.
+ps -ef | grep apache | grep -v grep
+
+# Change group
+chgrp <group-name-from> <group-name-to>
+
+% shell Symlinks
+
+# Create symlink
+ln -s <source-dirname> <destination-dirname>
+
+# Update symlink
+ln -sfn <source-dirname> <destination-dirname>
+
+# Remove symlink
+unlink <sample-dirname>
+
+% Shell Files
+
+# Search and replace within file
+sed -i s/<original-text>/<new-text>/g <filename-txt>
+
+% Shell System
+
+# Show disc space
+df -h
+
+# Show disc space (inodes)
+df -i
+
+# Show disc space for current directory
+du -hs
+
+# Monitor error log (stream as file grows)
+tail error.log -f -n 0
+
+% Shell Variables
+
+# Register variable
+export <TESTING>=<Variable-text>
+
+# Echo variable
+echo $<Variable>
+
+# Unset variable
+unset <Variable>
+
