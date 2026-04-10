@@ -2,7 +2,6 @@ nix:
   packages:
     common:
       - git
-      - zsh
       - eza
       - ripgrep
       - fd
@@ -30,6 +29,9 @@ nix:
 apt:
   packages:
     linux:
+      - zsh
+      - git
+      - xz-utils
 
 brew:
   packages:
