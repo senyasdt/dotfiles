@@ -1,0 +1,31 @@
+[".oh-my-zsh"]
+type = "archive"
+url = "https://github.com/ohmyzsh/ohmyzsh/archive/master.tar.gz"
+exact = true
+stripComponents = 1
+refreshPeriod = "720h"
+[".config/zsh/plugins/fast-syntax-highlighting"]
+type = "archive"
+url = "https://github.com/zdharma-continuum/fast-syntax-highlighting/archive/master.tar.gz"
+exact = true
+stripComponents = 1
+refreshPeriod = "720h"
+[".config/zsh/plugins/fzf-tab"]
+type = "archive"
+url = "https://github.com/Aloxaf/fzf-tab/archive/master.tar.gz"
+exact = true
+stripComponents = 1
+refreshPeriod = "720h"
+[".config/zsh/plugins/zsh-autosuggestions"]
+type = "archive"
+url = "https://github.com/zsh-users/zsh-autosuggestions/archive/master.tar.gz"
+exact = true
+stripComponents = 1
+refreshPeriod = "720h"
+[".config/zsh/themes/spaceship-prompt"]
+type = "git-repo"
+url = "https://github.com/spaceship-prompt/spaceship-prompt.git"
+exact = true
+stripComponents = 1
+[".config/zsh/themes/spaceship-prompt".clone]
+args = ["--depth=1"]
