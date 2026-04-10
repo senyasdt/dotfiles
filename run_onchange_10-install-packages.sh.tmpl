@@ -19,9 +19,10 @@ if command -v apt >/dev/null 2>&1; then
     $APT_CMD update
 
     {{- if eq .chezmoi.os "linux" }}
-    {{- if .apt.packages.linux }}
+    {{- $aptLinux := default (list) .apt.packages.linux }}
+    {{- if gt (len $aptLinux) 0 }}
     $APT_CMD install -y \
-    {{- range .apt.packages.linux }}
+    {{- range $aptLinux }}
       {{ . }} \
     {{- end }}
     {{- end }}
@@ -33,16 +34,26 @@ fi
 
 echo "==> Installing packages via Nix"
 
+{{- $nixCommon := default (list) .nix.packages.common }}
+{{- $nixLinux := default (list) .nix.packages.linux }}
+{{- $nixDarwin := default (list) .nix.packages.darwin }}
+
+{{- $allNix := concat $nixCommon (cond (eq .chezmoi.os "linux") $nixLinux $nixDarwin) }}
+
+{{- if gt (len $allNix) 0 }}
 nix profile add \
-{{- range .nix.packages.common }}
+{{- range $nixCommon }}
   nixpkgs#{{ . }} \
 {{- end }}
 {{- if eq .chezmoi.os "linux" }}
-  {{- range .nix.packages.linux }}
+  {{- range $nixLinux }}
   nixpkgs#{{ . }} \
   {{- end }}
 {{- else if eq .chezmoi.os "darwin" }}
-  {{- range .nix.packages.darwin }}
+  {{- range $nixDarwin }}
   nixpkgs#{{ . }} \
   {{- end }}
+{{- end }}
+{{- else }}
+echo "No Nix packages to install"
 {{- end }}
