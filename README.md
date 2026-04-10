@@ -3,5 +3,5 @@
 Configure via [chezmoi](http://chezmoi.io/)
 
 ```sh
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply $GITHUB_USERNAME
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply senyast4745
 ```
