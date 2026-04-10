@@ -19,12 +19,18 @@ if command -v apt >/dev/null 2>&1; then
     $APT_CMD update
 
     {{- if eq .chezmoi.os "linux" }}
-    {{- $aptPackages := default (list) (get (get .apt "packages") "linux") }}
-    {{- if gt (len $aptPackages) 0 }}
-    $APT_CMD install -y \
-    {{- range $aptPackages }}
-      {{ . }} \
-    {{- end }}
+    {{- $apt := default (dict) .apt }}
+    {{- $aptPkgs := default (dict) (get $apt "packages") }}
+    {{- $aptLinux := default (list) (get $aptPkgs "linux") }}
+
+    {{- if gt (len $aptLinux) 0 }}
+    APT_PACKAGES=(
+      {{- range $aptLinux }}
+      "{{ . }}"
+      {{- end }}
+    )
+
+    $APT_CMD install -y "${APT_PACKAGES[@]}"
     {{- end }}
     {{- end }}
   fi
@@ -46,19 +52,25 @@ echo "==> Installing packages via Nix"
       (and (eq .chezmoi.os "linux") (gt (len $nixLinux) 0))
       (and (eq .chezmoi.os "darwin") (gt (len $nixDarwin) 0))
 }}
-nix profile add \
-{{- range $nixCommon }}
-  nixpkgs#{{ . }} \
-{{- end }}
-{{- if eq .chezmoi.os "linux" }}
-  {{- range $nixLinux }}
-  nixpkgs#{{ . }} \
+
+NIX_PACKAGES=(
+  {{- range $nixCommon }}
+  "nixpkgs#{{ . }}"
   {{- end }}
-{{- else if eq .chezmoi.os "darwin" }}
-  {{- range $nixDarwin }}
-  nixpkgs#{{ . }} \
+
+  {{- if eq .chezmoi.os "linux" }}
+    {{- range $nixLinux }}
+    "nixpkgs#{{ . }}"
+    {{- end }}
+  {{- else if eq .chezmoi.os "darwin" }}
+    {{- range $nixDarwin }}
+    "nixpkgs#{{ . }}"
+    {{- end }}
   {{- end }}
-{{- end }}
+)
+
+nix profile add "${NIX_PACKAGES[@]}"
+
 {{- else }}
 echo "No Nix packages to install"
 {{- end }}
