@@ -38,9 +38,11 @@ echo "==> Installing packages via Nix"
 {{- $nixLinux := default (list) .nix.packages.linux }}
 {{- $nixDarwin := default (list) .nix.packages.darwin }}
 
-{{- $allNix := concat $nixCommon (cond (eq .chezmoi.os "linux") $nixLinux $nixDarwin) }}
-
-{{- if gt (len $allNix) 0 }}
+{{- if or
+      (gt (len $nixCommon) 0)
+      (and (eq .chezmoi.os "linux") (gt (len $nixLinux) 0))
+      (and (eq .chezmoi.os "darwin") (gt (len $nixDarwin) 0))
+}}
 nix profile add \
 {{- range $nixCommon }}
   nixpkgs#{{ . }} \
