@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -e
+
+. /etc/profile.d/nix.sh || true
+
+echo "==> Installing packages via apt (if available)"
+
+if command -v apt >/dev/null 2>&1; then
+  if [ "$(id -u)" -eq 0 ]; then
+    APT_CMD="apt"
+  elif command -v sudo >/dev/null 2>&1; then
+    APT_CMD="sudo apt"
+  else
+    echo "apt found but no sudo and not root, skipping apt packages"
+    APT_CMD=""
+  fi
+
+  if [ -n "$APT_CMD" ]; then
+    $APT_CMD update
+
+    {{- if eq .chezmoi.os "linux" }}
+    {{- if .apt.packages.linux }}
+    $APT_CMD install -y \
+    {{- range .apt.packages.linux }}
+      {{ . }} \
+    {{- end }}
+    {{- end }}
+    {{- end }}
+  fi
+else
+  echo "apt not found, skipping apt packages"
+fi
+
+echo "==> Installing packages via Nix"
+
+nix profile add \
+{{- range .nix.packages.common }}
+  nixpkgs#{{ . }} \
+{{- end }}
+{{- if eq .chezmoi.os "linux" }}
+  {{- range .nix.packages.linux }}
+  nixpkgs#{{ . }} \
+  {{- end }}
+{{- else if eq .chezmoi.os "darwin" }}
+  {{- range .nix.packages.darwin }}
+  nixpkgs#{{ . }} \
+  {{- end }}
+{{- end }}
