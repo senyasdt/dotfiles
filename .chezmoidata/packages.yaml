@@ -9,7 +9,6 @@ packages:
       - zoxide
       - yazi
       - tree-sitter
-      - cargo
       - navi
       - tldr
       - bat
