@@ -8,8 +8,8 @@ set -euo pipefail
 OS="{{ .chezmoi.os }}"
 
 # --- PROFILES FROM CHEZMOI_DATA ---
-{{- $raw := .chezmoi.args.profiles | default "full" -}}
-{{- $profiles := (kindIs "slice" $raw) | ternary $raw (splitList "," $raw) -}}
+{{- $profiles := (index .chezmoi.args "profiles") | default "full" -}}
+{{- $profiles := (kindIs "slice" $profiles) | ternary $profiles (splitList "," $profiles) -}}
 PROFILES=({{- range $profiles }}{{ . | quote }} {{ end }})
 
 log() { printf "==> %s\n" "$*"; }
