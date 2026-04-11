@@ -8,7 +8,7 @@ if [ ! -d "$HOME/.oh-my-zsh" ]; then
   git clone https://github.com/ohmyzsh/ohmyzsh.git ~/.oh-my-zsh
 fi
 
-ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.config/zsh}"
 
 if [ ! -d "$ZSH_CUSTOM/themes/spaceship-prompt" ]; then
   git clone https://github.com/spaceship-prompt/spaceship-prompt.git \

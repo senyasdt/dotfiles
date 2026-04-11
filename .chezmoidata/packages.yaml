@@ -1,7 +1,7 @@
 packages:
   brew:
     full:
-      - git
+      - gcc
       - eza
       - ripgrep
       - fd
@@ -20,10 +20,12 @@ packages:
       - p7zip
       - jq
       - resvg
-      - jstkdng/programs/ueberzugpp
+      - ueberzugpp
 
     linux:
       - xclip
+    desctop:
+      - wezterm
   apt:
     linux:
       - zsh
