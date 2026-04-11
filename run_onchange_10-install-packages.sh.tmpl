@@ -15,6 +15,10 @@ OS={{ .chezmoi.os | quote }}
 {{- $rawBase := index $root "base" | default (list "lite") -}}
 {{- $profiles := (kindOf $rawBase | eq "slice") | ternary $rawBase (list $rawBase) -}}
 
+{{- $apt := index $packages "apt" | default (dict) -}}
+{{- $brew := index $packages "brew" | default (dict) -}}
+{{- $cargo := index $packages "cargo" | default (dict) -}}
+
 SELECTED_PROFILES=({{- range $profiles }}{{ . | quote }} {{ end }})
 
 log() { printf "==> %s\n" "$*"; }
