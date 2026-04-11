@@ -20,7 +20,7 @@ packages:
       - p7zip
       - jq
       - resvg
-      - ueberzugpp
+      - jstkdng/programs/ueberzugpp
 
     linux:
       - xclip
