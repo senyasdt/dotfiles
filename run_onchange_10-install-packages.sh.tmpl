@@ -1,59 +1,40 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- КОНТЕКСТ ИЗ CHEZMOI ---
+# --- DATA INJECTION ---
 OS={{ .chezmoi.os | quote }}
 
-{{- /* Инициализация данных */ -}}
 {{- $root := . | default (dict) -}}
 {{- $packages := index $root "packages" | default (dict) -}}
-
-{{- /* Обработка PROFILES (может быть строкой или списком) */ -}}
 {{- $rawBase := index $root "base" | default "lite" -}}
 {{- $profiles := (kindOf $rawBase | eq "slice") | ternary $rawBase (list $rawBase) -}}
 
-# Передаем список выбранных профилей в Bash как массив
 SELECTED_PROFILES=({{- range $profiles }}{{ . | quote }} {{ end }})
 
 log() { printf "==> %s\n" "$*"; }
 has() { command -v "$1" >/dev/null 2>&1; }
 
-# Функция для проверки, выбран ли профиль
-is_profile_active() {
-  local search="$1"
-  for profile in "${SELECTED_PROFILES[@]}"; do
-    [[ "$profile" == "$search" ]] && return 0
-  done
-  return 1
-}
-
-# --- ГЕНЕРАЦИЯ ДАННЫХ ИЗ YAML (NULL-SAFE) ---
-{{- $managers := list "apt" "brew" "cargo" -}}
-{{- range $manager := $managers }}
-  {{- $m_data := index $packages $manager | default (dict) }}
-  
-  # Пакеты для менеджера: {{ $manager }}
-  declare -A {{ $manager | upper }}_MAP
-  {{- range $key, $list := $m_data }}
-  {{ $manager | upper }}_MAP[{{ $key }}] Olivia_is_dummy # Инициализация ключа
-  {{ $manager | upper }}_{{ $key | replace "-" "_" }}=({{- range ($list | default list) }}{{ . | quote }} {{ end }})
-  {{- end }}
+# --- GENERATE ARRAYS FROM YAML ---
+{{- range $manager := list "apt" "brew" "cargo" }}
+{{- $m_data := index $packages $manager | default (dict) }}
+declare -A {{ $manager | upper }}_MAP
+{{- range $key, $list := $m_data }}
+{{ $manager | upper }}_MAP[{{ $key }}]=1
+{{ $manager | upper }}_{{ $key | replace "-" "_" }}=({{- range ($list | default list) }}{{ . | quote }} {{ end }})
+{{- end }}
 {{- end }}
 
 # =========================================
-# APT PHASE (Linux)
+# APT PHASE
 # =========================================
 if [ "$OS" = "linux" ] && has apt; then
   log "APT phase"
   APT_FINAL=()
+  [[ -v APT_MAP[base] ]] && APT_FINAL+=("${APT_base[@]}")
   
-  # 1. Всегда добавляем 'base' (если есть)
-  [[ ${APT_MAP[base]+_} ]] && APT_FINAL+=("${APT_base[@]}")
-  
-  # 2. Добавляем пакеты из активных профилей
   for p in "${SELECTED_PROFILES[@]}"; do
     key="APT_${p//-/_}"
-    [[ -n "${!key:-}" ]] && APT_FINAL+=("${!key[@]}")
+    [[ -v "APT_MAP[$p]" ]] && APT_FINAL+=("${!key[@]}")
   done
 
   if [ "${#APT_FINAL[@]}" -gt 0 ]; then
@@ -84,22 +65,17 @@ install_brew
 if has brew; then
   log "Brew phase"
   BREW_FINAL=()
+  [[ -v BREW_MAP[base] ]] && BREW_FINAL+=("${BREW_base[@]}")
   
-  # Базовые пакеты
-  [[ ${BREW_MAP[base]+_} ]] && BREW_FINAL+=("${BREW_base[@]}")
-  
-  # Профили (full, ai, desktop и т.д.)
   for p in "${SELECTED_PROFILES[@]}"; do
     key="BREW_${p//-/_}"
-    [[ -n "${!key:-}" ]] && BREW_FINAL+=("${!key[@]}")
+    [[ -v "BREW_MAP[$p]" ]] && BREW_FINAL+=("${!key[@]}")
   done
 
-  # Специфичные для ОС
-  [ "$OS" = "linux" ] && [[ ${BREW_MAP[linux]+_} ]] && BREW_FINAL+=("${BREW_linux[@]}")
-  [ "$OS" = "darwin" ] && [[ ${BREW_MAP[macos]+_} ]] && BREW_FINAL+=("${BREW_macos[@]}")
+  [ "$OS" = "linux" ] && [[ -v BREW_MAP[linux] ]] && BREW_FINAL+=("${BREW_linux[@]}")
+  [ "$OS" = "darwin" ] && [[ -v BREW_MAP[macos] ]] && BREW_FINAL+=("${BREW_macos[@]}")
 
   if [ "${#BREW_FINAL[@]}" -gt 0 ]; then
-    # Дедупликация и установка
     mapfile -t BREW_FINAL < <(printf "%s\n" "${BREW_FINAL[@]}" | sort -u)
     printf 'brew "%s"\n' "${BREW_FINAL[@]}" | brew bundle --file=/dev/stdin
   fi
@@ -112,7 +88,7 @@ install_rust() {
   if ! has cargo; then
     log "Installing Rust..."
     curl https://rustup.rs -sSf | sh -s -- -y
-    source "$HOME/.cargo/env"
+    [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
   fi
 }
 
@@ -121,11 +97,11 @@ install_rust
 if has cargo; then
   log "Cargo phase"
   CARGO_FINAL=()
-  [[ ${CARGO_MAP[base]+_} ]] && CARGO_FINAL+=("${CARGO_base[@]}")
+  [[ -v CARGO_MAP[base] ]] && CARGO_FINAL+=("${CARGO_base[@]}")
   
   for p in "${SELECTED_PROFILES[@]}"; do
     key="CARGO_${p//-/_}"
-    [[ -n "${!key:-}" ]] && CARGO_FINAL+=("${!key[@]}")
+    [[ -v "CARGO_MAP[$p]" ]] && CARGO_FINAL+=("${!key[@]}")
   done
 
   if [ "${#CARGO_FINAL[@]}" -gt 0 ]; then
@@ -139,5 +115,5 @@ if has cargo; then
   fi
 fi
 
-log "All systems ready!"
+log "Done!"
 
