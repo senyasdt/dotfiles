@@ -1,74 +1,59 @@
 #!/usr/bin/env bash
 
-# Force use bash if run via sh
-if [ -z "${BASH_VERSION:-}" ]; then
-  exec bash "$0" "$@"
-fi
+# Force bash
+[ -z "${BASH_VERSION:-}" ] && exec bash "$0" "$@"
 
 set -euo pipefail
 
-# --- DATA INJECTION ---
-OS={{ .chezmoi.os | quote }}
+OS="{{ .chezmoi.os }}"
 
-{{- $root := . | default (dict) -}}
-{{- $packages := index $root "packages" | default (dict) -}}
-{{- $rawBase := index $root "base" | default (list "lite") -}}
-{{- $profiles := (kindOf $rawBase | eq "slice") | ternary $rawBase (list $rawBase) -}}
-
-{{- $apt := index $packages "apt" | default (dict) -}}
-{{- $brew := index $packages "brew" | default (dict) -}}
-{{- $cargo := index $packages "cargo" | default (dict) -}}
-
-SELECTED_PROFILES=({{- range $profiles }}{{ . | quote }} {{ end }})
+# --- PROFILES FROM CHEZMOI_DATA ---
+{{- $profiles := .profiles | default (list "full") }}
+PROFILES=({{- range $profiles }}{{ . | quote }} {{ end }})
 
 log() { printf "==> %s\n" "$*"; }
 has() { command -v "$1" >/dev/null 2>&1; }
 
-# --- GENERATE ARRAYS FROM YAML ---
-{{- range $manager := list "apt" "brew" "cargo" }}
-{{- $m_data := index $packages $manager | default (dict) }}
-{{- range $key, $list := $m_data }}
-{{ $manager | upper }}_{{ $key | replace "-" "_" }}=({{- range ($list | default list) }}{{ . | quote }} {{ end }})
-{{- end }}
-{{- end }}
-
 # =========================================
-# APT PHASE
+# APT
 # =========================================
 if [ "$OS" = "linux" ] && has apt; then
   log "APT phase"
-  APT_FINAL=()
-  
-  # Always add base if exists
-  {{ if (index $apt "base") }} APT_FINAL+=("${APT_base[@]}") {{ end }}
-  
-  for p in "${SELECTED_PROFILES[@]}"; do
-    profile_var="APT_${p//-/_}[@]"
-    if [[ -n "${!profile_var:-}" ]]; then
-      APT_FINAL+=("${!profile_var}")
-    fi
-  done
 
-  if [ "${#APT_FINAL[@]}" -gt 0 ]; then
+  APT_PKGS=(
+    {{- range (index .packages.apt "linux" | default list) }}
+    "{{ . }}"
+    {{- end }}
+  )
+
+  if [ "${#APT_PKGS[@]}" -gt 0 ]; then
     CMD=$( [ "$(id -u)" -eq 0 ] && echo "apt" || echo "sudo apt" )
-    $CMD update -y && $CMD install -y "${APT_FINAL[@]}"
+    $CMD update -y
+    $CMD install -y "${APT_PKGS[@]}"
   fi
 fi
 
 # =========================================
-# HOMEBREW PHASE
+# BREW
 # =========================================
 install_brew() {
-  if ! has brew; then
-    [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && return
-    [ -f "/opt/homebrew/bin/brew" ] && eval "$(/opt/homebrew/bin/brew shellenv)" && return
-    
-    if has curl; then
-      log "Installing Homebrew..."
-      NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://githubusercontent.com)"
-      [ -d "/home/linuxbrew/.linuxbrew" ] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-      [ -d "/opt/homebrew" ] && eval "$(/opt/homebrew/bin/brew shellenv)"
-    fi
+  if has brew; then return; fi
+
+  if [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    return
+  fi
+
+  if [ -f "/opt/homebrew/bin/brew" ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+    return
+  fi
+
+  if has curl; then
+    log "Installing Homebrew..."
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || true)"
+    eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || true)"
   fi
 }
 
@@ -76,35 +61,45 @@ install_brew
 
 if has brew; then
   log "Brew phase"
-  BREW_FINAL=()
-  {{ if (index $brew "base") }} BREW_FINAL+=("${BREW_base[@]}") {{ end }}
-  
-  for p in "${SELECTED_PROFILES[@]}"; do
-    profile_var="BREW_${p//-/_}[@]"
-    if [[ -n "${!profile_var:-}" ]]; then
-      BREW_FINAL+=("${!profile_var}")
-    fi
-  done
 
-  [ "$OS" = "linux" ] && {{ if (index $brew "linux") }} BREW_FINAL+=("${BREW_linux[@]}") {{ end }}
-  [ "$OS" = "darwin" ] && {{ if (index $brew "macos") }} BREW_FINAL+=("${BREW_macos[@]}") {{ end }}
+  BREW_PKGS=()
 
-  if [ "${#BREW_FINAL[@]}" -gt 0 ]; then
-    mapfile -t BREW_FINAL < <(printf "%s\n" "${BREW_FINAL[@]}" | sort -u)
-    printf 'brew "%s"\n' "${BREW_FINAL[@]}" | brew bundle --file=/dev/stdin
+  # profiles
+  {{- range $profile := $profiles }}
+  {{- range (index $.packages.brew $profile | default list) }}
+  BREW_PKGS+=("{{ . }}")
+  {{- end }}
+  {{- end }}
+
+  # OS-specific
+  {{- if eq .chezmoi.os "linux" }}
+  {{- range (index .packages.brew "linux" | default list) }}
+  BREW_PKGS+=("{{ . }}")
+  {{- end }}
+  {{- end }}
+
+  {{- if eq .chezmoi.os "darwin" }}
+  {{- range (index .packages.brew "macos" | default list) }}
+  BREW_PKGS+=("{{ . }}")
+  {{- end }}
+  {{- end }}
+
+  if [ "${#BREW_PKGS[@]}" -gt 0 ]; then
+    mapfile -t BREW_PKGS < <(printf "%s\n" "${BREW_PKGS[@]}" | sort -u)
+    brew install "${BREW_PKGS[@]}"
   fi
 fi
 
 # =========================================
-# CARGO PHASE
+# CARGO
 # =========================================
 install_rust() {
-  if ! has cargo; then
+  if has cargo; then return; fi
+
+  if has curl; then
     log "Installing Rust..."
-    if has curl; then
-      curl https://rustup.rs -sSf | sh -s -- -y
-      [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
-    fi
+    curl https://sh.rustup.rs -sSf | sh -s -- -y
+    [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   fi
 }
 
@@ -112,21 +107,21 @@ install_rust
 
 if has cargo; then
   log "Cargo phase"
-  CARGO_FINAL=()
-  {{ if (index $cargo "base") }} CARGO_FINAL+=("${CARGO_base[@]}") {{ end }}
-  
-  for p in "${SELECTED_PROFILES[@]}"; do
-    profile_var="CARGO_${p//-/_}[@]"
-    if [[ -n "${!profile_var:-}" ]]; then
-      CARGO_FINAL+=("${!profile_var}")
-    fi
-  done
 
-  if [ "${#CARGO_FINAL[@]}" -gt 0 ]; then
-    mapfile -t CARGO_FINAL < <(printf "%s\n" "${CARGO_FINAL[@]}" | sort -u)
-    for pkg in "${CARGO_FINAL[@]}"; do
+  CARGO_PKGS=()
+
+  {{- range $profile := $profiles }}
+  {{- range (index $.packages.cargo $profile | default list) }}
+  CARGO_PKGS+=("{{ . }}")
+  {{- end }}
+  {{- end }}
+
+  if [ "${#CARGO_PKGS[@]}" -gt 0 ]; then
+    mapfile -t CARGO_PKGS < <(printf "%s\n" "${CARGO_PKGS[@]}" | sort -u)
+
+    for pkg in "${CARGO_PKGS[@]}"; do
       if ! cargo install --list | grep -q "^$pkg "; then
-        log "Installing $pkg via cargo"
+        log "Installing $pkg"
         cargo install "$pkg"
       fi
     done
@@ -134,4 +129,3 @@ if has cargo; then
 fi
 
 log "Done"
-
