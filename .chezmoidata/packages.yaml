@@ -1,14 +1,15 @@
 packages:
   brew:
-    full:
+    common:
       - gcc
-      - eza
       - ripgrep
-      - fd
       - fzf
-      - zoxide
-      - tree-sitter
       - navi
+      - nvim
+    full:
+      - eza
+      - tree-sitter
+      - fd
       - tldr
       - bat
       - unzip
@@ -16,10 +17,10 @@ packages:
       - ffmpeg
       - imagemagick
       - poppler
+      - zoxide
       - p7zip
       - jq
       - resvg
-      - nvim
       - jstkdng/programs/ueberzugpp
       - yazi
 
