@@ -10,21 +10,31 @@ has() {
 }
 
 # =========================================
-# CHEZMOI SAFE DEFAULTS (ВАЖНО)
+# SAFE CONTEXT LAYER (CRASH-PROOF)
 # =========================================
 
-{{- $base := "full" }}
-{{- if hasKey . "base" }}
-  {{- $base = .base }}
-{{- end }}
+{{- $root := . | default (dict) }}
+{{- $base := index $root "base" | default "lite" }}
 
-{{- $packages := .packages | default (dict) }}
+{{- $packages := index $root "packages" | default (dict) }}
 
-{{- $cargo := index $packages "cargo" | default (dict) }}
-{{- $brew := index $packages "brew" | default (dict) }}
 {{- $apt := index $packages "apt" | default (dict) }}
+{{- $brew := index $packages "brew" | default (dict) }}
+{{- $cargo := index $packages "cargo" | default (dict) }}
+
+# normalize lists (NEVER FAIL)
+{{- $aptLinux := index $apt "linux" | default (list) }}
+
+{{- $brewLite := index $brew "lite" | default (list) }}
+{{- $brewFull := index $brew "full" | default (list) }}
+{{- $brewLinux := index $brew "linux" | default (list) }}
+{{- $brewMac := index $brew "macos" | default (list) }}
+
+{{- $cargoLite := index $cargo "lite" | default (list) }}
+{{- $cargoFull := index $cargo "full" | default (list) }}
+
 # =========================================
-# APT (Linux system packages)
+# APT (safe, Linux only)
 # =========================================
 
 log "APT phase"
@@ -35,38 +45,30 @@ if has apt; then
   elif has sudo; then
     APT_CMD="sudo apt"
   else
-    log "apt found but no sudo/root → skipping"
+    log "no sudo/root → skip apt"
     APT_CMD=""
   fi
 
-  if [ -n "$APT_CMD" ]; then
+  if [ -n "${APT_CMD:-}" ]; then
     $APT_CMD update -y
 
-    {{- if eq .chezmoi.os "linux" }}
-    {{- $aptLinux := default (list) (get $apt "linux") }}
-
-    {{- if gt (len $aptLinux) 0 }}
-    APT_PACKAGES=(
-      {{- range $aptLinux }}
-      "{{ . }}"
-      {{- end }}
-    )
-
-    log "Installing apt packages"
-    $APT_CMD install -y "${APT_PACKAGES[@]}"
-    {{- else }}
-    log "No apt packages defined"
-    {{- end }}
-    {{- else }}
-    log "Not linux → skipping apt"
-    {{- end }}
+    if [ "{{ .chezmoi.os }}" = "linux" ]; then
+      if [ "${#aptLinux[@]}" -gt 0 ]; then
+        log "installing apt packages"
+        $APT_CMD install -y "${aptLinux[@]}"
+      else
+        log "no apt linux packages"
+      fi
+    else
+      log "not linux → skip apt"
+    fi
   fi
 else
   log "apt not available"
 fi
 
 # =========================================
-# HOMEBREW
+# HOMEBREW (bulletproof bootstrap)
 # =========================================
 
 install_brew() {
@@ -75,11 +77,11 @@ install_brew() {
   fi
 
   if ! has curl; then
-    log "curl missing → cannot install brew"
+    log "curl missing → skip brew"
     return
   fi
 
-  log "Installing Homebrew"
+  log "installing Homebrew"
 
   NONINTERACTIVE=1 \
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -95,63 +97,48 @@ install_brew() {
 
 install_brew
 
-log "Brew phase"
+log "brew phase"
 
 if has brew; then
   brew update
 
-  {{- $brewLite := default (list) (get $brew "lite") }}
-  {{- $brewFull := default (list) (get $brew "full") }}
-  {{- $brewLinux := default (list) (get $brew "linux") }}
-  {{- $brewMac := default (list) (get $brew "macos") }}
+  BREW_PACKAGES=()
 
-  # проверка: есть ли вообще пакеты
-  BREW_HAS=0
-  {{- if and (eq $base "lite") (gt (len $brewLite) 0) }}BREW_HAS=1{{ end }}
-  {{- if and (eq $base "full") (gt (len $brewFull) 0) }}BREW_HAS=1{{ end }}
-  {{- if and (eq .chezmoi.os "linux") (gt (len $brewLinux) 0) }}BREW_HAS=1{{ end }}
-  {{- if and (eq .chezmoi.os "darwin") (gt (len $brewMac) 0) }}BREW_HAS=1{{ end }}
+  # base selection
+  if [ "$base" = "lite" ]; then
+    BREW_PACKAGES+=("${brewLite[@]}")
+  elif [ "$base" = "full" ]; then
+    BREW_PACKAGES+=("${brewFull[@]}")
+  fi
 
-  if [ "$BREW_HAS" -eq 0 ]; then
-    log "No brew packages"
-  else
-    log "Running brew bundle"
+  # platform
+  if [ "{{ .chezmoi.os }}" = "linux" ]; then
+    BREW_PACKAGES+=("${brewLinux[@]}")
+  fi
 
-    brew bundle --no-lock --file=/dev/stdin <<EOF
-# --- base ---
-{{- if eq $base "lite" }}
-  {{- range $brewLite }}
-brew "{{ . }}"
-  {{- end }}
-{{- end }}
+  if [ "{{ .chezmoi.os }}" = "darwin" ]; then
+    BREW_PACKAGES+=("${brewMac[@]}")
+  fi
 
-{{- if eq $base "full" }}
-  {{- range $brewFull }}
-brew "{{ . }}"
-  {{- end }}
-{{- end }}
+  # deduplicate safely
+  mapfile -t BREW_PACKAGES < <(printf "%s\n" "${BREW_PACKAGES[@]}" | awk '!seen[$0]++')
 
-# --- platform ---
-{{- if eq .chezmoi.os "linux" }}
-  {{- range $brewLinux }}
-brew "{{ . }}"
-  {{- end }}
-{{- end }}
+  if [ "${#BREW_PACKAGES[@]}" -gt 0 ]; then
+    log "installing brew packages"
 
-{{- if eq .chezmoi.os "darwin" }}
-  {{- range $brewMac }}
-brew "{{ . }}"
-  {{- end }}
-{{- end }}
+    brew bundle --file=/dev/stdin <<EOF
+$(for p in "${BREW_PACKAGES[@]}"; do echo "brew \"$p\""; done)
 EOF
 
+  else
+    log "no brew packages"
   fi
 else
   log "brew not available"
 fi
 
 # =========================================
-# CARGO
+# CARGO (safe rust tools)
 # =========================================
 
 install_rust() {
@@ -160,11 +147,11 @@ install_rust() {
   fi
 
   if ! has curl; then
-    log "curl missing → cannot install rust"
+    log "curl missing → skip rust"
     return
   fi
 
-  log "Installing Rust"
+  log "installing rust"
 
   curl https://sh.rustup.rs -sSf | sh -s -- -y
   # shellcheck disable=SC1091
@@ -173,40 +160,31 @@ install_rust() {
 
 install_rust
 
-log "Cargo phase"
+log "cargo phase"
 
 if has cargo; then
-  {{- $cargoLite := default (list) (get $cargo "lite") }}
-  {{- $cargoFull := default (list) (get $cargo "full") }}
-
   CARGO_PACKAGES=()
 
-  {{- if eq $base "lite" }}
-    {{- range $cargoLite }}
-  CARGO_PACKAGES+=("{{ . }}")
-    {{- end }}
-  {{- end }}
+  if [ "$base" = "lite" ]; then
+    CARGO_PACKAGES+=("${cargoLite[@]}")
+  elif [ "$base" = "full" ]; then
+    CARGO_PACKAGES+=("${cargoFull[@]}")
+  fi
 
-  {{- if eq $base "full" }}
-    {{- range $cargoFull }}
-  CARGO_PACKAGES+=("{{ . }}")
-    {{- end }}
-  {{- end }}
-
-  if [ "${#CARGO_PACKAGES[@]}" -eq 0 ]; then
-    log "No cargo packages"
-  else
+  if [ "${#CARGO_PACKAGES[@]}" -gt 0 ]; then
     for pkg in "${CARGO_PACKAGES[@]}"; do
       if ! cargo install --list | grep -q "^$pkg "; then
         log "cargo install $pkg"
         cargo install "$pkg"
       else
-        log "cargo skip $pkg"
+        log "skip $pkg"
       fi
     done
+  else
+    log "no cargo packages"
   fi
 else
   log "cargo not available"
 fi
 
-log "Done"
+log "done"
