@@ -1,3 +1,5 @@
+README.md
+
 .config/zsh/plugins/**
 .config/zsh/themes/**
 .config/zsh/local_env.zsh

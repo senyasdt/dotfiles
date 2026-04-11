@@ -1,132 +1,72 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Force bash
-[ -z "${BASH_VERSION:-}" ] && exec bash "$0" "$@"
+# .chezmoidata/packages.yaml hash: {{ include "dot_chezmoidata/packages.yaml" | sha256sum }}
 
-set -euo pipefail
+# 1. Setup privilege command
+CMD=$( [ "$(id -u)" -eq 0 ] && echo "" || echo "sudo " )
 
-OS="{{ .chezmoi.os }}"
+{{- $os := .chezmoi.os -}}
+{{- $profiles := index . "profiles" | default (list "full") -}}
+{{- $pkgs_data := index . "packages" | default (dict) -}}
 
-# --- PROFILES FROM CHEZMOI_DATA ---
-{{- $profiles := (index .chezmoi.args "profiles") | default "full" -}}
-{{- $profiles := (kindIs "slice" $profiles) | ternary $profiles (splitList "," $profiles) -}}
-PROFILES=({{- range $profiles }}{{ . | quote }} {{ end }})
-
-log() { printf "==> %s\n" "$*"; }
-has() { command -v "$1" >/dev/null 2>&1; }
-
-# =========================================
-# APT
-# =========================================
-if [ "$OS" = "linux" ] && has apt; then
-  log "APT phase"
-
-  APT_PKGS=(
-    {{- range (index .packages.apt "linux" | default list) }}
-    "{{ . }}"
+# 2. APT packages installation
+{{- if and (eq $os "linux") (index $pkgs_data "apt") }}
+echo "Installing APT packages..."
+${CMD}apt-get update
+{{- range $type, $pkgs := index $pkgs_data "apt" }}
+  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
+    {{- range $pkgs }}
+${CMD}apt-get install -y {{ . | quote }}
     {{- end }}
-  )
+  {{- end }}
+{{- end }}
+{{- end }}
 
-  if [ "${#APT_PKGS[@]}" -gt 0 ]; then
-    CMD=$( [ "$(id -u)" -eq 0 ] && echo "apt" || echo "sudo apt" )
-    $CMD update -y
-    $CMD install -y "${APT_PKGS[@]}"
-  fi
+# 3. Homebrew installation/setup
+if ! command -v brew &> /dev/null; then
+    echo "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://githubusercontent.com)"
+    
+    {{ if eq $os "linux" -}}
+    test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
+    test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    {{ else -}}
+    test -d /usr/local/bin/brew && eval "$(/usr/local/bin/brew shellenv)"
+    test -d /opt/homebrew/bin/brew && eval "$(/opt/homebrew/bin/brew shellenv)"
+    {{- end }}
 fi
 
-# =========================================
-# BREW
-# =========================================
-install_brew() {
-  if has brew; then return; fi
-
-  if [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    return
-  fi
-
-  if [ -f "/opt/homebrew/bin/brew" ]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-    return
-  fi
-
-  if has curl; then
-    log "Installing Homebrew..."
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || true)"
-    eval "$(/opt/homebrew/bin/brew shellenv 2>/dev/null || true)"
-  fi
-}
-
-install_brew
-
-if has brew; then
-  log "Brew phase"
-
-  BREW_PKGS=()
-
-  # profiles
-  {{- range $profile := $profiles }}
-  {{- range (index $.packages.brew $profile | default list) }}
-  BREW_PKGS+=("{{ . }}")
+# 4. Brew packages installation
+{{- if (index $pkgs_data "brew") }}
+echo "Installing Brew packages..."
+{{- range $type, $pkgs := index $pkgs_data "brew" }}
+  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (eq $type "darwin" | and (eq $os "darwin")) (has $type $profiles) }}
+    {{- range $pkgs }}
+brew install {{ . | quote }}
+    {{- end }}
   {{- end }}
-  {{- end }}
+{{- end }}
+{{- end }}
 
-  # OS-specific
-  {{- if eq .chezmoi.os "linux" }}
-  {{- range (index .packages.brew "linux" | default list) }}
-  BREW_PKGS+=("{{ . }}")
-  {{- end }}
-  {{- end }}
-
-  {{- if eq .chezmoi.os "darwin" }}
-  {{- range (index .packages.brew "macos" | default list) }}
-  BREW_PKGS+=("{{ . }}")
-  {{- end }}
-  {{- end }}
-
-  if [ "${#BREW_PKGS[@]}" -gt 0 ]; then
-    mapfile -t BREW_PKGS < <(printf "%s\n" "${BREW_PKGS[@]}" | sort -u)
-    brew install "${BREW_PKGS[@]}"
-  fi
+# 5. Cargo installation and packages
+{{- if not (has "lite" $profiles) }}
+if ! command -v cargo &> /dev/null; then
+    echo "Installing Rust/Cargo..."
+    curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y
+    source "$HOME/.cargo/env"
 fi
 
-# =========================================
-# CARGO
-# =========================================
-install_rust() {
-  if has cargo; then return; fi
-
-  if has curl; then
-    log "Installing Rust..."
-    curl https://sh.rustup.rs -sSf | sh -s -- -y
-    [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
-  fi
-}
-
-install_rust
-
-if has cargo; then
-  log "Cargo phase"
-
-  CARGO_PKGS=()
-
-  {{- range $profile := $profiles }}
-  {{- range (index $.packages.cargo $profile | default list) }}
-  CARGO_PKGS+=("{{ . }}")
+{{- if (index $pkgs_data "cargo") }}
+echo "Installing Cargo packages..."
+{{- range $type, $pkgs := index $pkgs_data "cargo" }}
+  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
+    {{- range $pkgs }}
+cargo install {{ . | quote }}
+    {{- end }}
   {{- end }}
-  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
 
-  if [ "${#CARGO_PKGS[@]}" -gt 0 ]; then
-    mapfile -t CARGO_PKGS < <(printf "%s\n" "${CARGO_PKGS[@]}" | sort -u)
+echo "Installation process finished."
 
-    for pkg in "${CARGO_PKGS[@]}"; do
-      if ! cargo install --list | grep -q "^$pkg "; then
-        log "Installing $pkg"
-        cargo install "$pkg"
-      fi
-    done
-  fi
-fi
-
-log "Done"
