@@ -7,7 +7,6 @@ packages:
       - fd
       - fzf
       - zoxide
-      - yazi
       - tree-sitter
       - navi
       - tldr
@@ -20,7 +19,9 @@ packages:
       - p7zip
       - jq
       - resvg
+      - nvim
       - jstkdng/programs/ueberzugpp
+      - yazi
 
     linux:
       - xclip
@@ -28,6 +29,7 @@ packages:
       - wezterm
   apt:
     linux:
+      - build-essential
       - zsh
       - git
       - xz-utils
