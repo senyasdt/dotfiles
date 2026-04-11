@@ -1,6 +1,6 @@
-nix:
+brew:
   packages:
-    common:
+    full:
       - git
       - eza
       - ripgrep
@@ -25,14 +25,9 @@ nix:
 
     linux:
       - xclip
-
-apt:
-  packages:
+  apt:
     linux:
       - zsh
       - git
       - xz-utils
 
-brew:
-  packages:
-    darwin:
