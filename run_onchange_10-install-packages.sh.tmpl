@@ -1,224 +1,143 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-log() {
-  printf "==> %s\n" "$*"
+# --- КОНТЕКСТ ИЗ CHEZMOI ---
+OS={{ .chezmoi.os | quote }}
+
+{{- /* Инициализация данных */ -}}
+{{- $root := . | default (dict) -}}
+{{- $packages := index $root "packages" | default (dict) -}}
+
+{{- /* Обработка PROFILES (может быть строкой или списком) */ -}}
+{{- $rawBase := index $root "base" | default "lite" -}}
+{{- $profiles := (kindOf $rawBase | eq "slice") | ternary $rawBase (list $rawBase) -}}
+
+# Передаем список выбранных профилей в Bash как массив
+SELECTED_PROFILES=({{- range $profiles }}{{ . | quote }} {{ end }})
+
+log() { printf "==> %s\n" "$*"; }
+has() { command -v "$1" >/dev/null 2>&1; }
+
+# Функция для проверки, выбран ли профиль
+is_profile_active() {
+  local search="$1"
+  for profile in "${SELECTED_PROFILES[@]}"; do
+    [[ "$profile" == "$search" ]] && return 0
+  done
+  return 1
 }
 
-has() {
-  command -v "$1" >/dev/null 2>&1
-}
+# --- ГЕНЕРАЦИЯ ДАННЫХ ИЗ YAML (NULL-SAFE) ---
+{{- $managers := list "apt" "brew" "cargo" -}}
+{{- range $manager := $managers }}
+  {{- $m_data := index $packages $manager | default (dict) }}
+  
+  # Пакеты для менеджера: {{ $manager }}
+  declare -A {{ $manager | upper }}_MAP
+  {{- range $key, $list := $m_data }}
+  {{ $manager | upper }}_MAP[{{ $key }}] Olivia_is_dummy # Инициализация ключа
+  {{ $manager | upper }}_{{ $key | replace "-" "_" }}=({{- range ($list | default list) }}{{ . | quote }} {{ end }})
+  {{- end }}
+{{- end }}
 
 # =========================================
-# SAFE CONTEXT LAYER (CRASH-PROOF)
+# APT PHASE (Linux)
 # =========================================
+if [ "$OS" = "linux" ] && has apt; then
+  log "APT phase"
+  APT_FINAL=()
+  
+  # 1. Всегда добавляем 'base' (если есть)
+  [[ ${APT_MAP[base]+_} ]] && APT_FINAL+=("${APT_base[@]}")
+  
+  # 2. Добавляем пакеты из активных профилей
+  for p in "${SELECTED_PROFILES[@]}"; do
+    key="APT_${p//-/_}"
+    [[ -n "${!key:-}" ]] && APT_FINAL+=("${!key[@]}")
+  done
 
-{{- $root := . | default (dict) }}
-{{- $base := index $root "base" | default "lite" }}
-
-{{- $packages := index $root "packages" | default (dict) }}
-
-{{- $apt := index $packages "apt" | default (dict) }}
-{{- $brew := index $packages "brew" | default (dict) }}
-{{- $cargo := index $packages "cargo" | default (dict) }}
-
-# normalize lists (NEVER FAIL)
-{{- $aptLinux := index $apt "linux" | default (list) }}
-
-{{- $brewLite := index $brew "lite" | default (list) }}
-{{- $brewFull := index $brew "full" | default (list) }}
-{{- $brewLinux := index $brew "linux" | default (list) }}
-{{- $brewMac := index $brew "macos" | default (list) }}
-
-{{- $cargoLite := index $cargo "lite" | default (list) }}
-{{- $cargoFull := index $cargo "full" | default (list) }}
-
-APT_LINUX=(
-{{- range $aptLinux }}
-"{{ . }}"
-{{- end }}
-)
-
-BREW_LITE=(
-{{- range $brewLite }}
-"{{ . }}"
-{{- end }}
-)
-
-BREW_FULL=(
-{{- range $brewFull }}
-"{{ . }}"
-{{- end }}
-)
-
-BREW_LINUX=(
-{{- range $brewLinux }}
-"{{ . }}"
-{{- end }}
-)
-
-BREW_MAC=(
-{{- range $brewMac }}
-"{{ . }}"
-{{- end }}
-)
-
-CARGO_LITE=(
-{{- range $cargoLite }}
-"{{ . }}"
-{{- end }}
-)
-
-CARGO_FULL=(
-{{- range $cargoFull }}
-"{{ . }}"
-{{- end }}
-)
-# =========================================
-# APT (safe, Linux only)
-# =========================================
-
-log "APT phase"
-
-if has apt; then
-  if [ "$(id -u)" -eq 0 ]; then
-    APT_CMD="apt"
-  elif has sudo; then
-    APT_CMD="sudo apt"
-  else
-    log "no sudo/root → skip apt"
-    APT_CMD=""
+  if [ "${#APT_FINAL[@]}" -gt 0 ]; then
+    CMD=$( [ "$(id -u)" -eq 0 ] && echo "apt" || echo "sudo apt" )
+    $CMD update -y && $CMD install -y "${APT_FINAL[@]}"
   fi
-
-  if [ -n "${APT_CMD:-}" ] && [ "$OS" = "linux" ]; then
-    $APT_CMD update -y
-
-    if [ "${#APT_LINUX[@]}" -gt 0 ]; then
-      log "installing apt packages"
-      $APT_CMD install -y "${APT_LINUX[@]}"
-    else
-      log "no apt packages"
-    fi
-  fi
-else
-  log "apt not available"
 fi
-# =========================================
-# HOMEBREW (bulletproof bootstrap)
-# =========================================
 
+# =========================================
+# HOMEBREW PHASE
+# =========================================
 install_brew() {
-  if has brew; then
-    return
-  fi
-
-  if ! has curl; then
-    log "curl missing → skip brew"
-    return
-  fi
-
-  log "installing Homebrew"
-
-  NONINTERACTIVE=1 \
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-  if [[ -d "/home/linuxbrew/.linuxbrew" ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-  elif [[ -d "/opt/homebrew" ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [[ -d "/usr/local/Homebrew" ]]; then
-    eval "$(/usr/local/bin/brew shellenv)"
+  if ! has brew; then
+    [ -f "/home/linuxbrew/.linuxbrew/bin/brew" ] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && return
+    [ -f "/opt/homebrew/bin/brew" ] && eval "$(/opt/homebrew/bin/brew shellenv)" && return
+    
+    if has curl; then
+      log "Installing Homebrew..."
+      NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://githubusercontent.com)"
+      [ -d "/home/linuxbrew/.linuxbrew" ] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+      [ -d "/opt/homebrew" ] && eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
   fi
 }
 
 install_brew
 
-log "brew phase"
-
 if has brew; then
-  brew update
+  log "Brew phase"
+  BREW_FINAL=()
+  
+  # Базовые пакеты
+  [[ ${BREW_MAP[base]+_} ]] && BREW_FINAL+=("${BREW_base[@]}")
+  
+  # Профили (full, ai, desktop и т.д.)
+  for p in "${SELECTED_PROFILES[@]}"; do
+    key="BREW_${p//-/_}"
+    [[ -n "${!key:-}" ]] && BREW_FINAL+=("${!key[@]}")
+  done
 
-  BREW_PACKAGES=()
+  # Специфичные для ОС
+  [ "$OS" = "linux" ] && [[ ${BREW_MAP[linux]+_} ]] && BREW_FINAL+=("${BREW_linux[@]}")
+  [ "$OS" = "darwin" ] && [[ ${BREW_MAP[macos]+_} ]] && BREW_FINAL+=("${BREW_macos[@]}")
 
-  # BASE (lite/full)
-  if [ "$BASE" = "lite" ]; then
-    BREW_PACKAGES+=("${BREW_LITE[@]}")
-  else
-    BREW_PACKAGES+=("${BREW_FULL[@]}")
+  if [ "${#BREW_FINAL[@]}" -gt 0 ]; then
+    # Дедупликация и установка
+    mapfile -t BREW_FINAL < <(printf "%s\n" "${BREW_FINAL[@]}" | sort -u)
+    printf 'brew "%s"\n' "${BREW_FINAL[@]}" | brew bundle --file=/dev/stdin
   fi
-
-  # PLATFORM
-  if [ "$OS" = "linux" ]; then
-    BREW_PACKAGES+=("${BREW_LINUX[@]}")
-  fi
-
-  if [ "$OS" = "darwin" ]; then
-    BREW_PACKAGES+=("${BREW_MAC[@]}")
-  fi
-
-  # dedupe
-  mapfile -t BREW_PACKAGES < <(printf "%s\n" "${BREW_PACKAGES[@]}" | awk '!seen[$0]++')
-
-  if [ "${#BREW_PACKAGES[@]}" -gt 0 ]; then
-    log "installing brew packages"
-
-    brew bundle --file=/dev/stdin <<EOF
-$(printf 'brew "%s"\n' "${BREW_PACKAGES[@]}")
-EOF
-  else
-    log "no brew packages"
-  fi
-else
-  log "brew not available"
 fi
-# =========================================
-# CARGO (safe rust tools)
-# =========================================
 
+# =========================================
+# CARGO PHASE
+# =========================================
 install_rust() {
-  if has cargo; then
-    return
+  if ! has cargo; then
+    log "Installing Rust..."
+    curl https://rustup.rs -sSf | sh -s -- -y
+    source "$HOME/.cargo/env"
   fi
-
-  if ! has curl; then
-    log "curl missing → skip rust"
-    return
-  fi
-
-  log "installing rust"
-
-  curl https://sh.rustup.rs -sSf | sh -s -- -y
-  # shellcheck disable=SC1091
-  source "$HOME/.cargo/env"
 }
 
 install_rust
 
-log "cargo phase"
-
 if has cargo; then
-  CARGO_PACKAGES=()
+  log "Cargo phase"
+  CARGO_FINAL=()
+  [[ ${CARGO_MAP[base]+_} ]] && CARGO_FINAL+=("${CARGO_base[@]}")
+  
+  for p in "${SELECTED_PROFILES[@]}"; do
+    key="CARGO_${p//-/_}"
+    [[ -n "${!key:-}" ]] && CARGO_FINAL+=("${!key[@]}")
+  done
 
-  if [ "$BASE" = "lite" ]; then
-    CARGO_PACKAGES+=("${CARGO_LITE[@]}")
-  else
-    CARGO_PACKAGES+=("${CARGO_FULL[@]}")
-  fi
-
-  if [ "${#CARGO_PACKAGES[@]}" -gt 0 ]; then
-    for pkg in "${CARGO_PACKAGES[@]}"; do
+  if [ "${#CARGO_FINAL[@]}" -gt 0 ]; then
+    mapfile -t CARGO_FINAL < <(printf "%s\n" "${CARGO_FINAL[@]}" | sort -u)
+    for pkg in "${CARGO_FINAL[@]}"; do
       if ! cargo install --list | grep -q "^$pkg "; then
-        log "install $pkg"
+        log "Installing $pkg via cargo"
         cargo install "$pkg"
-      else
-        log "skip $pkg"
       fi
     done
-  else
-    log "no cargo packages"
   fi
-else
-  log "cargo not available"
 fi
 
-log "done"
+log "All systems ready!"
+
