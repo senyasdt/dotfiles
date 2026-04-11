@@ -1,5 +1,8 @@
 README.md
 
+.oh-my-zsh/cache/**
+
+.config/nvim/lazy-lock.json
 .config/zsh/plugins/**
 .config/zsh/themes/**
 .config/zsh/local_env.zsh
