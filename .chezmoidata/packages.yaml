@@ -1,5 +1,5 @@
-brew:
-  packages:
+packages:
+  brew:
     full:
       - git
       - eza
