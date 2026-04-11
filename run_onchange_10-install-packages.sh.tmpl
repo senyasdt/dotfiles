@@ -1,15 +1,13 @@
 #!/bin/bash
 
-# .chezmoidata/packages.yaml hash: {{ include "dot_chezmoidata/packages.yaml" | sha256sum }}
+# .chezmoidata/packages.yaml hash:
 
-# 1. Setup privilege command
 CMD=$( [ "$(id -u)" -eq 0 ] && echo "" || echo "sudo " )
 
 {{- $os := .chezmoi.os -}}
 {{- $profiles := index . "profiles" | default (list "full") -}}
 {{- $pkgs_data := index . "packages" | default (dict) -}}
 
-# 2. APT packages installation
 {{- if and (eq $os "linux") (index $pkgs_data "apt") }}
 echo "Installing APT packages..."
 ${CMD}apt-get update
@@ -22,7 +20,6 @@ ${CMD}apt-get install -y {{ . | quote }}
 {{- end }}
 {{- end }}
 
-# 3. Homebrew installation/setup
 if ! command -v brew &> /dev/null; then
     echo "Installing Homebrew..."
     /bin/bash -c "$(curl -fsSL https://githubusercontent.com)"
@@ -36,7 +33,6 @@ if ! command -v brew &> /dev/null; then
     {{- end }}
 fi
 
-# 4. Brew packages installation
 {{- if (index $pkgs_data "brew") }}
 echo "Installing Brew packages..."
 {{- range $type, $pkgs := index $pkgs_data "brew" }}
@@ -48,7 +44,6 @@ brew install {{ . | quote }}
 {{- end }}
 {{- end }}
 
-# 5. Cargo installation and packages
 {{- if not (has "lite" $profiles) }}
 if ! command -v cargo &> /dev/null; then
     echo "Installing Rust/Cargo..."
