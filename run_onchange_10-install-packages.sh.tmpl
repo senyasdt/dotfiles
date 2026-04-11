@@ -17,12 +17,12 @@ has() {
 {{- if hasKey . "base" }}
   {{- $base = .base }}
 {{- end }}
-{{- $packages := default (dict) .packages }}
 
-{{- $apt := default (dict) $packages.apt }}
-{{- $brew := default (dict) $packages.brew }}
-{{- $cargo := default (dict) $packages.cargo }}
+{{- $packages := .packages | default (dict) }}
 
+{{- $cargo := index $packages "cargo" | default (dict) }}
+{{- $brew := index $packages "brew" | default (dict) }}
+{{- $apt := index $packages "apt" | default (dict) }}
 # =========================================
 # APT (Linux system packages)
 # =========================================
