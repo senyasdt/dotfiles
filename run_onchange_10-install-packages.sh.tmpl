@@ -13,7 +13,10 @@ has() {
 # CHEZMOI SAFE DEFAULTS (ВАЖНО)
 # =========================================
 
-{{- $base := default "lite" .base }}
+{{- $base := "full" }}
+{{- if hasKey . "base" }}
+  {{- $base = .base }}
+{{- end }}
 {{- $packages := default (dict) .packages }}
 
 {{- $apt := default (dict) $packages.apt }}
