@@ -33,6 +33,47 @@ has() {
 {{- $cargoLite := index $cargo "lite" | default (list) }}
 {{- $cargoFull := index $cargo "full" | default (list) }}
 
+APT_LINUX=(
+{{- range $aptLinux }}
+"{{ . }}"
+{{- end }}
+)
+
+BREW_LITE=(
+{{- range $brewLite }}
+"{{ . }}"
+{{- end }}
+)
+
+BREW_FULL=(
+{{- range $brewFull }}
+"{{ . }}"
+{{- end }}
+)
+
+BREW_LINUX=(
+{{- range $brewLinux }}
+"{{ . }}"
+{{- end }}
+)
+
+BREW_MAC=(
+{{- range $brewMac }}
+"{{ . }}"
+{{- end }}
+)
+
+CARGO_LITE=(
+{{- range $cargoLite }}
+"{{ . }}"
+{{- end }}
+)
+
+CARGO_FULL=(
+{{- range $cargoFull }}
+"{{ . }}"
+{{- end }}
+)
 # =========================================
 # APT (safe, Linux only)
 # =========================================
@@ -49,24 +90,19 @@ if has apt; then
     APT_CMD=""
   fi
 
-  if [ -n "${APT_CMD:-}" ]; then
+  if [ -n "${APT_CMD:-}" ] && [ "$OS" = "linux" ]; then
     $APT_CMD update -y
 
-    if [ "{{ .chezmoi.os }}" = "linux" ]; then
-      if [ "${#aptLinux[@]}" -gt 0 ]; then
-        log "installing apt packages"
-        $APT_CMD install -y "${aptLinux[@]}"
-      else
-        log "no apt linux packages"
-      fi
+    if [ "${#APT_LINUX[@]}" -gt 0 ]; then
+      log "installing apt packages"
+      $APT_CMD install -y "${APT_LINUX[@]}"
     else
-      log "not linux → skip apt"
+      log "no apt packages"
     fi
   fi
 else
   log "apt not available"
 fi
-
 # =========================================
 # HOMEBREW (bulletproof bootstrap)
 # =========================================
@@ -104,39 +140,37 @@ if has brew; then
 
   BREW_PACKAGES=()
 
-  # base selection
-  if [ "$base" = "lite" ]; then
-    BREW_PACKAGES+=("${brewLite[@]}")
-  elif [ "$base" = "full" ]; then
-    BREW_PACKAGES+=("${brewFull[@]}")
+  # BASE (lite/full)
+  if [ "$BASE" = "lite" ]; then
+    BREW_PACKAGES+=("${BREW_LITE[@]}")
+  else
+    BREW_PACKAGES+=("${BREW_FULL[@]}")
   fi
 
-  # platform
-  if [ "{{ .chezmoi.os }}" = "linux" ]; then
-    BREW_PACKAGES+=("${brewLinux[@]}")
+  # PLATFORM
+  if [ "$OS" = "linux" ]; then
+    BREW_PACKAGES+=("${BREW_LINUX[@]}")
   fi
 
-  if [ "{{ .chezmoi.os }}" = "darwin" ]; then
-    BREW_PACKAGES+=("${brewMac[@]}")
+  if [ "$OS" = "darwin" ]; then
+    BREW_PACKAGES+=("${BREW_MAC[@]}")
   fi
 
-  # deduplicate safely
+  # dedupe
   mapfile -t BREW_PACKAGES < <(printf "%s\n" "${BREW_PACKAGES[@]}" | awk '!seen[$0]++')
 
   if [ "${#BREW_PACKAGES[@]}" -gt 0 ]; then
     log "installing brew packages"
 
     brew bundle --file=/dev/stdin <<EOF
-$(for p in "${BREW_PACKAGES[@]}"; do echo "brew \"$p\""; done)
+$(printf 'brew "%s"\n' "${BREW_PACKAGES[@]}")
 EOF
-
   else
     log "no brew packages"
   fi
 else
   log "brew not available"
 fi
-
 # =========================================
 # CARGO (safe rust tools)
 # =========================================
@@ -165,16 +199,16 @@ log "cargo phase"
 if has cargo; then
   CARGO_PACKAGES=()
 
-  if [ "$base" = "lite" ]; then
-    CARGO_PACKAGES+=("${cargoLite[@]}")
-  elif [ "$base" = "full" ]; then
-    CARGO_PACKAGES+=("${cargoFull[@]}")
+  if [ "$BASE" = "lite" ]; then
+    CARGO_PACKAGES+=("${CARGO_LITE[@]}")
+  else
+    CARGO_PACKAGES+=("${CARGO_FULL[@]}")
   fi
 
   if [ "${#CARGO_PACKAGES[@]}" -gt 0 ]; then
     for pkg in "${CARGO_PACKAGES[@]}"; do
       if ! cargo install --list | grep -q "^$pkg "; then
-        log "cargo install $pkg"
+        log "install $pkg"
         cargo install "$pkg"
       else
         log "skip $pkg"
