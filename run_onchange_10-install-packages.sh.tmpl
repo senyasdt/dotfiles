@@ -10,6 +10,17 @@ has() {
 }
 
 # =========================================
+# CHEZMOI SAFE DEFAULTS (ВАЖНО)
+# =========================================
+
+{{- $base := default "lite" .base }}
+{{- $packages := default (dict) .packages }}
+
+{{- $apt := default (dict) $packages.apt }}
+{{- $brew := default (dict) $packages.brew }}
+{{- $cargo := default (dict) $packages.cargo }}
+
+# =========================================
 # APT (Linux system packages)
 # =========================================
 
@@ -28,8 +39,6 @@ if has apt; then
   if [ -n "$APT_CMD" ]; then
     $APT_CMD update -y
 
-    {{- $apt := default (dict) .packages.apt }}
-
     {{- if eq .chezmoi.os "linux" }}
     {{- $aptLinux := default (list) (get $apt "linux") }}
 
@@ -43,8 +52,10 @@ if has apt; then
     log "Installing apt packages"
     $APT_CMD install -y "${APT_PACKAGES[@]}"
     {{- else }}
-    log "No apt packages"
+    log "No apt packages defined"
     {{- end }}
+    {{- else }}
+    log "Not linux → skipping apt"
     {{- end }}
   fi
 else
@@ -52,7 +63,7 @@ else
 fi
 
 # =========================================
-# HOMEBREW (user packages)
+# HOMEBREW
 # =========================================
 
 install_brew() {
@@ -86,67 +97,58 @@ log "Brew phase"
 if has brew; then
   brew update
 
-  {{- $brew := default (dict) .packages.brew }}
+  {{- $brewLite := default (list) (get $brew "lite") }}
+  {{- $brewFull := default (list) (get $brew "full") }}
+  {{- $brewLinux := default (list) (get $brew "linux") }}
+  {{- $brewMac := default (list) (get $brew "macos") }}
 
-  # проверим есть ли вообще пакеты
-  BREW_HAS_PACKAGES=0
+  # проверка: есть ли вообще пакеты
+  BREW_HAS=0
+  {{- if and (eq $base "lite") (gt (len $brewLite) 0) }}BREW_HAS=1{{ end }}
+  {{- if and (eq $base "full") (gt (len $brewFull) 0) }}BREW_HAS=1{{ end }}
+  {{- if and (eq .chezmoi.os "linux") (gt (len $brewLinux) 0) }}BREW_HAS=1{{ end }}
+  {{- if and (eq .chezmoi.os "darwin") (gt (len $brewMac) 0) }}BREW_HAS=1{{ end }}
 
-  {{- if eq .base "lite" }}
-    {{- if gt (len (default (list) (get $brew "lite"))) 0 }}BREW_HAS_PACKAGES=1{{ end }}
-  {{- end }}
-
-  {{- if eq .base "full" }}
-    {{- if gt (len (default (list) (get $brew "full"))) 0 }}BREW_HAS_PACKAGES=1{{ end }}
-  {{- end }}
-
-  {{- if eq .chezmoi.os "darwin" }}
-    {{- if gt (len (default (list) (get $brew "macos"))) 0 }}BREW_HAS_PACKAGES=1{{ end }}
-  {{- end }}
-
-  {{- if eq .chezmoi.os "linux" }}
-    {{- if gt (len (default (list) (get $brew "linux"))) 0 }}BREW_HAS_PACKAGES=1{{ end }}
-  {{- end }}
-
-  if [ "$BREW_HAS_PACKAGES" -eq 0 ]; then
+  if [ "$BREW_HAS" -eq 0 ]; then
     log "No brew packages"
   else
     log "Running brew bundle"
 
     brew bundle --no-lock --file=/dev/stdin <<EOF
 # --- base ---
-{{- if eq .base "lite" }}
-  {{- range (default (list) (get $brew "lite")) }}
+{{- if eq $base "lite" }}
+  {{- range $brewLite }}
 brew "{{ . }}"
   {{- end }}
 {{- end }}
 
-{{- if eq .base "full" }}
-  {{- range (default (list) (get $brew "full")) }}
+{{- if eq $base "full" }}
+  {{- range $brewFull }}
 brew "{{ . }}"
   {{- end }}
 {{- end }}
 
 # --- platform ---
-{{- if eq .chezmoi.os "darwin" }}
-  {{- range (default (list) (get $brew "macos")) }}
-brew "{{ . }}"
-  {{- end }}
-{{- end }}
-
 {{- if eq .chezmoi.os "linux" }}
-  {{- range (default (list) (get $brew "linux")) }}
+  {{- range $brewLinux }}
 brew "{{ . }}"
   {{- end }}
 {{- end }}
 
+{{- if eq .chezmoi.os "darwin" }}
+  {{- range $brewMac }}
+brew "{{ . }}"
+  {{- end }}
+{{- end }}
 EOF
+
   fi
 else
   log "brew not available"
 fi
 
 # =========================================
-# CARGO (Rust tools)
+# CARGO
 # =========================================
 
 install_rust() {
@@ -162,6 +164,7 @@ install_rust() {
   log "Installing Rust"
 
   curl https://sh.rustup.rs -sSf | sh -s -- -y
+  # shellcheck disable=SC1091
   source "$HOME/.cargo/env"
 }
 
@@ -170,18 +173,19 @@ install_rust
 log "Cargo phase"
 
 if has cargo; then
+  {{- $cargoLite := default (list) (get $cargo "lite") }}
+  {{- $cargoFull := default (list) (get $cargo "full") }}
+
   CARGO_PACKAGES=()
 
-  {{- $cargo := default (dict) .packages.cargo }}
-
-  {{- if eq .base "lite" }}
-    {{- range (default (list) (get $cargo "lite")) }}
+  {{- if eq $base "lite" }}
+    {{- range $cargoLite }}
   CARGO_PACKAGES+=("{{ . }}")
     {{- end }}
   {{- end }}
 
-  {{- if eq .base "full" }}
-    {{- range (default (list) (get $cargo "full")) }}
+  {{- if eq $base "full" }}
+    {{- range $cargoFull }}
   CARGO_PACKAGES+=("{{ . }}")
     {{- end }}
   {{- end }}
