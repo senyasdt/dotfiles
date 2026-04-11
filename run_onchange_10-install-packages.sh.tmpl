@@ -35,6 +35,7 @@ fi
 
 {{- if (index $pkgs_data "brew") }}
 echo "Installing Brew packages..."
+brew bundle --file=/dev/stdin <<EOF
 {{- range $type, $pkgs := index $pkgs_data "brew" }}
   {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
     {{- range $pkgs }}
