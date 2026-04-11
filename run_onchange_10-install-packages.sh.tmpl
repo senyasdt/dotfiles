@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+
+# Force use bash if run via sh
+if [ -z "${BASH_VERSION:-}" ]; then
+  exec bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 # --- DATA INJECTION ---
@@ -6,7 +12,7 @@ OS={{ .chezmoi.os | quote }}
 
 {{- $root := . | default (dict) -}}
 {{- $packages := index $root "packages" | default (dict) -}}
-{{- $rawBase := index $root "base" | default "lite" -}}
+{{- $rawBase := index $root "base" | default (list "lite") -}}
 {{- $profiles := (kindOf $rawBase | eq "slice") | ternary $rawBase (list $rawBase) -}}
 
 SELECTED_PROFILES=({{- range $profiles }}{{ . | quote }} {{ end }})
@@ -17,9 +23,7 @@ has() { command -v "$1" >/dev/null 2>&1; }
 # --- GENERATE ARRAYS FROM YAML ---
 {{- range $manager := list "apt" "brew" "cargo" }}
 {{- $m_data := index $packages $manager | default (dict) }}
-declare -A {{ $manager | upper }}_MAP
 {{- range $key, $list := $m_data }}
-{{ $manager | upper }}_MAP[{{ $key }}]=1
 {{ $manager | upper }}_{{ $key | replace "-" "_" }}=({{- range ($list | default list) }}{{ . | quote }} {{ end }})
 {{- end }}
 {{- end }}
@@ -30,11 +34,15 @@ declare -A {{ $manager | upper }}_MAP
 if [ "$OS" = "linux" ] && has apt; then
   log "APT phase"
   APT_FINAL=()
-  [[ -v APT_MAP[base] ]] && APT_FINAL+=("${APT_base[@]}")
+  
+  # Always add base if exists
+  {{ if (index $apt "base") }} APT_FINAL+=("${APT_base[@]}") {{ end }}
   
   for p in "${SELECTED_PROFILES[@]}"; do
-    key="APT_${p//-/_}"
-    [[ -v "APT_MAP[$p]" ]] && APT_FINAL+=("${!key[@]}")
+    profile_var="APT_${p//-/_}[@]"
+    if [[ -n "${!profile_var:-}" ]]; then
+      APT_FINAL+=("${!profile_var}")
+    fi
   done
 
   if [ "${#APT_FINAL[@]}" -gt 0 ]; then
@@ -65,15 +73,17 @@ install_brew
 if has brew; then
   log "Brew phase"
   BREW_FINAL=()
-  [[ -v BREW_MAP[base] ]] && BREW_FINAL+=("${BREW_base[@]}")
+  {{ if (index $brew "base") }} BREW_FINAL+=("${BREW_base[@]}") {{ end }}
   
   for p in "${SELECTED_PROFILES[@]}"; do
-    key="BREW_${p//-/_}"
-    [[ -v "BREW_MAP[$p]" ]] && BREW_FINAL+=("${!key[@]}")
+    profile_var="BREW_${p//-/_}[@]"
+    if [[ -n "${!profile_var:-}" ]]; then
+      BREW_FINAL+=("${!profile_var}")
+    fi
   done
 
-  [ "$OS" = "linux" ] && [[ -v BREW_MAP[linux] ]] && BREW_FINAL+=("${BREW_linux[@]}")
-  [ "$OS" = "darwin" ] && [[ -v BREW_MAP[macos] ]] && BREW_FINAL+=("${BREW_macos[@]}")
+  [ "$OS" = "linux" ] && {{ if (index $brew "linux") }} BREW_FINAL+=("${BREW_linux[@]}") {{ end }}
+  [ "$OS" = "darwin" ] && {{ if (index $brew "macos") }} BREW_FINAL+=("${BREW_macos[@]}") {{ end }}
 
   if [ "${#BREW_FINAL[@]}" -gt 0 ]; then
     mapfile -t BREW_FINAL < <(printf "%s\n" "${BREW_FINAL[@]}" | sort -u)
@@ -87,8 +97,10 @@ fi
 install_rust() {
   if ! has cargo; then
     log "Installing Rust..."
-    curl https://rustup.rs -sSf | sh -s -- -y
-    [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
+    if has curl; then
+      curl https://rustup.rs -sSf | sh -s -- -y
+      [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+    fi
   fi
 }
 
@@ -97,11 +109,13 @@ install_rust
 if has cargo; then
   log "Cargo phase"
   CARGO_FINAL=()
-  [[ -v CARGO_MAP[base] ]] && CARGO_FINAL+=("${CARGO_base[@]}")
+  {{ if (index $cargo "base") }} CARGO_FINAL+=("${CARGO_base[@]}") {{ end }}
   
   for p in "${SELECTED_PROFILES[@]}"; do
-    key="CARGO_${p//-/_}"
-    [[ -v "CARGO_MAP[$p]" ]] && CARGO_FINAL+=("${!key[@]}")
+    profile_var="CARGO_${p//-/_}[@]"
+    if [[ -n "${!profile_var:-}" ]]; then
+      CARGO_FINAL+=("${!profile_var}")
+    fi
   done
 
   if [ "${#CARGO_FINAL[@]}" -gt 0 ]; then
@@ -115,5 +129,5 @@ if has cargo; then
   fi
 fi
 
-log "Done!"
+log "Done"
 
