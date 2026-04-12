@@ -10,14 +10,6 @@ plugins=(
   fast-syntax-highlighting
   command-not-found
 )
-{{- $profiles := index . "profiles" | default (list "full") -}}
-
-{{ if has "full" $profiles -}}
-if command -v zoxide &> /dev/null; then
-    eval "$(zoxide init zsh --cmd cd)"
-fi
-{{- end }}
-source <(fzf --zsh)
 
 source $ZSH/oh-my-zsh.sh
 

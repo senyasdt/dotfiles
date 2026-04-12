@@ -9,10 +9,13 @@ packages:
     full:
       - eza
       - tree-sitter
+      - bubblewrap
       - fd
       - tldr
       - bat
       - unzip
+      - htop
+      - node
       - file
       - ffmpeg
       - imagemagick
@@ -23,10 +26,15 @@ packages:
       - resvg
       - jstkdng/programs/ueberzugpp
       - yazi
-
+    ai: 
+      # - gemini-cli
     linux:
       - xclip
-    desctop:
+    desktop:
+      - codex
+      - google-chrome
+      - postman
+      - maccy
       - wezterm
   apt:
     linux:

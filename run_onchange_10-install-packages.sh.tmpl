@@ -37,15 +37,18 @@ fi
 echo "Installing Brew packages..."
 brew bundle --file=/dev/stdin <<EOF
 {{- range $type, $pkgs := index $pkgs_data "brew" }}
-  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
+  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) (eq $type "desctop") }}
     {{- range $pkgs }}
+{{- if eq $type "desktop" }}
+cask {{ . | quote }}
+{{- else }}
 brew {{ . | quote }}
+{{- end }}
     {{- end }}
   {{- end }}
 {{- end }}
 EOF
 {{- end }}
-
 {{- if not (has "lite" $profiles) }}
 if ! command -v cargo &> /dev/null; then
     echo "Installing Rust/Cargo..."
