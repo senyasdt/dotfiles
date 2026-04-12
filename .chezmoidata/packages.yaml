@@ -14,6 +14,7 @@ packages:
       - tldr
       - bat
       - unzip
+      - lazygit
       - htop
       - node
       - file
