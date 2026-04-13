@@ -68,21 +68,21 @@ fi
 {{- $pkgs_data := index . "packages" | default (dict) -}}
 
 {{- if and (eq $os "linux") (index $pkgs_data "apt") }}
-log_section "APT packages"
-run_cmd "Refreshing package index" "${sudo_cmd[@]}" apt-get update
+log_section "📦 APT packages"
+run_cmd "🔄 Refreshing package index" "${sudo_cmd[@]}" apt-get update
 {{- range $type, $pkgs := index $pkgs_data "apt" }}
   {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
     {{- range $pkgs }}
-run_cmd "Installing APT package {{ . }}" env DEBIAN_FRONTEND=noninteractive "${sudo_cmd[@]}" apt-get install -y {{ . | quote }}
+run_cmd "📥 Installing APT package {{ . }}" env DEBIAN_FRONTEND=noninteractive "${sudo_cmd[@]}" apt-get install -y {{ . | quote }}
     {{- end }}
   {{- end }}
 {{- end }}
-log_ok "APT packages are installed"
+log_ok "✅ APT packages are installed"
 {{- end }}
 
 if ! command -v brew >/dev/null 2>&1; then
-    log_section "Homebrew"
-    log_step "Installing Homebrew"
+    log_section "🍺 Homebrew"
+    log_step "📥 Installing Homebrew"
 
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     {{ if eq $os "linux" -}}
@@ -98,15 +98,15 @@ if ! command -v brew >/dev/null 2>&1; then
       eval "$(/opt/homebrew/bin/brew shellenv)"
     fi
     {{- end }}
-    log_ok "Homebrew is ready"
+    log_ok "✅ Homebrew is ready"
 fi
 
 {{- if (index $pkgs_data "brew") }}
-log_section "Brew packages"
-log_step "Installing Brew bundle"
+log_section "🍺 Brew packages"
+log_step "📦 Installing Brew bundle"
 brew bundle --file=/dev/stdin <<EOF
 {{- range $type, $pkgs := index $pkgs_data "brew" }}
-  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) (eq $type "desktop") }}
+  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
     {{- range $pkgs }}
 {{- if eq $type "desktop" }}
 cask {{ . | quote }}
@@ -117,29 +117,29 @@ brew {{ . | quote }}
   {{- end }}
 {{- end }}
 EOF
-log_ok "Brew packages are installed"
+log_ok "✅ Brew packages are installed"
 {{- end }}
 {{- if not (has "lite" $profiles) }}
 if ! command -v cargo >/dev/null 2>&1; then
-    log_section "Rust toolchain"
-    log_step "Installing rustup and cargo"
+    log_section "🦀 Rust toolchain"
+    log_step "📥 Installing rustup and cargo"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     # shellcheck disable=SC1090
     . "$HOME/.cargo/env"
-    log_ok "Cargo is ready"
+    log_ok "✅ Cargo is ready"
 fi
 
 {{- if (index $pkgs_data "cargo") }}
-log_section "Cargo packages"
+log_section "🦀 Cargo packages"
 {{- range $type, $pkgs := index $pkgs_data "cargo" }}
   {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
     {{- range $pkgs }}
-run_cmd "Installing Cargo package {{ . }}" cargo install {{ . | quote }}
+run_cmd "📥 Installing Cargo package {{ . }}" cargo install {{ . | quote }}
     {{- end }}
   {{- end }}
 {{- end }}
-log_ok "Cargo packages are installed"
+log_ok "✅ Cargo packages are installed"
 {{- end }}
 {{- end }}
 
-printf '\n%sInstallation process finished.%s\n' "$c_magenta" "$c_reset"
+printf '\n%s🎉 Installation process finished.%s\n' "$c_magenta" "$c_reset"
