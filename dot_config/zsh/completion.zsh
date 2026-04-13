@@ -1,7 +1,6 @@
 zstyle ':completion:*' group-name ''
 zstyle ':completion:*:descriptions' format '[%d]'
 
-zstyle ':completion:*:*:-command-:*:*' group-order alias builtins functions commands
 zstyle ':completion:*:complete:git-rebase:*' group-order 'commits'
 zstyle ':completion:*:*:git-checkout:*' group-order main-branches upstream-branches tags
 
