@@ -72,6 +72,8 @@ if [[ ${#profiles[@]} -eq 0 ]]; then
   profiles=(full)
 fi
 
+profiles_csv="$(IFS=,; printf '%s' "${profiles[*]}")"
+
 sudo_cmd=()
 if [[ ${EUID} -ne 0 ]] && command -v sudo >/dev/null 2>&1; then
   sudo_cmd=(sudo)
@@ -85,20 +87,9 @@ fi
 if command -v apt-get >/dev/null 2>&1; then
   log "Preparing base packages with APT"
   "${sudo_cmd[@]}" apt-get update
-  DEBIAN_FRONTEND=noninteractive "${sudo_cmd[@]}" apt-get install -y curl git
+  DEBIAN_FRONTEND=noninteractive "${sudo_cmd[@]}" apt-get install -y git
   log_ok "Base packages are ready"
 fi
-
-repo_dir="${HOME}/.local/share/chezmoi"
-data_dir="${repo_dir}/.chezmoidata"
-profiles_file="${data_dir}/01_profiles.yaml"
-
-mkdir -p "$data_dir"
-printf 'profiles: [%s]\n' "$(
-  IFS=,
-  printf '%s' "${profiles[*]}"
-)" >"$profiles_file"
-log_ok "Saved selected profiles to $profiles_file"
 
 require_cmd curl
 tmp_script="$(mktemp)"
@@ -106,6 +97,7 @@ tmp_script="$(mktemp)"
 log "Downloading chezmoi installer"
 curl -fsSL 'https://get.chezmoi.io' -o "$tmp_script"
 
+log "Using CHEZMOI_PROFILES=${profiles_csv}"
 log "Running chezmoi init"
-sh "$tmp_script" -- init --apply senyasdt
+CHEZMOI_PROFILES="$profiles_csv" sh "$tmp_script" -- init --apply senyasdt
 log_ok "chezmoi bootstrap completed"
