@@ -111,6 +111,7 @@ vim.o.scrolloff = 10
 vim.o.confirm = true
 
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+vim.keymap.set('i', 'jj', '<Esc>', { desc = 'Exit insert mode' })
 
 vim.diagnostic.config {
   update_in_insert = false,
@@ -413,17 +414,15 @@ require('lazy').setup({
     },
   },
   {
-    'folke/tokyonight.nvim',
+    'catppuccin/nvim',
+    name = 'catppuccin',
     priority = 1000,
     config = function()
-      ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false },
-        },
+      require('catppuccin').setup {
+        transparent_background = true,
       }
 
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'catppuccin'
     end,
   },
   {

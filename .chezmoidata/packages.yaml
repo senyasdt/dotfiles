@@ -5,10 +5,10 @@ packages:
       - ripgrep
       - fzf
       - navi
+      - tree-sitter
       - nvim
     full:
       - eza
-      - tree-sitter
       - bubblewrap
       - fd
       - tldr
