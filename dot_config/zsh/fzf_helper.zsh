@@ -3,7 +3,14 @@ export FZF_CTRL_R_OPTS="
   --color header:italic
   --header 'Press CTRL-Y to copy command into clipboard'"
 
-export FZF_ALT_C_OPTS="--preview '(eza --tree --level=2 --color=always --icons=always {} || ls -F --color=always {}) | head -200' \
+export FZF_ALT_C_OPTS="--preview '
+  if command -v eza >/dev/null 2>&1; then
+    eza --tree --level=2 --color=always --icons=always -- {}
+  elif ls --color=always . >/dev/null 2>&1; then
+    ls -F --color=always -- {}
+  else
+    ls -F -- {}
+  fi | head -200' \
   --preview-window 'right:50%' \
   --bind 'ctrl-/:toggle-preview' \
   --header 'Folders Tree (CTRL-/ to hide)' \
@@ -11,12 +18,23 @@ export FZF_ALT_C_OPTS="--preview '(eza --tree --level=2 --color=always --icons=a
 
 export FZF_CTRL_T_OPTS="--preview '
   if [ -d {} ]; then
-    (eza --tree --level=2 --icons=always --color=always {} || ls -F --color=always {}) | head -200
+    if command -v eza >/dev/null 2>&1; then
+      eza --tree --level=2 --icons=always --color=always -- {}
+    elif ls --color=always . >/dev/null 2>&1; then
+      ls -F --color=always -- {}
+    else
+      ls -F -- {}
+    fi
   else
-    (bat --color=always {} || cat {}) | head -200
+    if command -v bat >/dev/null 2>&1; then
+      bat --color=always -- {}
+    elif command -v batcat >/dev/null 2>&1; then
+      batcat --color=always -- {}
+    else
+      cat -- {}
+    fi
   fi' 
   --preview-window 'right:50%' 
   --bind 'ctrl-/:toggle-preview' 
   --header 'Folders Tree (CTRL-/ to hide)' \
   --walker-skip .git,node_modules,target"
-

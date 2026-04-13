@@ -1,43 +1,111 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
 # .chezmoidata/packages.yaml hash:
 
-CMD=$( [ "$(id -u)" -eq 0 ] && echo "" || echo "sudo " )
+if [[ -t 1 ]]; then
+  c_reset=$'\033[0m'
+  c_dim=$'\033[2m'
+  c_red=$'\033[1;31m'
+  c_green=$'\033[1;32m'
+  c_yellow=$'\033[1;33m'
+  c_blue=$'\033[1;34m'
+  c_magenta=$'\033[1;35m'
+  c_cyan=$'\033[1;36m'
+else
+  c_reset=''
+  c_dim=''
+  c_red=''
+  c_green=''
+  c_yellow=''
+  c_blue=''
+  c_magenta=''
+  c_cyan=''
+fi
+
+log_section() {
+  printf '\n%s==>%s %s\n' "$c_blue" "$c_reset" "$*"
+}
+
+log_step() {
+  printf '%s  ->%s %s\n' "$c_cyan" "$c_reset" "$*"
+}
+
+log_ok() {
+  printf '%s  ok%s %s\n' "$c_green" "$c_reset" "$*"
+}
+
+log_warn() {
+  printf '%s  !!%s %s\n' "$c_yellow" "$c_reset" "$*" >&2
+}
+
+log_error() {
+  printf '%s  xx%s %s\n' "$c_red" "$c_reset" "$*" >&2
+}
+
+run_cmd() {
+  local title=$1
+  shift
+  log_step "$title"
+  "$@"
+}
+
+trap 'log_error "Package installation failed on line $LINENO."' ERR
+
+sudo_cmd=()
+if [[ $(id -u) -ne 0 ]]; then
+  sudo_cmd=(sudo)
+fi
+
+if [[ $(id -u) -ne 0 ]] && [[ ${#sudo_cmd[@]} -eq 0 ]] && command -v apt-get >/dev/null 2>&1; then
+  log_error "APT installation requires root or sudo"
+  exit 1
+fi
 
 {{- $os := .chezmoi.os -}}
 {{- $profiles := index . "profiles" | default (list "full") -}}
 {{- $pkgs_data := index . "packages" | default (dict) -}}
 
 {{- if and (eq $os "linux") (index $pkgs_data "apt") }}
-echo "Installing APT packages..."
-${CMD}apt-get update
+log_section "APT packages"
+run_cmd "Refreshing package index" "${sudo_cmd[@]}" apt-get update
 {{- range $type, $pkgs := index $pkgs_data "apt" }}
   {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
     {{- range $pkgs }}
-${CMD}apt-get install -y {{ . | quote }}
+run_cmd "Installing APT package {{ . }}" env DEBIAN_FRONTEND=noninteractive "${sudo_cmd[@]}" apt-get install -y {{ . | quote }}
     {{- end }}
   {{- end }}
 {{- end }}
+log_ok "APT packages are installed"
 {{- end }}
 
-if ! command -v brew &> /dev/null; then
-    echo "Installing Homebrew..."
+if ! command -v brew >/dev/null 2>&1; then
+    log_section "Homebrew"
+    log_step "Installing Homebrew"
 
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     {{ if eq $os "linux" -}}
-    test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
-    test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    if [[ -x "${HOME}/.linuxbrew/bin/brew" ]]; then
+      eval "$("${HOME}/.linuxbrew/bin/brew" shellenv)"
+    elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+      eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    fi
     {{ else -}}
-    test -d /usr/local/bin/brew && eval "$(/usr/local/bin/brew shellenv)"
-    test -d /opt/homebrew/bin/brew && eval "$(/opt/homebrew/bin/brew shellenv)"
+    if [[ -x /usr/local/bin/brew ]]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    elif [[ -x /opt/homebrew/bin/brew ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
     {{- end }}
+    log_ok "Homebrew is ready"
 fi
 
 {{- if (index $pkgs_data "brew") }}
-echo "Installing Brew packages..."
+log_section "Brew packages"
+log_step "Installing Brew bundle"
 brew bundle --file=/dev/stdin <<EOF
 {{- range $type, $pkgs := index $pkgs_data "brew" }}
-  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) (eq $type "desctop") }}
+  {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) (eq $type "desktop") }}
     {{- range $pkgs }}
 {{- if eq $type "desktop" }}
 cask {{ . | quote }}
@@ -48,25 +116,29 @@ brew {{ . | quote }}
   {{- end }}
 {{- end }}
 EOF
+log_ok "Brew packages are installed"
 {{- end }}
 {{- if not (has "lite" $profiles) }}
-if ! command -v cargo &> /dev/null; then
-    echo "Installing Rust/Cargo..."
-    curl https://sh.rustup.rs -sSf | sh
-    source "$HOME/.cargo/env"
+if ! command -v cargo >/dev/null 2>&1; then
+    log_section "Rust toolchain"
+    log_step "Installing rustup and cargo"
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    # shellcheck disable=SC1090
+    . "$HOME/.cargo/env"
+    log_ok "Cargo is ready"
 fi
 
 {{- if (index $pkgs_data "cargo") }}
-echo "Installing Cargo packages..."
+log_section "Cargo packages"
 {{- range $type, $pkgs := index $pkgs_data "cargo" }}
   {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
     {{- range $pkgs }}
-cargo install {{ . | quote }}
+run_cmd "Installing Cargo package {{ . }}" cargo install {{ . | quote }}
     {{- end }}
   {{- end }}
 {{- end }}
+log_ok "Cargo packages are installed"
 {{- end }}
 {{- end }}
 
-echo "Installation process finished."
-
+printf '\n%sInstallation process finished.%s\n' "$c_magenta" "$c_reset"
