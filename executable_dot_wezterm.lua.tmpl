@@ -80,7 +80,7 @@ local function random_background(dir)
 		return nil
 	end
 
-	math.randomseed(os.time() + tonumber(tostring({}):sub(8), 16))
+	math.randomseed(os.time())
 	cached_bg = files[math.random(#files)]
 	return cached_bg
 end
