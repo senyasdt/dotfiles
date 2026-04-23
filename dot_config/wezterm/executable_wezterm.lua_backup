@@ -1,0 +1,202 @@
+local wezterm = require("wezterm")
+
+local act = wezterm.action
+
+-- ───────────────────────────── Config builder ─────────────────────
+
+local config = {}
+
+if wezterm.config_builder then
+	config = wezterm.config_builder()
+end
+
+-- ───────────────────────────── UI ────────────────────────────────
+
+config.window_background_opacity = 0.90
+
+config.text_background_opacity = 1.0
+
+config.macos_window_background_blur = 20
+config.native_macos_fullscreen_mode = true
+config.win32_system_backdrop = "Acrylic"
+
+config.initial_cols = 121
+
+config.initial_rows = 28
+
+config.font_size = 10
+
+config.color_scheme = "Catppuccin Macchiato"
+
+if wezterm.target_triple:find("windows") then
+	config.default_domain = "WSL:Ubuntu"
+end
+config.command_palette_bg_color = "#303030"
+
+-- ───────────────────────────── Window title ─────────────────────
+
+wezterm.on("format-window-title", function()
+	local user = os.getenv("USER") or os.getenv("USERNAME") or "user"
+
+	local host = wezterm.hostname()
+
+	return string.format("%s@%s | Terminal", user, host)
+end)
+
+-- ───────────────────────────── Random background ────────────────
+local cached_bg = nil
+
+local function random_background(dir)
+	if cached_bg then
+		return cached_bg
+	end
+	local files = {}
+
+	local patterns = { dir .. "/*.png", dir .. "/*.jpg", dir .. "/*.jpeg" }
+
+	for _, pattern in ipairs(patterns) do
+		local ok, matches = pcall(wezterm.glob, pattern)
+
+		if ok and matches then
+			for _, f in ipairs(matches) do
+				table.insert(files, f)
+			end
+		end
+	end
+
+	if #files == 0 then
+		return nil
+	end
+
+	math.randomseed(os.time() + tonumber(tostring({}):sub(8), 16))
+	cached_bg = files[math.random(#files)]
+	return cached_bg
+end
+
+local home = wezterm.home_dir
+
+local background_dir = home .. "/.config/wezterm/backgrounds"
+
+local bg = random_background(background_dir)
+
+if bg then
+	config.background = {
+
+		{ source = { File = bg }, opacity = 0.9 },
+	}
+end
+
+-- ───────────────────────────── Rename Tab ─────────────────────────
+
+local rename_tab_action = act.PromptInputLine({
+	description = "Enter new name for tab",
+	action = wezterm.action_callback(function(window, pane, line)
+		if line then
+			window:active_tab():set_title(line)
+		end
+	end),
+})
+-- ───────────────────────────── Keybindings ───────────────────────
+
+config.keys = {
+
+	{
+		key = "LeftArrow",
+		mods = wezterm.target_triple:find("darwin") and "CMD|SHIFT" or "WIN|SHIFT",
+		action = act.MoveTabRelative(-1),
+	},
+
+	{
+		key = "RightArrow",
+		mods = wezterm.target_triple:find("darwin") and "CMD|SHIFT" or "WIN|SHIFT",
+		action = act.MoveTabRelative(1),
+	},
+	{ key = "F6", mods = "SHIFT", action = rename_tab_action },
+	{
+		key = "|",
+		mods = wezterm.target_triple:find("darwin") and "CMD|SHIFT" or "CTRL|SHIFT",
+		action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }),
+	},
+}
+
+-- ───────────────────────────── Smart close ───────────────────────
+
+local safe_processes = {
+	["bash"] = true,
+	["zsh"] = true,
+	["fish"] = true,
+	["sh"] = true,
+	["nu"] = true,
+	["nil"] = true,
+	["wslhost.exe"] = true,
+}
+
+local function is_safe_process(name)
+	wezterm.log_info("Check procees is safe " .. tostring(name))
+	if not name then
+		return true
+	end
+	return safe_processes[name:match("([^/\\]+)$")] == true
+end
+
+local function smart_close(window, pane)
+	local tab = pane:tab()
+
+	local panes = tab:panes()
+
+	local tabs = window:mux_window():tabs()
+
+	local process = pane:get_foreground_process_name()
+
+	local confirm = not is_safe_process(process)
+
+	if #panes > 1 then
+		window:perform_action(act.CloseCurrentPane({ confirm = confirm }), pane)
+	elseif #tabs > 1 then
+		window:perform_action(act.CloseCurrentTab({ confirm = confirm }), pane)
+	else
+		window:perform_action(act.CloseCurrentTab({ confirm = confirm }), pane)
+	end
+end
+
+table.insert(config.keys, {
+
+	key = "w",
+
+	mods = wezterm.target_triple:find("darwin") and "CMD" or "CTRL",
+
+	action = wezterm.action_callback(smart_close),
+})
+
+-- ───────────────────────────── Plugin: bar ───────────────────────
+
+local ok, bar = pcall(wezterm.plugin.require, "https://github.com/adriankarlen/bar.wezterm")
+
+if ok and bar then
+	bar.apply_to_config(config, {})
+end
+
+-- ───────────────────────── Command palette extension ─────────────
+wezterm.on("augment-command-palette", function(window, pane)
+	return {
+		{
+			brief = "Tab | Rename tab",
+			icon = "md_rename_box",
+			action = rename_tab_action,
+		},
+	}
+end)
+
+-- ───────────────────────── Fullscreen on startup  ────────────────
+wezterm.on("gui-startup", function(cmd)
+	local tab, pane, window = wezterm.mux.spawn_window(cmd or {})
+	local gui_window = window:gui_window()
+
+	if wezterm.target_triple:find("darwin") then
+		gui_window:toggle_fullscreen()
+	else
+		gui_window:maximize()
+	end
+end)
+
+return config
