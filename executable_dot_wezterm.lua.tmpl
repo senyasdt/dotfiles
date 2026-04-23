@@ -25,7 +25,11 @@ config.initial_cols = 121
 
 config.initial_rows = 28
 
+{{ if eq .chezmoi.os "darwin" -}}
+config.font_size = 16
+{{else -}} 
 config.font_size = 10
+{{end -}}
 
 config.color_scheme = "Catppuccin Macchiato"
 config.window_frame = {
