@@ -2,6 +2,7 @@ local wezterm = require("wezterm")
 
 local nerdfonts = wezterm.nerdfonts
 local F = dofile(wezterm.home_dir .. "/.config/wezterm/functions.lua")
+local wezterm_vim = dofile(wezterm.home_dir .. "/.config/wezterm/wezterm_vim.lua")
 
 local M = {}
 
@@ -50,11 +51,19 @@ local function pane_has_ssh_connection(pane)
 	return false
 end
 
+local function tab_bar_background(colors)
+	if wezterm.GLOBAL.solid_background_mode then
+		return colors.background or "#1e2030"
+	end
+
+	return "rgba(0, 0, 0, 0)"
+end
+
 function M.setup(config)
 	local colors = wezterm.get_builtin_color_schemes()[config.color_scheme] or {}
 	local transparent = "rgba(0, 0, 0, 0)"
+	local bar_background = tab_bar_background(colors)
 	local username = os.getenv("USER") or os.getenv("LOGNAME") or os.getenv("USERNAME") or "user"
-	local hostname = string.lower(wezterm.hostname())
 	local active_tab_color = "#a6da95"
 
 	config.enable_tab_bar = true
@@ -67,27 +76,27 @@ function M.setup(config)
 
 	config.colors = config.colors or {}
 	config.colors.tab_bar = {
-		background = transparent,
+		background = bar_background,
 		active_tab = {
-			bg_color = transparent,
+			bg_color = bar_background,
 			fg_color = active_tab_color,
 			italic = true,
 		},
 		inactive_tab = {
-			bg_color = transparent,
+			bg_color = bar_background,
 			fg_color = colors.foreground or "#cad3f5",
 		},
 		inactive_tab_hover = {
-			bg_color = transparent,
+			bg_color = bar_background,
 			fg_color = colors.foreground or "#cad3f5",
 			italic = false,
 		},
 		new_tab = {
-			bg_color = transparent,
+			bg_color = bar_background,
 			fg_color = colors.foreground or "#cad3f5",
 		},
 		new_tab_hover = {
-			bg_color = transparent,
+			bg_color = bar_background,
 			fg_color = (colors.indexed and colors.indexed[16]) or colors.foreground or "#cad3f5",
 			italic = false,
 		},
@@ -95,9 +104,15 @@ function M.setup(config)
 
 	wezterm.on("update-status", function(window, pane)
 		local active_key_table = window:active_key_table()
+		local vi_mode = wezterm_vim.current_vi_mode(pane)
+		local vi_label = vi_mode
 		local stat = "local"
+		local bar_background = tab_bar_background(colors)
 		local workspace_color = (colors.ansi and colors.ansi[3]) or "#eed49f"
 		local time = wezterm.strftime("%Y-%m-%d %H:%M")
+		local vi_color = vi_mode == "N"
+			and ((colors.indexed and colors.indexed[16]) or "#b7bdf8")
+			or ((colors.ansi and colors.ansi[6]) or "#8bd5ca")
 
 		if pane_has_ssh_connection(pane) then
 			stat = "ssh"
@@ -105,11 +120,8 @@ function M.setup(config)
 		end
 
 		if active_key_table then
-			stat = active_key_table
-			workspace_color = (colors.ansi and colors.ansi[4]) or "#8aadf4"
-		elseif window:leader_is_active() then
-			stat = "leader"
-			workspace_color = (colors.ansi and colors.ansi[2]) or "#a6da95"
+			vi_label = active_key_table
+			vi_color = (colors.ansi and colors.ansi[2]) or "#a6da95"
 		end
 
 		local cwd = pane:get_current_working_dir()
@@ -127,7 +139,7 @@ function M.setup(config)
 
 		window:set_right_status(wezterm.format({
 			{ Text = " " },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = "#ee99a0" } },
 			{ Text = nerdfonts.ple_left_half_circle_thick },
 			-- { Background = { Color = (colors.ansi and colors.ansi[4]) or "#8aadf4" } },
@@ -137,12 +149,12 @@ function M.setup(config)
 			{ Background = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Foreground = { Color = colors.foreground or "#cad3f5" } },
 			{ Text = " " .. cwd },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Text = nerdfonts.ple_right_half_circle_thick },
 
 			{ Text = " " },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[7]) or "#91d7e3" } },
 			{ Text = nerdfonts.ple_left_half_circle_thick },
 			{ Background = { Color = (colors.ansi and colors.ansi[7]) or "#91d7e3" } },
@@ -151,26 +163,26 @@ function M.setup(config)
 			{ Background = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Foreground = { Color = colors.foreground or "#cad3f5" } },
 			{ Text = " " .. username },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Text = nerdfonts.ple_right_half_circle_thick },
 
 			{ Text = " " },
-			{ Background = { Color = transparent } },
-			{ Foreground = { Color = (colors.indexed and colors.indexed[16]) or "#b7bdf8" } },
+			{ Background = { Color = bar_background } },
+			{ Foreground = { Color = vi_color } },
 			{ Text = nerdfonts.ple_left_half_circle_thick },
-			{ Background = { Color = (colors.indexed and colors.indexed[16]) or "#b7bdf8" } },
+			{ Background = { Color = vi_color } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
-			{ Text = nerdfonts.cod_server .. " " },
+			{ Text = nerdfonts.dev_vim .. " " },
 			{ Background = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Foreground = { Color = colors.foreground or "#cad3f5" } },
-			{ Text = " " .. hostname },
-			{ Background = { Color = transparent } },
+			{ Text = " " .. vi_label },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Text = nerdfonts.ple_right_half_circle_thick },
 
 			{ Text = " " },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = workspace_color } },
 			{ Text = nerdfonts.ple_left_half_circle_thick },
 			{ Background = { Color = workspace_color } },
@@ -179,12 +191,12 @@ function M.setup(config)
 			{ Background = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Foreground = { Color = colors.foreground or "#cad3f5" } },
 			{ Text = " " .. stat },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Text = nerdfonts.ple_right_half_circle_thick },
 
 			{ Text = " " },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = (colors.brights and colors.brights[1]) or "#f5bde6" } },
 			{ Text = nerdfonts.ple_left_half_circle_thick },
 			{ Background = { Color = (colors.brights and colors.brights[1]) or "#f5bde6" } },
@@ -193,13 +205,14 @@ function M.setup(config)
 			{ Background = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Foreground = { Color = colors.foreground or "#cad3f5" } },
 			{ Text = " " .. time },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = bar_background } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Text = nerdfonts.ple_right_half_circle_thick },
 		}))
 	end)
 
 	wezterm.on("format-tab-title", function(tab)
+		local background = tab_bar_background(colors)
 		local pane = tab.active_pane
 		local title = F.tab_title(tab)
 		local tab_number = tostring(tab.tab_index + 1)
@@ -263,20 +276,20 @@ function M.setup(config)
 
 		if tab.is_active then
 			return {
-				{ Background = { Color = transparent } },
+				{ Background = { Color = background } },
 				{ Foreground = { Color = (colors.ansi and colors.ansi[3]) or "#494d64" } },
 				{ Text = title .. " " },
 				{ Background = { Color = (colors.ansi and colors.ansi[3]) or "#494d64" } },
 				{ Foreground = { Color = colors.background or "#cad3f5" } },
 				{ Text = " " .. tab_number },
-				{ Background = { Color = transparent } },
+				{ Background = { Color = background } },
 				{ Foreground = { Color = active_tab_color } },
 				{ Text = nerdfonts.ple_right_half_circle_thick .. " " },
 			}
 		end
 
 		return {
-			{ Background = { Color = transparent } },
+			{ Background = { Color = background } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
 			{ Text = nerdfonts.ple_left_half_circle_thick },
 			{ Background = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
@@ -285,7 +298,7 @@ function M.setup(config)
 			{ Background = { Color = (colors.ansi and colors.ansi[5]) or "#8aadf4" } },
 			{ Foreground = { Color = colors.background or "#1e2030" } },
 			{ Text = " " .. tab_number },
-			{ Background = { Color = transparent } },
+			{ Background = { Color = background } },
 			{ Foreground = { Color = (colors.ansi and colors.ansi[5]) or "#8aadf4" } },
 			{ Text = nerdfonts.ple_right_half_circle_thick .. " " },
 		}

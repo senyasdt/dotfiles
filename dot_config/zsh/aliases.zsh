@@ -1,4 +1,5 @@
 alias ch=chezmoi
+alias vlite='NVIM_APPNAME=nvim-lite nvim'
 
 if command -v xclip >/dev/null 2>&1; then
   alias pbcopy='xclip -selection clipboard'

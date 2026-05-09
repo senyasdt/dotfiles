@@ -50,6 +50,18 @@ run_cmd() {
   "$@"
 }
 
+run_cmd_nonfatal() {
+  local title=$1
+  shift
+  log_step "$title"
+  if "$@"; then
+    return 0
+  fi
+
+  log_warn "$title failed, continuing"
+  return 1
+}
+
 trap 'log_error "Package installation failed on line $LINENO."' ERR
 
 sudo_cmd=()
@@ -103,8 +115,7 @@ fi
 
 {{- if (index $pkgs_data "brew") }}
 log_section "🍺 Brew packages"
-log_step "📦 Installing Brew bundle"
-brew bundle --file=/dev/stdin <<EOF
+if run_cmd_nonfatal "📦 Installing Brew bundle" brew bundle --file=/dev/stdin <<EOF
 {{- range $type, $pkgs := index $pkgs_data "brew" }}
   {{- if or (eq $type "all") (eq $type "common") (eq $type $os) (has $type $profiles) }}
     {{- range $pkgs }}
@@ -117,7 +128,11 @@ brew {{ . | quote }}
   {{- end }}
 {{- end }}
 EOF
-log_ok "✅ Brew packages are installed"
+then
+  log_ok "✅ Brew packages are installed"
+else
+  log_warn "🍺 Some Brew packages failed to install or upgrade; continuing chezmoi apply"
+fi
 {{- end }}
 {{- if not (has "lite" $profiles) }}
 if ! command -v cargo >/dev/null 2>&1; then

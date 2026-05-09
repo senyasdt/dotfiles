@@ -1,0 +1,86 @@
+[INFO  Sat May  9 06:30:32 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=goimports) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:30:32 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=gofumpt) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:30:32 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=delve) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:30:32 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=java-debug-adapter) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:30:32 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=java-test) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[ERROR Sat May  9 06:30:32 2026] ...al/share/nvim/lazy/mason.nvim/lua/mason-core/process.lua:226: Failed to spawn process. cmd="go", err="ENOENT: no such file or directory"
+[ERROR Sat May  9 06:30:32 2026] ...al/share/nvim/lazy/mason.nvim/lua/mason-core/process.lua:226: Failed to spawn process. cmd="go", err="ENOENT: no such file or directory"
+[ERROR Sat May  9 06:30:32 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=delve) error=spawn: go failed with exit code - and signal -. Could not find executable "go" in PATH.
+
+[ERROR Sat May  9 06:30:32 2026] ...al/share/nvim/lazy/mason.nvim/lua/mason-core/process.lua:226: Failed to spawn process. cmd="go", err="ENOENT: no such file or directory"
+[ERROR Sat May  9 06:30:32 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=gofumpt) error=spawn: go failed with exit code - and signal -. Could not find executable "go" in PATH.
+
+[ERROR Sat May  9 06:30:32 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=goimports) error=spawn: go failed with exit code - and signal -. Could not find executable "go" in PATH.
+
+[ERROR Sat May  9 06:30:34 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=java-debug-adapter) error="Installation was aborted."
+[ERROR Sat May  9 06:30:34 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=java-test) error="Installation was aborted."
+[INFO  Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=goimports) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=gofumpt) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=delve) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=java-debug-adapter) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=java-test) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[INFO  Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=kotlin-debug-adapter) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[ERROR Sat May  9 06:31:57 2026] ...al/share/nvim/lazy/mason.nvim/lua/mason-core/process.lua:226: Failed to spawn process. cmd="go", err="ENOENT: no such file or directory"
+[ERROR Sat May  9 06:31:57 2026] ...al/share/nvim/lazy/mason.nvim/lua/mason-core/process.lua:226: Failed to spawn process. cmd="go", err="ENOENT: no such file or directory"
+[ERROR Sat May  9 06:31:57 2026] ...al/share/nvim/lazy/mason.nvim/lua/mason-core/process.lua:226: Failed to spawn process. cmd="go", err="ENOENT: no such file or directory"
+[ERROR Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=delve) error=spawn: go failed with exit code - and signal -. Could not find executable "go" in PATH.
+
+[ERROR Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=goimports) error=spawn: go failed with exit code - and signal -. Could not find executable "go" in PATH.
+
+[ERROR Sat May  9 06:31:57 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=gofumpt) error=spawn: go failed with exit code - and signal -. Could not find executable "go" in PATH.
+
+[INFO  Sat May  9 06:31:58 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:86: Installation succeeded for Package(name=kotlin-debug-adapter)
+[ERROR Sat May  9 06:31:59 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=java-debug-adapter) error="Installation was aborted."
+[ERROR Sat May  9 06:31:59 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=java-test) error="Installation was aborted."
+[INFO  Sat May  9 06:36:34 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:40: Executing installer for Package(name=delve) {
+  debug = false,
+  force = false,
+  strict = false
+}
+[ERROR Sat May  9 06:36:34 2026] ...al/share/nvim/lazy/mason.nvim/lua/mason-core/process.lua:226: Failed to spawn process. cmd="go", err="ENOENT: no such file or directory"
+[ERROR Sat May  9 06:36:34 2026] ...zy/mason.nvim/lua/mason-core/installer/InstallRunner.lua:93: Installation failed for Package(name=delve) error=spawn: go failed with exit code - and signal -. Could not find executable "go" in PATH.
+

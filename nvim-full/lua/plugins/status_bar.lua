@@ -1,18 +1,30 @@
 local function bubbles_theme()
-  local ok, tn_colors = pcall(require, "tokyonight.colors")
-  local colors = ok and tn_colors.setup() or nil
+  local ok, cp = pcall(require, "catppuccin.palettes")
+  local colors = ok and cp.get_palette("mocha") or nil
 
   if not colors then
     colors = {
       none = "NONE",
-      bg_dark = "#1e2030",
-      fg = "#c8d3f5",
-      fg_dark = "#828bb8",
-      fg_gutter = "#3b4261",
-      blue = "#82aaff",
-      cyan = "#86e1fc",
-      magenta = "#c099ff",
-      red = "#ff757f",
+      bg_dark = "#181825",
+      fg = "#cdd6f4",
+      fg_dark = "#a6adc8",
+      fg_gutter = "#45475a",
+      blue = "#89b4fa",
+      cyan = "#89dceb",
+      magenta = "#cba6f7",
+      red = "#f38ba8",
+    }
+  else
+    colors = {
+      none = colors.none,
+      bg_dark = colors.mantle,
+      fg = colors.text,
+      fg_dark = colors.overlay1,
+      fg_gutter = colors.surface1,
+      blue = colors.blue,
+      cyan = colors.teal,
+      magenta = colors.mauve,
+      red = colors.red,
     }
   end
 

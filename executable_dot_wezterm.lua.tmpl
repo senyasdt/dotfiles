@@ -2,6 +2,8 @@ local wezterm = require("wezterm")
 
 local act = wezterm.action
 local tab_bar = dofile(wezterm.home_dir .. "/.config/wezterm/tab_bar.lua")
+local wezterm_vim = dofile(wezterm.home_dir .. "/.config/wezterm/wezterm_vim.lua")
+local background_mode_file = wezterm.home_dir .. "/.config/wezterm/background_mode"
 
 -- ───────────────────────────── Config builder ─────────────────────
 
@@ -27,16 +29,50 @@ config.initial_rows = 28
 
 {{ if eq .chezmoi.os "darwin" -}}
 config.font_size = 16
-{{else -}} 
+{{- else if eq .chezmoi.os "windows" -}}
+config.font_size = 11
+{{- else -}}
 config.font_size = 10
-{{end -}}
-
+{{- end }}
 config.color_scheme = "Catppuccin Macchiato"
+config.status_update_interval = 250
+local theme_colors = wezterm.get_builtin_color_schemes()[config.color_scheme] or {}
+local solid_background_color = theme_colors.background or "#1e2030"
+local function read_background_mode()
+	local file = io.open(background_mode_file, "r")
+	if not file then
+		return "image"
+	end
+
+	local mode = file:read("*l")
+	file:close()
+
+	if mode == "solid" then
+		return "solid"
+	end
+
+	return "image"
+end
+
+local function write_background_mode(mode)
+	local file = io.open(background_mode_file, "w")
+	if not file then
+		return false
+	end
+
+	file:write(mode, "\n")
+	file:close()
+	return true
+end
+
+local background_mode = read_background_mode()
+local is_solid_background_mode = background_mode == "solid"
+wezterm.GLOBAL.solid_background_mode = is_solid_background_mode
 config.window_frame = {
 	border_top_height = "0.35cell",
-	border_top_color = "rgba(0, 0, 0, 0)",
-	active_titlebar_bg = "rgba(0, 0, 0, 0)",
-	inactive_titlebar_bg = "rgba(0, 0, 0, 0)",
+	border_top_color = is_solid_background_mode and solid_background_color or "rgba(0, 0, 0, 0)",
+	active_titlebar_bg = is_solid_background_mode and solid_background_color or "rgba(0, 0, 0, 0)",
+	inactive_titlebar_bg = is_solid_background_mode and solid_background_color or "rgba(0, 0, 0, 0)",
 }
 
 if wezterm.target_triple:find("windows") then
@@ -90,13 +126,50 @@ local home = wezterm.home_dir
 local background_dir = home .. "/.config/wezterm/backgrounds"
 
 local bg = random_background(background_dir)
+local image_background = bg and {
+	{ source = { File = bg }, opacity = 0.9 },
+} or nil
+local solid_background = {
+	{ source = { Color = solid_background_color } },
+}
 
-if bg then
-	config.background = {
+local solid_tab_bar_colors = {
+	background = solid_background_color,
+	tab_bar = {
+		background = solid_background_color,
+		active_tab = {
+			bg_color = solid_background_color,
+		},
+		inactive_tab = {
+			bg_color = solid_background_color,
+		},
+		inactive_tab_hover = {
+			bg_color = solid_background_color,
+		},
+		new_tab = {
+			bg_color = solid_background_color,
+		},
+		new_tab_hover = {
+			bg_color = solid_background_color,
+		},
+	},
+}
 
-		{ source = { File = bg }, opacity = 0.9 },
-	}
+if is_solid_background_mode then
+	config.background = solid_background
+	config.window_background_opacity = 1.0
+else
+	config.background = image_background
 end
+
+wezterm.on("toggle-background-mode", function(window, pane)
+	local next_mode = wezterm.GLOBAL.solid_background_mode and "image" or "solid"
+	if not write_background_mode(next_mode) then
+		window:toast_notification("wezterm", "failed to write background mode", nil, 3000)
+		return
+	end
+	window:perform_action(act.ReloadConfiguration, pane)
+end)
 
 -- ───────────────────────────── Rename Tab ─────────────────────────
 
@@ -108,18 +181,33 @@ local rename_tab_action = act.PromptInputLine({
 		end
 	end),
 })
+local toggle_background_action = act.EmitEvent("toggle-background-mode")
 -- ───────────────────────────── Keybindings ───────────────────────
 
 config.keys = {
-
 	{
 		key = "LeftArrow",
 		mods = wezterm.target_triple:find("darwin") and "CMD|SHIFT" or "WIN|SHIFT",
-		action = act.MoveTabRelative(-1),
+		action = act.ActivateTabRelative(-1),
 	},
 
 	{
 		key = "RightArrow",
+		mods = wezterm.target_triple:find("darwin") and "CMD|SHIFT" or "WIN|SHIFT",
+		action = act.ActivateTabRelative(1),
+	},
+	{
+		key = "B",
+		mods = wezterm.target_triple:find("darwin") and "CMD|SHIFT" or "CTRL|SHIFT",
+		action = toggle_background_action,
+	},
+	{
+		key = "[",
+		mods = wezterm.target_triple:find("darwin") and "CMD|SHIFT" or "WIN|SHIFT",
+		action = act.MoveTabRelative(-1),
+	},
+	{
+		key = "]",
 		mods = wezterm.target_triple:find("darwin") and "CMD|SHIFT" or "WIN|SHIFT",
 		action = act.MoveTabRelative(1),
 	},
@@ -130,6 +218,7 @@ config.keys = {
 		action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }),
 	},
 }
+wezterm_vim.setup(config)
 
 -- ───────────────────────────── Smart close ───────────────────────
 
@@ -187,6 +276,11 @@ wezterm.on("augment-command-palette", function(window, pane)
 			brief = "Tab | Rename tab",
 			icon = "md_rename_box",
 			action = rename_tab_action,
+		},
+		{
+			brief = "Background | Toggle image/theme background",
+			icon = "md_image_filter_hdr",
+			action = toggle_background_action,
 		},
 	}
 end)
