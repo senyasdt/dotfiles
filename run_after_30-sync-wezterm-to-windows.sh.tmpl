@@ -1,0 +1,71 @@
+#!/bin/sh
+
+set -eu
+
+linux_home="{{ .chezmoi.homeDir }}"
+source_dir="{{ .chezmoi.sourceDir }}"
+windows_home="/mnt/c/Users/{{ .chezmoi.username }}"
+linux_wezterm_dir="$linux_home/.config/wezterm"
+windows_wezterm_dir="$windows_home/.config/wezterm"
+active_scheme_file="active_scheme.toml"
+default_active_scheme_source="$source_dir/dot_config/wezterm/$active_scheme_file"
+
+if [ "{{ .chezmoi.os }}" != "linux" ]; then
+	exit 0
+fi
+
+if [ ! -d "$windows_home" ]; then
+	exit 0
+fi
+
+copy_file() {
+	src="$1"
+	dst="$2"
+
+	if [ ! -f "$src" ]; then
+		return 0
+	fi
+
+	mkdir -p "$(dirname "$dst")"
+	cp -f "$src" "$dst"
+}
+
+copy_dir_contents() {
+	src="$1"
+	dst="$2"
+
+	if [ ! -d "$src" ]; then
+		return 0
+	fi
+
+	mkdir -p "$dst"
+	cp -fR "$src"/. "$dst"/
+}
+
+copy_file "$linux_home/.wezterm.lua" "$windows_home/.wezterm.lua"
+copy_file "$linux_wezterm_dir/wezterm.lua" "$windows_wezterm_dir/wezterm.lua"
+copy_file "$linux_wezterm_dir/functions.lua" "$windows_wezterm_dir/functions.lua"
+copy_file "$linux_wezterm_dir/generate-theme-from-wallpaper.sh" "$windows_wezterm_dir/generate-theme-from-wallpaper.sh"
+copy_file "$linux_wezterm_dir/opacity.lua" "$windows_wezterm_dir/opacity.lua"
+copy_file "$linux_wezterm_dir/tab_bar.lua" "$windows_wezterm_dir/tab_bar.lua"
+copy_file "$linux_wezterm_dir/theme.lua" "$windows_wezterm_dir/theme.lua"
+copy_file "$linux_wezterm_dir/wezterm_vim.lua" "$windows_wezterm_dir/wezterm_vim.lua"
+copy_file "$linux_wezterm_dir/background_mode" "$windows_wezterm_dir/background_mode"
+copy_file "$linux_wezterm_dir/generated_palette.json" "$windows_wezterm_dir/generated_palette.json"
+copy_file "$linux_wezterm_dir/opacity" "$windows_wezterm_dir/opacity"
+copy_file "$linux_wezterm_dir/theme" "$windows_wezterm_dir/theme"
+copy_dir_contents "$linux_wezterm_dir/backgrounds" "$windows_wezterm_dir/backgrounds"
+copy_dir_contents "$linux_wezterm_dir/themes" "$windows_wezterm_dir/themes"
+
+windows_active_scheme="$windows_wezterm_dir/$active_scheme_file"
+linux_active_scheme="$linux_wezterm_dir/$active_scheme_file"
+
+if [ ! -f "$windows_active_scheme" ] && [ -f "$default_active_scheme_source" ]; then
+	mkdir -p "$windows_wezterm_dir"
+	cp -f "$default_active_scheme_source" "$windows_active_scheme"
+fi
+
+if uname -r | grep -qi "microsoft" && [ -f "$windows_active_scheme" ]; then
+	rm -f "$linux_active_scheme"
+	ln -s "$windows_active_scheme" "$linux_active_scheme"
+fi

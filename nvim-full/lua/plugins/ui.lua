@@ -1,3 +1,5 @@
+local background_mode = require("config.background_mode")
+
 local function random_logo_builder()
   local ok, ascii = pcall(require, "ascii")
   if not ok then
@@ -263,7 +265,8 @@ local function patch_snacks_transparent_backdrop()
 
     backdrop = type(backdrop) == "number" and { blend = backdrop } or backdrop
     backdrop = backdrop == true and {} or backdrop
-    backdrop = vim.tbl_extend("force", { bg = "#181825", blend = 50, transparent = true }, backdrop)
+    background_mode.apply_highlights()
+    backdrop = background_mode.backdrop(backdrop)
 
     if not vim.o.termguicolors or backdrop.blend == 100 or not self:is_floating() then
       return
@@ -335,11 +338,7 @@ return {
       opts.picker.layouts = opts.picker.layouts or {}
       opts.picker.layouts.default = vim.tbl_deep_extend("force", opts.picker.layouts.default or {}, {
         layout = {
-          backdrop = {
-            bg = "#181825",
-            transparent = true,
-            blend = 50,
-          },
+          backdrop = background_mode.backdrop(),
         },
       })
 

@@ -43,4 +43,6 @@ packages:
       - zsh
       - git
       - xz-utils
-
+  cargo:
+    desktop:
+      - matugen

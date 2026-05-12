@@ -27,6 +27,29 @@ function F.basename(string)
 	return string.gsub(string, "(.*[/\\])(.*)", "%2")
 end
 
+function F.hex_to_rgba(hex, alpha)
+	local value = hex or "#000000"
+	local normalized = value:gsub("#", "")
+
+	if #normalized == 3 then
+		normalized = normalized:gsub(".", "%1%1")
+	end
+
+	if #normalized ~= 6 then
+		return value
+	end
+
+	local r = tonumber(normalized:sub(1, 2), 16)
+	local g = tonumber(normalized:sub(3, 4), 16)
+	local b = tonumber(normalized:sub(5, 6), 16)
+
+	if not r or not g or not b then
+		return value
+	end
+
+	return string.format("rgba(%d, %d, %d, %.3f)", r, g, b, alpha or 1.0)
+end
+
 -- Define window title
 function F.tab_title(tab_info)
 	local title = tab_info.tab_title

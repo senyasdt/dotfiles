@@ -1,0 +1,193 @@
+#!/bin/sh
+
+set -eu
+
+wezterm_dir="$HOME/.config/wezterm"
+active_scheme_file="$wezterm_dir/active_scheme.toml"
+generated_theme_file="$wezterm_dir/themes/generated.toml"
+generated_palette_file="$wezterm_dir/generated_palette.json"
+tmp_json="$(mktemp)"
+trap 'rm -f "$tmp_json"' EXIT
+
+require_cmd() {
+	if ! command -v "$1" >/dev/null 2>&1; then
+		echo "missing required command: $1" >&2
+		exit 1
+	fi
+}
+
+require_cmd matugen
+require_cmd jq
+require_cmd python3
+
+{{- if eq .chezmoi.os "darwin" }}
+require_cmd osascript
+wallpaper_path="$(osascript -e 'tell application "System Events" to tell current desktop to get POSIX path of (picture as alias)' | tr -d '\r')"
+
+if [ -z "$wallpaper_path" ]; then
+	echo "failed to detect macOS wallpaper" >&2
+	exit 1
+fi
+{{- else if eq .chezmoi.os "linux" }}
+windows_wezterm_dir="/mnt/c/Users/$USER/.config/wezterm"
+
+if ! uname -r | grep -qi "microsoft"; then
+	echo "wallpaper generation is only supported from WSL on this Linux setup" >&2
+	exit 1
+fi
+
+require_cmd powershell.exe
+wallpaper_win="$(powershell.exe -NoProfile -Command "(Get-ItemProperty 'HKCU:\\Control Panel\\Desktop').WallPaper" | tr -d '\r')"
+
+if [ -z "$wallpaper_win" ]; then
+	echo "failed to detect Windows wallpaper" >&2
+	exit 1
+fi
+
+drive_letter="$(printf '%s' "$wallpaper_win" | cut -c1 | tr '[:upper:]' '[:lower:]')"
+wallpaper_rel="$(printf '%s' "$wallpaper_win" | cut -c3- | sed 's#\\#/#g')"
+wallpaper_path="/mnt/$drive_letter$wallpaper_rel"
+{{- else }}
+echo "wallpaper generation is not supported on {{ .chezmoi.os }}" >&2
+exit 1
+{{- end }}
+
+if [ ! -f "$wallpaper_path" ]; then
+	echo "wallpaper not found: $wallpaper_path" >&2
+	exit 1
+fi
+
+mkdir -p "$wezterm_dir/themes"
+
+matugen image "$wallpaper_path" --json hex --mode dark --dry-run --source-color-index 0 >"$tmp_json"
+
+jq '{
+  none: "NONE",
+  rosewater: .base16.base06.dark.color,
+  flamingo: .base16.base07.dark.color,
+  pink: .base16.base0e.dark.color,
+  mauve: .base16.base0e.dark.color,
+  red: .base16.base08.dark.color,
+  maroon: .base16.base08.dark.color,
+  peach: .base16.base09.dark.color,
+  yellow: .base16.base0a.dark.color,
+  green: .base16.base0b.dark.color,
+  teal: .base16.base0c.dark.color,
+  sky: .base16.base0c.dark.color,
+  sapphire: .base16.base0d.dark.color,
+  blue: .base16.base0d.dark.color,
+  lavender: .base16.base0e.dark.color,
+  text: .base16.base05.dark.color,
+  subtext1: .base16.base04.dark.color,
+  subtext0: .base16.base03.dark.color,
+  overlay2: .base16.base04.dark.color,
+  overlay1: .base16.base03.dark.color,
+  overlay0: .base16.base02.dark.color,
+  surface2: .base16.base02.dark.color,
+  surface1: .base16.base01.dark.color,
+  surface0: .base16.base01.dark.color,
+  base: .base16.base00.dark.color,
+  mantle: .base16.base00.dark.color,
+  crust: .base16.base00.dark.color
+}' "$tmp_json" >"$generated_palette_file"
+
+python3 - "$tmp_json" "$generated_theme_file" <<'PY'
+import json
+import sys
+
+src, dst = sys.argv[1], sys.argv[2]
+with open(src, "r", encoding="utf-8") as fh:
+    data = json.load(fh)["base16"]
+
+def dark(name):
+    return data[name]["dark"]["color"]
+
+theme = """[metadata]
+name = "generated"
+
+[colors]
+foreground = "{foreground}"
+background = "{background}"
+cursor_bg = "{cursor_bg}"
+cursor_fg = "{cursor_fg}"
+cursor_border = "{cursor_border}"
+selection_bg = "{selection_bg}"
+selection_fg = "{selection_fg}"
+split = "{split}"
+scrollbar_thumb = "{scrollbar_thumb}"
+compose_cursor = "{compose_cursor}"
+
+ansi = [
+  "{ansi0}",
+  "{ansi1}",
+  "{ansi2}",
+  "{ansi3}",
+  "{ansi4}",
+  "{ansi5}",
+  "{ansi6}",
+  "{ansi7}",
+]
+
+brights = [
+  "{bright0}",
+  "{bright1}",
+  "{bright2}",
+  "{bright3}",
+  "{bright4}",
+  "{bright5}",
+  "{bright6}",
+  "{bright7}",
+]
+
+indexed = __INDEXED__
+"""
+
+theme = theme.format(
+    foreground=dark("base05"),
+    background=dark("base00"),
+    cursor_bg=dark("base06"),
+    cursor_fg=dark("base00"),
+    cursor_border=dark("base06"),
+    selection_bg=dark("base02"),
+    selection_fg=dark("base07"),
+    split=dark("base01"),
+    scrollbar_thumb=dark("base01"),
+    compose_cursor=dark("base0a"),
+    ansi0=dark("base00"),
+    ansi1=dark("base08"),
+    ansi2=dark("base0b"),
+    ansi3=dark("base0a"),
+    ansi4=dark("base0d"),
+    ansi5=dark("base0e"),
+    ansi6=dark("base0c"),
+    ansi7=dark("base05"),
+    bright0=dark("base03"),
+    bright1=dark("base08"),
+    bright2=dark("base0b"),
+    bright3=dark("base0a"),
+    bright4=dark("base0d"),
+    bright5=dark("base0e"),
+    bright6=dark("base0c"),
+    bright7=dark("base07"),
+)
+theme = theme.replace(
+    "__INDEXED__",
+    '{ 16 = "' + dark("base09") + '", 17 = "' + dark("base01") + '" }',
+)
+
+with open(dst, "w", encoding="utf-8") as fh:
+    fh.write(theme)
+PY
+
+printf 'theme = "generated"\n' >"$active_scheme_file"
+printf 'generated\n' >"$wezterm_dir/theme"
+
+{{- if eq .chezmoi.os "linux" }}
+if [ -d "/mnt/c/Users/$USER" ]; then
+	mkdir -p "$windows_wezterm_dir/themes"
+	cp -f "$generated_theme_file" "$windows_wezterm_dir/themes/generated.toml"
+	cp -f "$generated_palette_file" "$windows_wezterm_dir/generated_palette.json"
+fi
+{{- end }}
+
+echo "generated theme from $wallpaper_path"

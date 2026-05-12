@@ -3,6 +3,10 @@ bootstrap.sh
 nvim-full/**
 nvim-lite/**
 
+{{- if and (eq .chezmoi.os "linux") (contains "microsoft" (lower (output "uname" "-r"))) }}
+.config/wezterm/active_scheme.toml
+{{- end }}
+
 .oh-my-zsh/cache/**
 .config/zsh/themes/**
 .config/zsh/local_env.zsh

@@ -1,7 +1,10 @@
 local wezterm = require("wezterm")
 
 local act = wezterm.action
+local F = dofile(wezterm.home_dir .. "/.config/wezterm/functions.lua")
+local opacity = dofile(wezterm.home_dir .. "/.config/wezterm/opacity.lua")
 local tab_bar = dofile(wezterm.home_dir .. "/.config/wezterm/tab_bar.lua")
+local theme = dofile(wezterm.home_dir .. "/.config/wezterm/theme.lua")
 local wezterm_vim = dofile(wezterm.home_dir .. "/.config/wezterm/wezterm_vim.lua")
 local background_mode_file = wezterm.home_dir .. "/.config/wezterm/background_mode"
 
@@ -14,8 +17,6 @@ if wezterm.config_builder then
 end
 
 -- ───────────────────────────── UI ────────────────────────────────
-
-config.window_background_opacity = 0.90
 
 config.text_background_opacity = 1.0
 
@@ -34,10 +35,8 @@ config.font_size = 11
 {{- else -}}
 config.font_size = 10
 {{- end }}
-config.color_scheme = "Catppuccin Macchiato"
 config.status_update_interval = 250
-local theme_colors = wezterm.get_builtin_color_schemes()[config.color_scheme] or {}
-local solid_background_color = theme_colors.background or "#1e2030"
+
 local function read_background_mode()
 	local file = io.open(background_mode_file, "r")
 	if not file then
@@ -64,15 +63,20 @@ local function write_background_mode(mode)
 	file:close()
 	return true
 end
+local theme_state = theme.apply(config)
+local theme_colors = theme_state.colors
+local solid_background_color = theme_colors.background or "#1e2030"
+local window_background_opacity = opacity.apply(config)
+local solid_background_rgba = F.hex_to_rgba(solid_background_color, window_background_opacity)
 
 local background_mode = read_background_mode()
 local is_solid_background_mode = background_mode == "solid"
 wezterm.GLOBAL.solid_background_mode = is_solid_background_mode
 config.window_frame = {
 	border_top_height = "0.35cell",
-	border_top_color = is_solid_background_mode and solid_background_color or "rgba(0, 0, 0, 0)",
-	active_titlebar_bg = is_solid_background_mode and solid_background_color or "rgba(0, 0, 0, 0)",
-	inactive_titlebar_bg = is_solid_background_mode and solid_background_color or "rgba(0, 0, 0, 0)",
+	border_top_color = is_solid_background_mode and solid_background_rgba or "rgba(0, 0, 0, 0)",
+	active_titlebar_bg = is_solid_background_mode and solid_background_rgba or "rgba(0, 0, 0, 0)",
+	inactive_titlebar_bg = is_solid_background_mode and solid_background_rgba or "rgba(0, 0, 0, 0)",
 }
 
 if wezterm.target_triple:find("windows") then
@@ -157,7 +161,6 @@ local solid_tab_bar_colors = {
 
 if is_solid_background_mode then
 	config.background = solid_background
-	config.window_background_opacity = 1.0
 else
 	config.background = image_background
 end
@@ -271,7 +274,7 @@ table.insert(config.keys, {
 
 -- ───────────────────────── Command palette extension ─────────────
 wezterm.on("augment-command-palette", function(window, pane)
-	return {
+	local entries = {
 		{
 			brief = "Tab | Rename tab",
 			icon = "md_rename_box",
@@ -283,6 +286,16 @@ wezterm.on("augment-command-palette", function(window, pane)
 			action = toggle_background_action,
 		},
 	}
+
+	for _, entry in ipairs(theme.palette_entries(theme_state)) do
+		table.insert(entries, entry)
+	end
+
+	for _, entry in ipairs(opacity.palette_entries(window_background_opacity)) do
+		table.insert(entries, entry)
+	end
+
+	return entries
 end)
 
 -- ───────────────────────── Fullscreen on startup  ────────────────

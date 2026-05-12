@@ -6,6 +6,11 @@ local wezterm_vim = dofile(wezterm.home_dir .. "/.config/wezterm/wezterm_vim.lua
 
 local M = {}
 
+local function resolve_scheme_colors(config)
+	local custom_schemes = config.color_schemes or {}
+	return custom_schemes[config.color_scheme] or wezterm.get_builtin_color_schemes()[config.color_scheme] or {}
+end
+
 local function normalize_process_name(process)
 	if not process or process == "" then
 		return nil
@@ -52,19 +57,21 @@ local function pane_has_ssh_connection(pane)
 end
 
 local function tab_bar_background(colors)
+	local opacity = wezterm.GLOBAL.window_background_opacity or 1.0
+
 	if wezterm.GLOBAL.solid_background_mode then
-		return colors.background or "#1e2030"
+		return F.hex_to_rgba(colors.background or "#1e2030", opacity)
 	end
 
 	return "rgba(0, 0, 0, 0)"
 end
 
 function M.setup(config)
-	local colors = wezterm.get_builtin_color_schemes()[config.color_scheme] or {}
+	local colors = resolve_scheme_colors(config)
 	local transparent = "rgba(0, 0, 0, 0)"
 	local bar_background = tab_bar_background(colors)
 	local username = os.getenv("USER") or os.getenv("LOGNAME") or os.getenv("USERNAME") or "user"
-	local active_tab_color = "#a6da95"
+	local active_tab_color = (colors.ansi and colors.ansi[3]) or "#a6da95"
 
 	config.enable_tab_bar = true
 	config.hide_tab_bar_if_only_one_tab = false
@@ -108,10 +115,10 @@ function M.setup(config)
 		local vi_label = vi_mode
 		local stat = "local"
 		local bar_background = tab_bar_background(colors)
+		local cwd_color = (colors.ansi and colors.ansi[2]) or "#7fa6a8"
 		local workspace_color = (colors.ansi and colors.ansi[3]) or "#eed49f"
 		local time = wezterm.strftime("%Y-%m-%d %H:%M")
-		local vi_color = vi_mode == "N"
-			and ((colors.indexed and colors.indexed[16]) or "#b7bdf8")
+		local vi_color = vi_mode == "N" and ((colors.indexed and colors.indexed[16]) or "#b7bdf8")
 			or ((colors.ansi and colors.ansi[6]) or "#8bd5ca")
 
 		if pane_has_ssh_connection(pane) then
@@ -140,10 +147,9 @@ function M.setup(config)
 		window:set_right_status(wezterm.format({
 			{ Text = " " },
 			{ Background = { Color = bar_background } },
-			{ Foreground = { Color = "#ee99a0" } },
+			{ Foreground = { Color = cwd_color } },
 			{ Text = nerdfonts.ple_left_half_circle_thick },
-			-- { Background = { Color = (colors.ansi and colors.ansi[4]) or "#8aadf4" } },
-			{ Background = { Color = "#ee99a0" } },
+			{ Background = { Color = cwd_color } },
 			{ Foreground = { Color = colors.background or "#1e2030" } },
 			{ Text = nerdfonts.md_folder .. " " },
 			{ Background = { Color = (colors.ansi and colors.ansi[1]) or "#494d64" } },
@@ -277,9 +283,9 @@ function M.setup(config)
 		if tab.is_active then
 			return {
 				{ Background = { Color = background } },
-				{ Foreground = { Color = (colors.ansi and colors.ansi[3]) or "#494d64" } },
+				{ Foreground = { Color = active_tab_color } },
 				{ Text = title .. " " },
-				{ Background = { Color = (colors.ansi and colors.ansi[3]) or "#494d64" } },
+				{ Background = { Color = active_tab_color } },
 				{ Foreground = { Color = colors.background or "#cad3f5" } },
 				{ Text = " " .. tab_number },
 				{ Background = { Color = background } },

@@ -1,6 +1,56 @@
+local background_mode = require("config.background_mode")
+local theme_sync = require("config.theme_sync")
+
+local function catppuccin_opts()
+  local selected_theme = theme_sync.current()
+  return {
+    flavour = selected_theme.flavour,
+    color_overrides = selected_theme.color_overrides or {},
+    transparent_background = true,
+    auto_integrations = true,
+    float = {
+      transparent = true,
+    },
+    custom_highlights = function(c)
+      return {
+        Normal = { bg = c.none },
+        NormalNC = { bg = c.none },
+        SignColumn = { bg = c.none },
+        EndOfBuffer = { bg = c.none },
+        LineNr = { bg = c.none },
+        FoldColumn = { bg = c.none },
+        CursorLine = {
+          bg = c.none,
+          underline = true,
+          sp = c.surface1,
+        },
+        CursorLineNr = { bg = c.none },
+        NormalFloat = { bg = background_mode.is_solid() and c.mantle or c.none },
+        FloatBorder = { bg = background_mode.is_solid() and c.mantle or c.none },
+        FloatTitle = { bg = background_mode.is_solid() and c.mantle or c.none },
+        Pmenu = { bg = background_mode.is_solid() and c.mantle or c.none },
+        PmenuSel = { bg = c.surface0 },
+        WinSeparator = { bg = c.none },
+        VertSplit = { bg = c.none },
+      }
+    end,
+  }
+end
+
+local function apply_selected_theme()
+  local selected_theme = theme_sync.current()
+  local ok, catppuccin = pcall(require, "catppuccin")
+  if not ok then
+    return
+  end
+
+  catppuccin.setup(catppuccin_opts())
+  vim.cmd.colorscheme(selected_theme.colorscheme)
+end
+
 local function apply_transparent_highlights()
-  local ok_palette, palette = pcall(require, "catppuccin.palettes")
-  local colors = ok_palette and palette.get_palette("mocha") or {}
+  local colors = theme_sync.get_palette() or {}
+  local float_bg = background_mode.is_solid() and (colors.mantle or colors.base or "#181825") or "NONE"
 
   local groups = {
     "Normal",
@@ -10,10 +60,6 @@ local function apply_transparent_highlights()
     "LineNr",
     "FoldColumn",
     "CursorLineNr",
-    "NormalFloat",
-    "FloatBorder",
-    "FloatTitle",
-    "Pmenu",
     "WinSeparator",
     "VertSplit",
   }
@@ -33,20 +79,15 @@ local function apply_transparent_highlights()
     underline = true,
     sp = vim.api.nvim_get_hl(0, { name = "Comment", link = false }).fg,
   })
-
-  -- Keep picker/search overlays dimmed by the theme instead of falling back to black.
-  vim.api.nvim_set_hl(0, "FloatShadow", {
-    bg = colors.mantle or colors.base or "#181825",
-    blend = 60,
-  })
-  vim.api.nvim_set_hl(0, "FloatShadowThrough", {
-    bg = colors.mantle or colors.base or "#181825",
-    blend = 85,
-  })
-  vim.api.nvim_set_hl(0, "SnacksBackdrop", {
-    bg = colors.mantle or colors.base or "#181825",
-    blend = 60,
-  })
+  local float_hl = { bg = float_bg }
+  if float_bg == "NONE" then
+    float_hl.ctermbg = "NONE"
+  end
+  vim.api.nvim_set_hl(0, "NormalFloat", float_hl)
+  vim.api.nvim_set_hl(0, "FloatBorder", float_hl)
+  vim.api.nvim_set_hl(0, "FloatTitle", float_hl)
+  vim.api.nvim_set_hl(0, "Pmenu", float_hl)
+  background_mode.apply_highlights()
 end
 
 return {
@@ -54,37 +95,7 @@ return {
     "catppuccin/nvim",
     name = "catppuccin",
     priority = 1000,
-    opts = {
-      flavour = "mocha",
-      transparent_background = true,
-      auto_integrations = true,
-      float = {
-        transparent = true,
-      },
-      custom_highlights = function(c)
-        return {
-          Normal = { bg = c.none },
-          NormalNC = { bg = c.none },
-          SignColumn = { bg = c.none },
-          EndOfBuffer = { bg = c.none },
-          LineNr = { bg = c.none },
-          FoldColumn = { bg = c.none },
-          CursorLine = {
-            bg = c.none,
-            underline = true,
-            sp = c.surface1,
-          },
-          CursorLineNr = { bg = c.none },
-          NormalFloat = { bg = c.none },
-          FloatBorder = { bg = c.none },
-          FloatTitle = { bg = c.none },
-          Pmenu = { bg = c.none },
-          PmenuSel = { bg = c.surface0 },
-          WinSeparator = { bg = c.none },
-          VertSplit = { bg = c.none },
-        }
-      end,
-    },
+    opts = catppuccin_opts(),
     init = function()
       local group = vim.api.nvim_create_augroup("ruantni-catppuccin-transparent", { clear = true })
       local function apply_later()
@@ -121,15 +132,20 @@ return {
       })
     end,
     config = function(_, opts)
-      require("catppuccin").setup(opts)
-      vim.cmd.colorscheme("catppuccin")
+      apply_selected_theme()
       apply_transparent_highlights()
+
+      theme_sync.watch(function()
+        apply_selected_theme()
+        apply_transparent_highlights()
+        vim.api.nvim_exec_autocmds("User", { pattern = "ThemeSyncReload" })
+      end)
     end,
   },
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "catppuccin",
+      colorscheme = theme_sync.current().colorscheme,
     },
   },
 }

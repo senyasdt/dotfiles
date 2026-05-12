@@ -1,6 +1,6 @@
 local function bubbles_theme()
-  local ok, cp = pcall(require, "catppuccin.palettes")
-  local colors = ok and cp.get_palette("mocha") or nil
+  local ok, theme_sync = pcall(require, "config.theme_sync")
+  local colors = ok and theme_sync.get_palette() or nil
 
   if not colors then
     colors = {
@@ -121,6 +121,16 @@ return {
     config = function(_, opts)
       require("lualine").setup(opts)
       vim.schedule(set_transparent_statusline)
+
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "ThemeSyncReload",
+        callback = function()
+          opts.options = opts.options or {}
+          opts.options.theme = bubbles_theme()
+          require("lualine").setup(opts)
+          vim.schedule(set_transparent_statusline)
+        end,
+      })
     end,
   },
 }

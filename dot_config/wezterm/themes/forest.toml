@@ -1,0 +1,38 @@
+[metadata]
+name = "Forest"
+
+[colors]
+foreground = "#c7d0d3"
+background = "#0b1114"
+cursor_bg = "#9fb7bd"
+cursor_fg = "#0b1114"
+cursor_border = "#9fb7bd"
+selection_bg = "#263238"
+selection_fg = "#d8e2e5"
+split = "#334047"
+scrollbar_thumb = "#334047"
+compose_cursor = "#b0a06a"
+
+ansi = [
+  "#0b1114",
+  "#334047",
+  "#6f8f7a",
+  "#b0a06a",
+  "#6f8fa3",
+  "#8a7f99",
+  "#7fa6a8",
+  "#c7d0d3",
+]
+
+brights = [
+  "#334047",
+  "#b87878",
+  "#8fae98",
+  "#c7b87a",
+  "#8faec1",
+  "#a398b4",
+  "#9bbfc0",
+  "#e1e8ea",
+]
+
+indexed = { 16 = "#b0a06a", 17 = "#334047" }
