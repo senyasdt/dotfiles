@@ -185,36 +185,36 @@ fi
 
 mkdir -p "$wezterm_dir/themes"
 
-matugen image "$wallpaper_path" --json hex --mode dark --dry-run --source-color-index 0 >"$tmp_json"
+matugen image "$wallpaper_path" --json hex --mode dark --type scheme-tonal-spot --prefer saturation --dry-run >"$tmp_json"
 
 jq '{
   none: "NONE",
-  rosewater: .base16.base06.dark.color,
-  flamingo: .base16.base07.dark.color,
-  pink: .base16.base0e.dark.color,
-  mauve: .base16.base0e.dark.color,
-  red: .base16.base08.dark.color,
-  maroon: .base16.base08.dark.color,
-  peach: .base16.base09.dark.color,
-  yellow: .base16.base0a.dark.color,
-  green: .base16.base0b.dark.color,
-  teal: .base16.base0c.dark.color,
-  sky: .base16.base0c.dark.color,
-  sapphire: .base16.base0d.dark.color,
-  blue: .base16.base0d.dark.color,
-  lavender: .base16.base0e.dark.color,
-  text: .base16.base05.dark.color,
-  subtext1: .base16.base04.dark.color,
-  subtext0: .base16.base03.dark.color,
-  overlay2: .base16.base04.dark.color,
-  overlay1: .base16.base03.dark.color,
-  overlay0: .base16.base02.dark.color,
-  surface2: .base16.base02.dark.color,
-  surface1: .base16.base01.dark.color,
-  surface0: .base16.base01.dark.color,
-  base: .base16.base00.dark.color,
-  mantle: .base16.base00.dark.color,
-  crust: .base16.base00.dark.color
+  rosewater: .colors.on_secondary_container.dark.color,
+  flamingo: .colors.on_tertiary_container.dark.color,
+  pink: .colors.primary_fixed.dark.color,
+  mauve: .colors.secondary_fixed.dark.color,
+  red: .colors.error.dark.color,
+  maroon: .colors.error_container.dark.color,
+  peach: .colors.secondary.dark.color,
+  yellow: .colors.primary_fixed.dark.color,
+  green: .colors.primary.dark.color,
+  teal: .colors.secondary.dark.color,
+  sky: .colors.secondary_fixed.dark.color,
+  sapphire: .colors.secondary_fixed.dark.color,
+  blue: .colors.primary.dark.color,
+  lavender: .colors.tertiary.dark.color,
+  text: .colors.on_surface.dark.color,
+  subtext1: .colors.on_surface_variant.dark.color,
+  subtext0: .colors.outline.dark.color,
+  overlay2: .colors.outline.dark.color,
+  overlay1: .colors.outline_variant.dark.color,
+  overlay0: .colors.surface_variant.dark.color,
+  surface2: .colors.surface_container_high.dark.color,
+  surface1: .colors.surface_container.dark.color,
+  surface0: .colors.surface_container_low.dark.color,
+  base: .colors.background.dark.color,
+  mantle: .colors.surface.dark.color,
+  crust: .colors.surface_dim.dark.color
 }' "$tmp_json" >"$generated_palette_file"
 
 python3 - "$tmp_json" "$generated_theme_file" <<'PY'
@@ -223,9 +223,9 @@ import sys
 
 src, dst = sys.argv[1], sys.argv[2]
 with open(src, "r", encoding="utf-8") as fh:
-    data = json.load(fh)["base16"]
+    data = json.load(fh)["colors"]
 
-def dark(name):
+def color(name):
     return data[name]["dark"]["color"]
 
 theme = """[metadata]
@@ -269,36 +269,36 @@ indexed = __INDEXED__
 """
 
 theme = theme.format(
-    foreground=dark("base05"),
-    background=dark("base00"),
-    cursor_bg=dark("base06"),
-    cursor_fg=dark("base00"),
-    cursor_border=dark("base06"),
-    selection_bg=dark("base02"),
-    selection_fg=dark("base07"),
-    split=dark("base01"),
-    scrollbar_thumb=dark("base01"),
-    compose_cursor=dark("base0a"),
-    ansi0=dark("base00"),
-    ansi1=dark("base08"),
-    ansi2=dark("base0b"),
-    ansi3=dark("base0a"),
-    ansi4=dark("base0d"),
-    ansi5=dark("base0e"),
-    ansi6=dark("base0c"),
-    ansi7=dark("base05"),
-    bright0=dark("base03"),
-    bright1=dark("base08"),
-    bright2=dark("base0b"),
-    bright3=dark("base0a"),
-    bright4=dark("base0d"),
-    bright5=dark("base0e"),
-    bright6=dark("base0c"),
-    bright7=dark("base07"),
+    foreground=color("on_surface"),
+    background=color("background"),
+    cursor_bg=color("primary"),
+    cursor_fg=color("background"),
+    cursor_border=color("primary"),
+    selection_bg=color("surface_variant"),
+    selection_fg=color("on_surface"),
+    split=color("outline_variant"),
+    scrollbar_thumb=color("surface_container_high"),
+    compose_cursor=color("secondary"),
+    ansi0=color("surface_dim"),
+    ansi1=color("error"),
+    ansi2=color("primary"),
+    ansi3=color("primary_fixed"),
+    ansi4=color("primary_fixed"),
+    ansi5=color("secondary"),
+    ansi6=color("tertiary"),
+    ansi7=color("on_surface"),
+    bright0=color("outline_variant"),
+    bright1=color("error_container"),
+    bright2=color("primary_fixed"),
+    bright3=color("primary_fixed_dim"),
+    bright4=color("secondary_fixed"),
+    bright5=color("secondary_fixed"),
+    bright6=color("tertiary_fixed"),
+    bright7=color("on_surface_variant"),
 )
 theme = theme.replace(
     "__INDEXED__",
-    '{ 16 = "' + dark("base09") + '", 17 = "' + dark("base01") + '" }',
+    '{ 16 = "' + color("secondary_fixed") + '", 17 = "' + color("surface_container") + '" }',
 )
 
 with open(dst, "w", encoding="utf-8") as fh:

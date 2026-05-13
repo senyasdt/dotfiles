@@ -110,6 +110,7 @@ vim.o.guicursor = 'n-v-c:block-blinkoff0,i-ci-ve:ver25-blinkoff0,r-cr:hor20-blin
 vim.o.cursorline = true
 vim.o.scrolloff = 10
 vim.o.confirm = true
+vim.o.showtabline = 2
 vim.opt.shortmess:append 'I'
 
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
@@ -148,6 +149,27 @@ vim.keymap.set('n', '<leader>bo', '<cmd>%bdelete|edit#|bdelete#<CR>', { desc = '
 vim.keymap.set('n', '<leader>-', '<C-W>s', { desc = 'Split window below', remap = true })
 vim.keymap.set('n', '<leader>|', '<C-W>v', { desc = 'Split window right', remap = true })
 vim.keymap.set('n', '<leader>wq', '<C-W>c', { desc = 'Quit window', remap = true })
+vim.keymap.set('n', '<leader>fl', '<cmd>edit .<CR>', { desc = 'List current directory' })
+
+function _G.lite_tabline()
+  local parts = {}
+  local current = vim.api.nvim_get_current_buf()
+
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.bo[bufnr].buflisted then
+      local name = vim.api.nvim_buf_get_name(bufnr)
+      local label = name == '' and '[No Name]' or vim.fn.fnamemodify(name, ':t')
+      local modified = vim.bo[bufnr].modified and ' [+]' or ''
+      local hl = bufnr == current and '%#TabLineSel#' or '%#TabLine#'
+      table.insert(parts, string.format('%s %d:%s%s ', hl, bufnr, label, modified))
+    end
+  end
+
+  table.insert(parts, '%#TabLineFill#%=')
+  return table.concat(parts)
+end
+
+vim.o.tabline = '%!v:lua.lite_tabline()'
 
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
@@ -167,16 +189,66 @@ end
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
-local function lite_dashboard_header()
-  return [[
-███╗   ██╗██╗   ██╗██╗███╗   ███╗
-████╗  ██║██║   ██║██║████╗ ████║
-██╔██╗ ██║██║   ██║██║██╔████╔██║
-██║╚██╗██║╚██╗ ██╔╝██║██║╚██╔╝██║
-██║ ╚████║ ╚████╔╝ ██║██║ ╚═╝ ██║
-╚═╝  ╚═══╝  ╚═══╝  ╚═╝╚═╝     ╚═╝
-]]
+local function open_file_under_config()
+  local path = vim.fn.input('Config file: ', vim.fn.stdpath 'config' .. '/', 'file')
+  if path ~= '' then
+    vim.cmd.edit(vim.fn.fnameescape(path))
+  end
 end
+
+local function find_files_builtin()
+  local path = vim.fn.input('Open file: ', vim.fn.getcwd() .. '/', 'file')
+  if path ~= '' then
+    vim.cmd.edit(vim.fn.fnameescape(path))
+  end
+end
+
+local function grep_builtin()
+  local pattern = vim.fn.input 'Grep > '
+  if pattern == '' then
+    return
+  end
+
+  vim.cmd('silent grep! ' .. vim.fn.shellescape(pattern))
+  vim.cmd.copen()
+end
+
+local function grep_word_builtin()
+  local word = vim.fn.expand '<cword>'
+  if word == '' then
+    return
+  end
+
+  vim.cmd('silent grep! ' .. vim.fn.shellescape(word))
+  vim.cmd.copen()
+end
+
+vim.keymap.set('n', '<leader><space>', find_files_builtin, { desc = 'Find files' })
+vim.keymap.set('n', '<leader>,', '<cmd>buffers<CR>', { desc = 'Buffers' })
+vim.keymap.set('n', '<leader><leader>', '<cmd>buffers<CR>', { desc = '[ ] Find existing buffers' })
+vim.keymap.set('n', '<leader>ff', find_files_builtin, { desc = 'Find files' })
+vim.keymap.set('n', '<leader>fF', find_files_builtin, { desc = 'Find files (cwd)' })
+vim.keymap.set('n', '<leader>fr', '<cmd>oldfiles<CR>', { desc = 'Recent files' })
+vim.keymap.set('n', '<leader>fb', '<cmd>buffers<CR>', { desc = 'Buffers' })
+vim.keymap.set('n', '<leader>fc', open_file_under_config, { desc = 'Find config file' })
+vim.keymap.set('n', '<leader>sh', '<cmd>help<CR>', { desc = '[S]earch [H]elp' })
+vim.keymap.set('n', '<leader>sk', '<cmd>map<CR>', { desc = '[S]earch [K]eymaps' })
+vim.keymap.set('n', '<leader>sf', find_files_builtin, { desc = '[S]earch [F]iles' })
+vim.keymap.set({ 'n', 'v' }, '<leader>sw', grep_word_builtin, { desc = '[S]earch current [W]ord' })
+vim.keymap.set('n', '<leader>sg', grep_builtin, { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader>sd', '<cmd>lua vim.diagnostic.setqflist()<CR><cmd>copen<CR>', { desc = '[S]earch [D]iagnostics' })
+vim.keymap.set('n', '<leader>sr', '<cmd>oldfiles<CR>', { desc = '[S]earch [R]esume' })
+vim.keymap.set('n', '<leader>s.', '<cmd>oldfiles<CR>', { desc = '[S]earch Recent Files (\".\" for repeat)' })
+vim.keymap.set('n', '<leader>sc', '<cmd>command<CR>', { desc = '[S]earch [C]ommands' })
+vim.keymap.set('n', '<leader>ss', vim.lsp.buf.document_symbol, { desc = 'Document symbols' })
+vim.keymap.set('n', '<leader>sS', function() vim.lsp.buf.workspace_symbol(vim.fn.input 'Workspace symbols > ') end, { desc = 'Workspace symbols' })
+vim.keymap.set('n', '<leader>/', '<cmd>normal! /<CR>', { desc = 'Search in current buffer' })
+vim.keymap.set('n', '<leader>s/', grep_builtin, { desc = '[S]earch [/] in Open Files' })
+vim.keymap.set('n', '<leader>sn', open_file_under_config, { desc = '[S]earch [N]eovim files' })
+vim.keymap.set('n', '<leader>xx', '<cmd>lua vim.diagnostic.setqflist()<CR><cmd>copen<CR>', { desc = 'Diagnostics' })
+vim.keymap.set('n', '<leader>xX', '<cmd>lua vim.diagnostic.setloclist()<CR><cmd>lopen<CR>', { desc = 'Buffer diagnostics' })
+vim.keymap.set('n', '<leader>xq', '<cmd>copen<CR>', { desc = 'Quickfix list' })
+vim.keymap.set('n', '<leader>xl', '<cmd>lopen<CR>', { desc = 'Location list' })
 
 require('lazy').setup({
   {
@@ -242,164 +314,7 @@ require('lazy').setup({
     },
   },
   {
-    'nvim-telescope/telescope.nvim',
-    enabled = true,
-    event = 'VimEnter',
-    dependencies = {
-      'nvim-lua/plenary.nvim',
-      { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
-    },
-    config = function()
-      require('telescope').setup {}
-
-      local builtin = require 'telescope.builtin'
-      vim.keymap.set('n', '<leader><space>', builtin.find_files, { desc = 'Find files' })
-      vim.keymap.set('n', '<leader>,', builtin.buffers, { desc = 'Buffers' })
-      vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Find files' })
-      vim.keymap.set('n', '<leader>fF', function() builtin.find_files { cwd = vim.uv.cwd() } end, { desc = 'Find files (cwd)' })
-      vim.keymap.set('n', '<leader>fr', builtin.oldfiles, { desc = 'Recent files' })
-      vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Buffers' })
-      vim.keymap.set('n', '<leader>fc', function() builtin.find_files { cwd = vim.fn.stdpath 'config' } end, { desc = 'Find config file' })
-      vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
-      vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-      vim.keymap.set('n', '<leader>sp', builtin.builtin, { desc = '[S]earch [P]ickers' })
-      vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
-      vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-      vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-      vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files (\".\" for repeat)' })
-      vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
-      vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
-      vim.keymap.set('n', '<leader>ss', builtin.lsp_document_symbols, { desc = 'Document symbols' })
-      vim.keymap.set('n', '<leader>sS', builtin.lsp_dynamic_workspace_symbols, { desc = 'Workspace symbols' })
-
-      vim.api.nvim_create_autocmd('LspAttach', {
-        group = vim.api.nvim_create_augroup('telescope-lsp-attach', { clear = true }),
-        callback = function(event)
-          local buf = event.buf
-          vim.keymap.set('n', 'grr', builtin.lsp_references, { buffer = buf, desc = '[G]oto [R]eferences' })
-          vim.keymap.set('n', 'gri', builtin.lsp_implementations, { buffer = buf, desc = '[G]oto [I]mplementation' })
-          vim.keymap.set('n', 'grd', builtin.lsp_definitions, { buffer = buf, desc = '[G]oto [D]efinition' })
-          vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })
-          vim.keymap.set('n', 'gW', builtin.lsp_dynamic_workspace_symbols, { buffer = buf, desc = 'Open Workspace Symbols' })
-          vim.keymap.set('n', 'grt', builtin.lsp_type_definitions, { buffer = buf, desc = '[G]oto [T]ype Definition' })
-        end,
-      })
-
-      vim.keymap.set('n', '<leader>/', function()
-        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-          winblend = 10,
-          previewer = false,
-        })
-      end, { desc = '[/] Fuzzily search in current buffer' })
-
-      vim.keymap.set('n', '<leader>s/', function()
-        builtin.live_grep {
-          grep_open_files = true,
-          prompt_title = 'Live Grep in Open Files',
-        }
-      end, { desc = '[S]earch [/] in Open Files' })
-
-      vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config' } end, { desc = '[S]earch [N]eovim files' })
-    end,
-  },
-  {
-    'folke/flash.nvim',
-    event = 'VeryLazy',
-    opts = {},
-    keys = {
-      { 's', mode = { 'n', 'x', 'o' }, function() require('flash').jump() end, desc = 'Flash' },
-      { 'S', mode = { 'n', 'x', 'o' }, function() require('flash').treesitter() end, desc = 'Flash Treesitter' },
-      { 'r', mode = 'o', function() require('flash').remote() end, desc = 'Remote Flash' },
-      { 'R', mode = { 'o', 'x' }, function() require('flash').treesitter_search() end, desc = 'Treesitter Search' },
-    },
-  },
-  {
-    'folke/trouble.nvim',
-    cmd = 'Trouble',
-    opts = {},
-    keys = {
-      { '<leader>xx', '<cmd>Trouble diagnostics toggle<CR>', desc = 'Diagnostics (Trouble)' },
-      { '<leader>xX', '<cmd>Trouble diagnostics toggle filter.buf=0<CR>', desc = 'Buffer diagnostics (Trouble)' },
-      { '<leader>cs', '<cmd>Trouble symbols toggle<CR>', desc = 'Symbols (Trouble)' },
-      { '<leader>xq', '<cmd>Trouble qflist toggle<CR>', desc = 'Quickfix list (Trouble)' },
-      { '<leader>xl', '<cmd>Trouble loclist toggle<CR>', desc = 'Location list (Trouble)' },
-    },
-  },
-  {
-    'folke/snacks.nvim',
-    priority = 1000,
-    lazy = false,
-    opts = {
-      dashboard = {
-        enabled = true,
-        preset = {
-          header = lite_dashboard_header(),
-          keys = {
-            {
-              icon = ' ',
-              key = 'f',
-              desc = 'Find File',
-              action = function() require('telescope.builtin').find_files() end,
-            },
-            {
-              icon = ' ',
-              key = 'r',
-              desc = 'Recent Files',
-              action = function() require('telescope.builtin').oldfiles() end,
-            },
-            {
-              icon = ' ',
-              key = 'g',
-              desc = 'Find Text',
-              action = function() require('telescope.builtin').live_grep() end,
-            },
-            {
-              icon = ' ',
-              key = 'c',
-              desc = 'Config',
-              action = function()
-                require('telescope.builtin').find_files { cwd = vim.fn.stdpath 'config' }
-              end,
-            },
-            {
-              icon = ' ',
-              key = 's',
-              desc = 'Restore Session',
-              section = 'session',
-            },
-            {
-              icon = ' ',
-              key = 'q',
-              desc = 'Quit',
-              action = ':qa',
-            },
-          },
-        },
-        sections = {
-          { section = 'header' },
-          { section = 'keys', gap = 1, padding = 1 },
-          { icon = ' ', title = 'Recent Files', section = 'recent_files', indent = 2, padding = 1, limit = 6 },
-          { section = 'startup' },
-        },
-      },
-    },
-  },
-  {
     'neovim/nvim-lspconfig',
-    dependencies = {
-      {
-        'mason-org/mason.nvim',
-        ---@module 'mason.settings'
-        ---@type MasonSettings
-        ---@diagnostic disable-next-line: missing-fields
-        opts = {
-          install_root_dir = vim.fn.expand '~/.local/share/nvim/mason',
-        },
-      },
-      'mason-org/mason-lspconfig.nvim',
-    },
     config = function()
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
@@ -409,9 +324,15 @@ require('lazy').setup({
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
 
+          map('grr', vim.lsp.buf.references, '[G]oto [R]eferences')
+          map('gri', vim.lsp.buf.implementation, '[G]oto [I]mplementation')
+          map('grd', vim.lsp.buf.definition, '[G]oto [D]efinition')
           map('grn', vim.lsp.buf.rename, '[R]e[n]ame')
           map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
           map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+          map('grt', vim.lsp.buf.type_definition, '[G]oto [T]ype Definition')
+          map('gO', vim.lsp.buf.document_symbol, 'Document Symbols')
+          map('gW', vim.lsp.buf.workspace_symbol, 'Workspace Symbols')
 
           local client = vim.lsp.get_client_by_id(event.data.client_id)
           if client and client:supports_method('textDocument/documentHighlight', event.buf) then
@@ -444,7 +365,6 @@ require('lazy').setup({
       })
 
       local servers = {
-        stylua = {},
         lua_ls = {
           on_init = function(client)
             if client.workspace_folders then
@@ -551,52 +471,6 @@ require('lazy').setup({
       }
 
       vim.cmd.colorscheme 'catppuccin'
-    end,
-  },
-  {
-    'folke/todo-comments.nvim',
-    event = 'VimEnter',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    ---@module 'todo-comments'
-    ---@type TodoOptions
-    ---@diagnostic disable-next-line: missing-fields
-    opts = { signs = false },
-  },
-  {
-    'nvim-treesitter/nvim-treesitter',
-    lazy = false,
-    build = ':TSUpdate',
-    branch = 'main',
-    config = function()
-      local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
-      require('nvim-treesitter').install(parsers)
-
-      local function treesitter_try_attach(buf, language)
-        if not vim.treesitter.language.add(language) then return end
-        vim.treesitter.start(buf, language)
-
-        local has_indent_query = vim.treesitter.query.get(language, 'indent') ~= nil
-        if has_indent_query then vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()" end
-      end
-
-      local available_parsers = require('nvim-treesitter').get_available()
-      vim.api.nvim_create_autocmd('FileType', {
-        callback = function(args)
-          local buf, filetype = args.buf, args.match
-          local language = vim.treesitter.language.get_lang(filetype)
-          if not language then return end
-
-          local installed_parsers = require('nvim-treesitter').get_installed 'parsers'
-
-          if vim.tbl_contains(installed_parsers, language) then
-            treesitter_try_attach(buf, language)
-          elseif vim.tbl_contains(available_parsers, language) then
-            require('nvim-treesitter').install(language):await(function() treesitter_try_attach(buf, language) end)
-          else
-            treesitter_try_attach(buf, language)
-          end
-        end,
-      })
     end,
   },
 }, { ---@diagnostic disable-line: missing-fields
