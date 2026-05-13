@@ -5,9 +5,9 @@ packages:
       - ripgrep
       - fzf
       - navi
-      - tree-sitter
       - nvim
     full:
+      - tree-sitter
       - eza
       - bubblewrap
       - fd
