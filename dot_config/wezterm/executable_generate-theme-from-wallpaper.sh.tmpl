@@ -7,7 +7,8 @@ active_scheme_file="$wezterm_dir/active_scheme.toml"
 generated_theme_file="$wezterm_dir/themes/generated.toml"
 generated_palette_file="$wezterm_dir/generated_palette.json"
 tmp_json="$(mktemp)"
-trap 'rm -f "$tmp_json"' EXIT
+tmp_detect_err="$(mktemp)"
+trap 'rm -f "$tmp_json" "$tmp_detect_err"' EXIT
 
 require_cmd() {
 	if ! command -v "$1" >/dev/null 2>&1; then
@@ -22,10 +23,135 @@ require_cmd python3
 
 {{- if eq .chezmoi.os "darwin" }}
 require_cmd osascript
-wallpaper_path="$(osascript -e 'tell application "System Events" to tell current desktop to get POSIX path of (picture as alias)' | tr -d '\r')"
+wallpaper_path=""
+
+if wallpaper_path="$(
+	osascript <<'APPLESCRIPT' 2>"$tmp_detect_err" | tr -d '\r'
+set wallpaperPath to ""
+
+tell application "System Events"
+	repeat with desktopRef in desktops
+		try
+			set desktopPicture to picture of desktopRef
+			if desktopPicture is not missing value then
+				try
+					set wallpaperPath to POSIX path of (desktopPicture as alias)
+				on error
+					try
+						set wallpaperPath to POSIX path of desktopPicture
+					end try
+				end try
+			end if
+		end try
+
+		if wallpaperPath is not "" then
+			exit repeat
+		end if
+	end repeat
+end tell
+
+return wallpaperPath
+APPLESCRIPT
+)" && [ -n "$wallpaper_path" ]; then
+	:
+else
+	wallpaper_path="$(
+		python3 - <<'PY' 2>>"$tmp_detect_err"
+import pathlib
+import plistlib
+import sys
+
+store_path = pathlib.Path.home() / "Library/Application Support/com.apple.wallpaper/Store/Index.plist"
+
+if not store_path.is_file():
+    print(f"wallpaper store not found: {store_path}", file=sys.stderr)
+    raise SystemExit(1)
+
+with store_path.open("rb") as fh:
+    data = plistlib.load(fh)
+
+choice_roots = [
+    data.get("AllSpacesAndDisplays"),
+    data.get("SystemDefault"),
+]
+
+for container_name in ("Displays", "Spaces"):
+    container = data.get(container_name) or {}
+    choice_roots.extend(container.values())
+
+choices = []
+for root in choice_roots:
+    if not isinstance(root, dict):
+        continue
+    linked = root.get("Linked")
+    if not isinstance(linked, dict):
+        continue
+    content = linked.get("Content")
+    if not isinstance(content, dict):
+        continue
+    root_choices = content.get("Choices")
+    if isinstance(root_choices, list):
+        choices.extend(root_choices)
+
+if not choices:
+    print("no wallpaper choices found in wallpaper store", file=sys.stderr)
+    raise SystemExit(1)
+
+def emit_existing_path(candidate):
+    if not candidate:
+        return False
+    path = pathlib.Path(candidate).expanduser()
+    if path.is_file():
+        print(path)
+        return True
+    return False
+
+for choice in choices:
+    if not isinstance(choice, dict):
+        continue
+
+    for candidate in choice.get("Files") or []:
+        if emit_existing_path(candidate):
+            raise SystemExit(0)
+
+    provider = choice.get("Provider")
+    config = choice.get("Configuration")
+    if provider == "com.apple.wallpaper.choice.aerials" and isinstance(config, (bytes, bytearray)):
+        try:
+            aerial_config = plistlib.loads(config)
+        except Exception as exc:
+            print(f"failed to parse aerial wallpaper configuration: {exc}", file=sys.stderr)
+            continue
+
+        asset_id = aerial_config.get("assetID")
+        if not asset_id:
+            print("aerial wallpaper configuration does not contain assetID", file=sys.stderr)
+            continue
+
+        aerial_root = pathlib.Path.home() / "Library/Application Support/com.apple.wallpaper/aerials"
+        candidates = [
+            aerial_root / "thumbnails" / f"{asset_id}.png",
+            aerial_root / "videos" / f"{asset_id}.mov",
+        ]
+        for candidate in candidates:
+            if emit_existing_path(candidate):
+                raise SystemExit(0)
+
+        print(f"aerial wallpaper asset not found locally for assetID {asset_id}", file=sys.stderr)
+
+print("unable to resolve wallpaper path from macOS wallpaper store", file=sys.stderr)
+raise SystemExit(1)
+PY
+	)"
+fi
 
 if [ -z "$wallpaper_path" ]; then
-	echo "failed to detect macOS wallpaper" >&2
+	if [ -s "$tmp_detect_err" ]; then
+		echo "failed to detect macOS wallpaper:" >&2
+		sed 's/^/  /' "$tmp_detect_err" >&2
+	else
+		echo "failed to detect macOS wallpaper" >&2
+	fi
 	exit 1
 fi
 {{- else if eq .chezmoi.os "linux" }}
