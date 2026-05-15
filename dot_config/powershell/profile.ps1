@@ -36,6 +36,10 @@ $env:Path = (@($userPath, $machinePath) | Where-Object { $_ }) -join ";"
 $env:VISUAL = "nvim"
 $env:EDITOR = "nvim"
 
+if ((Test-Command python) -and (-not (Test-Command python3))) {
+    Set-Alias python3 python -ErrorAction SilentlyContinue
+}
+
 if (Get-Module -ListAvailable -Name PSReadLine) {
     Import-Module PSReadLine -ErrorAction SilentlyContinue
 
