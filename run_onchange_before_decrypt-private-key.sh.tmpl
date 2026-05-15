@@ -4,6 +4,14 @@ if [ "{{ .chezmoi.os }}" = "windows" ]; then
     exit 0
 fi
 
+if [ -n "${CI:-}" ]; then
+    exit 0
+fi
+
+if [ ! -t 0 ] && [ ! -t 1 ] && [ ! -t 2 ]; then
+    exit 0
+fi
+
 if [ ! -f "${HOME}/.config/chezmoi/key.txt" ]; then
     mkdir -p "${HOME}/.config/chezmoi"
     chezmoi age decrypt --output "${HOME}/.config/chezmoi/key.txt" --passphrase "{{ .chezmoi.sourceDir }}/key.txt.age"
