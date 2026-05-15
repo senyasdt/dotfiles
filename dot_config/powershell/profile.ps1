@@ -160,6 +160,15 @@ if (Test-Command chezmoi) {
     Set-Alias ch chezmoi -ErrorAction SilentlyContinue
 }
 
+$doctorScript = Join-Path $HOME ".config/powershell/doctor.ps1"
+if (Test-Path -LiteralPath $doctorScript) {
+    function doctor-vial {
+        & $doctorScript @args
+    }
+
+    Set-Alias vdoctor doctor-vial -ErrorAction SilentlyContinue
+}
+
 Clear-Host
 if (Test-Command fastfetch) {
     fastfetch
