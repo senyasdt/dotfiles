@@ -1,0 +1,17 @@
+.DS_Store
+*.log
+*.log.*
+*.bak
+*.tmp
+*.swp
+*.swo
+*~
+
+nvim-full/.tmp-state/
+nvim.log
+nvim-full/nvim.log
+
+dot_config/navi/empty_navi.log
+dot_config/wezterm/active_scheme.toml
+dot_config/wezterm/dot_DS_Store
+dot_config/wezterm/executable_wezterm.lua_backup

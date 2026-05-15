@@ -1,0 +1,74 @@
+name: chezmoi-ci
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    name: ${{ matrix.os }} / ${{ matrix.profile }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        profile:
+          - full
+          - full,desktop
+
+    env:
+      CHEZMOI_PROFILES: ${{ matrix.profile }}
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install chezmoi on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          sh -c "$(curl -fsLS https://get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install chezmoi on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$HOME/bin'"
+          Add-Content -Path $env:GITHUB_PATH -Value "$HOME/bin"
+
+      - name: Install runtime config on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.config/chezmoi"
+          cp "$GITHUB_WORKSPACE/dot_config/chezmoi/chezmoi.toml" "$HOME/.config/chezmoi/chezmoi.toml"
+
+      - name: Install runtime config on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$HOME/.config/chezmoi" | Out-Null
+          Copy-Item "$env:GITHUB_WORKSPACE/dot_config/chezmoi/chezmoi.toml" "$HOME/.config/chezmoi/chezmoi.toml" -Force
+
+      - name: Validate source state on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          chezmoi --source "$GITHUB_WORKSPACE" execute-template < "$GITHUB_WORKSPACE/.chezmoiignore.tmpl" > /dev/null
+          chezmoi --source "$GITHUB_WORKSPACE" apply --dry-run --verbose
+
+      - name: Validate source state on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Get-Content "$env:GITHUB_WORKSPACE/.chezmoiignore.tmpl" | chezmoi --source "$env:GITHUB_WORKSPACE" execute-template > $null
+          chezmoi --source "$env:GITHUB_WORKSPACE" apply --dry-run --verbose

@@ -1,4 +1,37 @@
 packages:
+  windows:
+    scoop:
+      - git
+      - python
+      - make
+      - gcc
+      - neovim
+      - ripgrep
+      - fd
+      - fzf
+      - eza
+      - bat
+      - zoxide
+      - yazi
+      - jq
+      - fastfetch
+      - chezmoi
+      - nodejs-lts
+      - 7zip
+    winget:
+      - wez.wezterm
+      - JanDeDobbeleer.OhMyPosh
+      - Microsoft.PowerToys
+      - Flow-Launcher.Flow-Launcher
+      - LGUG2Z.komorebi
+      - LGUG2Z.whkd
+      - AmN.yasb
+      - AutoHotkey.AutoHotkey
+      - Microsoft.VisualStudioCode
+    powershell_modules:
+      - posh-git
+      - Terminal-Icons
+      - PSFzf
   brew:
     common:
       - gcc
@@ -31,6 +64,8 @@ packages:
       # - gemini-cli
     linux:
       - xclip
+    darwin:
+      - python
     desktop:
       - codex
       - google-chrome
@@ -43,6 +78,9 @@ packages:
       - zsh
       - git
       - xz-utils
+    full:
+      - python3
+      - python3-venv
   cargo:
     desktop:
       - matugen
