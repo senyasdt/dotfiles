@@ -1,0 +1,185 @@
+name: release-smoke
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu / full
+            os: ubuntu-latest
+            profile: full
+          - name: macos / full,desktop
+            os: macos-latest
+            profile: full,desktop
+          - name: windows / full,desktop
+            os: windows-latest
+            profile: full,desktop
+
+    env:
+      CHEZMOI_PROFILES: ${{ matrix.profile }}
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install chezmoi on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          sh -c "$(curl -fsLS https://get.chezmoi.io)" -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install chezmoi on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$HOME/bin'"
+          Add-Content -Path $env:GITHUB_PATH -Value "$HOME/bin"
+
+      - name: Install runtime config on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.config/chezmoi"
+          cp "$GITHUB_WORKSPACE/dot_config/chezmoi/chezmoi.toml" "$HOME/.config/chezmoi/chezmoi.toml"
+
+      - name: Install runtime config on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$HOME/.config/chezmoi" | Out-Null
+          Copy-Item "$env:GITHUB_WORKSPACE/dot_config/chezmoi/chezmoi.toml" "$HOME/.config/chezmoi/chezmoi.toml" -Force
+
+      - name: Apply and smoke-check on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          chezmoi --source "$GITHUB_WORKSPACE" apply --force --verbose
+
+          if [[ -x "${HOME}/.linuxbrew/bin/brew" ]]; then
+            eval "$("${HOME}/.linuxbrew/bin/brew" shellenv)"
+          elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          fi
+
+          command -v python3
+          command -v nvim
+          command -v rg
+          command -v fzf
+          command -v bat || command -v batcat
+          command -v eza
+          command -v jq
+          command -v yazi
+
+          python3 --version
+          nvim --version | head -n 1
+          rg --version | head -n 1
+          fzf --version
+          jq --version
+
+          test -f "$HOME/.gitconfig"
+          test -f "$HOME/.config/bat/config"
+          test -f "$HOME/.config/navi/config.yaml"
+          test -f "$HOME/.config/lazygit/config.yml"
+          test -f "$HOME/.config/chezmoi/chezmoi.toml"
+
+      - name: Apply and smoke-check on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          chezmoi --source "$GITHUB_WORKSPACE" apply --force --verbose
+
+          if [[ -x /opt/homebrew/bin/brew ]]; then
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+          elif [[ -x /usr/local/bin/brew ]]; then
+            eval "$(/usr/local/bin/brew shellenv)"
+          fi
+
+          command -v python3
+          command -v nvim
+          command -v rg
+          command -v fzf
+          command -v bat
+          command -v eza
+          command -v jq
+          command -v yazi
+          command -v wezterm
+
+          python3 --version
+          nvim --version | head -n 1
+          rg --version | head -n 1
+          wezterm --version
+
+          test -f "$HOME/.gitconfig"
+          test -f "$HOME/.wezterm.lua"
+          test -f "$HOME/.config/bat/config"
+          test -f "$HOME/.config/navi/config.yaml"
+          test -f "$HOME/.config/lazygit/config.yml"
+          test -f "$HOME/.config/chezmoi/chezmoi.toml"
+
+      - name: Apply and smoke-check on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          chezmoi --source "$env:GITHUB_WORKSPACE" apply --force --verbose
+
+          $scoopShims = Join-Path $HOME "scoop/shims"
+          if (Test-Path -LiteralPath $scoopShims) {
+            $env:Path = "$scoopShims;$env:Path"
+          }
+
+          $commands = @(
+            "python",
+            "git",
+            "nvim",
+            "rg",
+            "fd",
+            "fzf",
+            "jq",
+            "fastfetch",
+            "chezmoi",
+            "wezterm"
+          )
+
+          foreach ($name in $commands) {
+            if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
+              throw "Missing command: $name"
+            }
+          }
+
+          python --version
+          git --version
+          nvim --version | Select-Object -First 1
+          rg --version | Select-Object -First 1
+          fastfetch --version
+          wezterm --version
+
+          $expectedFiles = @(
+            "$HOME/.config/powershell/profile.ps1",
+            "$HOME/Documents/PowerShell/Microsoft.PowerShell_profile.ps1",
+            "$HOME/AppData/Roaming/Code/User/settings.json",
+            "$HOME/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json",
+            "$HOME/komorebi.json",
+            "$HOME/applications.json"
+          )
+
+          foreach ($path in $expectedFiles) {
+            if (-not (Test-Path -LiteralPath $path)) {
+              throw "Missing file: $path"
+            }
+          }
