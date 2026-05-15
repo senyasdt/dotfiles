@@ -1,15 +1,67 @@
+{{- $profiles := splitList "," (env "CHEZMOI_PROFILES" | default "full") -}}
+
+# Repo metadata
 README.md
 bootstrap.sh
 nvim-full/**
 nvim-lite/**
 
-{{- if and (eq .chezmoi.os "linux") (contains "microsoft" (lower (output "uname" "-r"))) }}
-.config/wezterm/active_scheme.toml
+# Windows-only targets
+{{- if ne .chezmoi.os "windows" }}
+AppData/**
+Documents/PowerShell/**
+Documents/WindowsPowerShell/**
+.config/autohotkey/**
+.config/fastfetch/**
+.config/powershell/**
+.config/vial/**
+.config/whkdrc
+applications.json
+komorebi.json
 {{- end }}
 
+# Unix-only targets
+{{- if eq .chezmoi.os "windows" }}
+.config/yamusic-tui/**
+.zshrc
+.config/nvim
+.config/nvim-lite
+.config/zsh/**
+{{- end }}
+
+# GUI / desktop layer
+{{- if not (has "desktop" $profiles) }}
+.wezterm.lua
+.config/wezterm/**
+AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/**
+AppData/Roaming/FlowLauncher/**
+.config/autohotkey/**
+.config/vial/**
+.config/whkdrc
+applications.json
+komorebi.json
+{{- end }}
+
+# Generated / local state
 .oh-my-zsh/cache/**
 .config/zsh/themes/**
 .config/zsh/local_env.zsh
+.DS_Store
+*.log
+*.log.*
+*.bak
+*~
+
+.config/navi/empty_navi.log
+.config/wezterm/active_scheme.toml
+.config/wezterm/generated_palette.json
+.config/wezterm/.DS_Store
+.config/wezterm/wezterm.lua_backup
+.config/wezterm/background_mode
+.config/wezterm/opacity
+.config/wezterm/theme
+
+.local/state/**
 
 !.config/zsh/themes/*.zsh-theme
 key.txt.age

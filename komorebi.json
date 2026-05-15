@@ -1,0 +1,108 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LGUG2Z/komorebi/master/schema.json",
+  "app_specific_configuration_path": "$Env:USERPROFILE/applications.json",
+  "window_hiding_behaviour": "Cloak",
+  "cross_monitor_move_behaviour": "Insert",
+  "default_workspace_padding": 8,
+  "default_container_padding": 8,
+  "resize_delta": 50,
+  "border": true,
+  "border_width": 3,
+  "border_offset": -1,
+  "manage_rules": [
+    [
+      {
+        "kind": "Exe",
+        "id": "orca-slicer.exe",
+        "matching_strategy": "Equals"
+      },
+      {
+        "kind": "Title",
+        "id": "^\\*?Без названия$",
+        "matching_strategy": "Regex"
+      }
+    ],
+    [
+      {
+        "kind": "Exe",
+        "id": "orca-slicer.exe",
+        "matching_strategy": "Equals"
+      },
+      {
+        "kind": "Title",
+        "id": "OrcaSlicer",
+        "matching_strategy": "EndsWith"
+      }
+    ],
+    [
+      {
+        "kind": "Exe",
+        "id": "ZBrush.exe",
+        "matching_strategy": "Equals"
+      },
+      {
+        "kind": "Class",
+        "id": "ZBrush",
+        "matching_strategy": "Equals"
+      }
+    ]
+  ],
+  "slow_application_identifiers": [
+    {
+      "kind": "Exe",
+      "id": "orca-slicer.exe",
+      "matching_strategy": "Equals"
+    }
+  ],
+  "object_name_change_applications": [
+    {
+      "kind": "Exe",
+      "id": "orca-slicer.exe",
+      "matching_strategy": "Equals"
+    }
+  ],
+  "theme": {
+    "palette": "Catppuccin",
+    "name": "Mocha",
+    "unfocused_border": "Surface0",
+    "bar_accent": "Blue",
+    "single_border": "Surface1",
+    "stack_border": "Mauve",
+    "monocle_border": "Red",
+    "floating_border": "Yellow"
+  },
+  "monitors": [
+    {
+      "workspaces": [
+        {
+          "name": "I",
+          "layout": "BSP"
+        },
+        {
+          "name": "II",
+          "layout": "BSP"
+        },
+        {
+          "name": "III",
+          "layout": "Columns"
+        },
+        {
+          "name": "IV",
+          "layout": "Rows"
+        },
+        {
+          "name": "V",
+          "layout": "VerticalStack"
+        },
+        {
+          "name": "VI",
+          "layout": "HorizontalStack"
+        },
+        {
+          "name": "VII",
+          "layout": "Grid"
+        }
+      ]
+    }
+  ]
+}

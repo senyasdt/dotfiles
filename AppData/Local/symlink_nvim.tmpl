@@ -1,0 +1,6 @@
+{{- $profiles := splitList "," (env "CHEZMOI_PROFILES" | default "full") -}}
+{{- if has "lite" $profiles -}}
+{{ joinPath .chezmoi.sourceDir "nvim-lite" }}
+{{- else -}}
+{{ joinPath .chezmoi.sourceDir "nvim-full" }}
+{{- end -}}

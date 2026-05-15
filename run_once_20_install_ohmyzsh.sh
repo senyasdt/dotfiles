@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+if [[ "${OS:-}" == "Windows_NT" ]] || ! command -v zsh >/dev/null 2>&1; then
+  exit 0
+fi
+
 if [[ -t 1 ]]; then
   c_reset=$'\033[0m'
   c_green=$'\033[1;32m'

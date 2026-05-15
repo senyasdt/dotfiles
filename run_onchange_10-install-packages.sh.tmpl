@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+{{- if eq .chezmoi.os "windows" }}
+exit 0
+{{- end }}
+
 # .chezmoidata/packages.yaml hash:
 
 if [[ -t 1 ]]; then

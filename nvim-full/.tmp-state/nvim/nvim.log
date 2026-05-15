@@ -1,6 +1,0 @@
-WRN 2026-05-09T06:21:21.650 ?.27400    server_start:197: Failed to start server: operation not permitted: /var/folders/h0/ndpb1kfj2392bbs5ld2s48zh02npsc/T/nvim.ruantni/iyTGuc/nvim.27400.0
-WRN 2026-05-09T06:21:53.725 ?.27747    server_start:197: Failed to start server: operation not permitted: /var/folders/h0/ndpb1kfj2392bbs5ld2s48zh02npsc/T/nvim.ruantni/zJpsao/nvim.27747.0
-WRN 2026-05-09T06:29:27.217 ?.35611    server_start:197: Failed to start server: operation not permitted: /var/folders/h0/ndpb1kfj2392bbs5ld2s48zh02npsc/T/nvim.ruantni/pWEAFK/nvim.35611.0
-WRN 2026-05-09T06:48:01.000 ?.54263    server_start:197: Failed to start server: operation not permitted: /var/folders/h0/ndpb1kfj2392bbs5ld2s48zh02npsc/T/nvim.ruantni/fo4sp3/nvim.54263.0
-WRN 2026-05-09T06:51:28.888 ?.63339    server_start:197: Failed to start server: operation not permitted: /var/folders/h0/ndpb1kfj2392bbs5ld2s48zh02npsc/T/nvim.ruantni/VCRi3x/nvim.63339.0
-WRN 2026-05-09T06:55:34.004 ?.68416    server_start:197: Failed to start server: operation not permitted: /var/folders/h0/ndpb1kfj2392bbs5ld2s48zh02npsc/T/nvim.ruantni/KWK56x/nvim.68416.0
