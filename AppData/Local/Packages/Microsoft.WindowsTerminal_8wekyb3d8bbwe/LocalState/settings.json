@@ -33,7 +33,7 @@
         [
             {
                 "antialiasingMode": "cleartype",
-                "backgroundImage": "C:\\Users\\druzh\\.config\\wezterm\\backgrounds\\friren_custom.png",
+                "backgroundImage": "%LOCALAPPDATA%\\Packages\\Microsoft.WindowsTerminal_8wekyb3d8bbwe\\LocalState\\backgrounds\\friren_custom.png",
                 "backgroundImageAlignment": "center",
                 "backgroundImageOpacity": 0.07,
                 "backgroundImageStretchMode": "uniformToFill",
