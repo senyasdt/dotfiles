@@ -46,6 +46,11 @@ applications.json
 komorebi.json
 {{- end }}
 
+# CI-only exclusions
+{{- if env "CI" }}
+.config/yamusic-tui/**
+{{- end }}
+
 # Generated / local state
 .oh-my-zsh/cache/**
 .config/zsh/themes/**
