@@ -57,9 +57,11 @@ widgets:
     options:
       label: "\uf021"
       class_name: "win-button-widget"
-      tooltip: false
+      tooltip: true
+      tooltip_label: "LMB: restart daemons\nRMB: start/stop/restart menu"
       callbacks:
-        on_left: 'exec cmd.exe /c start "" "%USERPROFILE%\.config\restart-daemons.cmd"'
+        on_left: 'exec powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "& ""%USERPROFILE%\.config\restart-daemons.cmd"""'
+        on_right: 'exec powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "%USERPROFILE%\.config\yasb\scripts\show_daemon_menu.ps1"'
   language:
     type: "yasb.language.LanguageWidget"
     options:
