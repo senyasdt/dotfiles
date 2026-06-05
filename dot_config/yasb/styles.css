@@ -1,0 +1,1191 @@
+/* ================================
+   Global
+   ================================ */
+
+* {
+	font-size: 13px;
+	color: #cdd6f4;
+	font-weight: 600;
+	font-family: "Segoe UI", "JetBrainsMono NFP";
+	margin: 0;
+	padding: 0;
+}
+
+.yasb-bar {
+	padding: 0 8px;
+	margin: 0;
+	background-color: rgba(30, 30, 46, 0.25);
+}
+
+.widget {
+	padding: 0 4px;
+	margin: 0;
+}
+
+.widget .label {
+	padding: 0 2px;
+	margin: 0;
+}
+
+.widget .label.alt {
+	padding: 1px 6px;
+}
+
+.icon {
+	font-size: 16px;
+}
+
+
+/* ================================
+   Compact right widgets spacing
+   language / weather / volume
+   ================================ */
+
+.language-widget,
+.open-meteo-widget,
+.volume-widget {
+	padding-left: 2px;
+	padding-right: 2px;
+}
+
+.language-widget .widget-container,
+.open-meteo-widget .widget-container,
+.volume-widget .widget-container {
+	padding-left: 2px;
+	padding-right: 2px;
+	margin-left: 0;
+	margin-right: 0;
+}
+
+.language-widget .label,
+.open-meteo-widget .label,
+.volume-widget .label {
+	padding: 0 1px;
+	margin: 0;
+}
+
+.open-meteo-widget .icon,
+.volume-widget .icon {
+	margin: 0 1px 0 0;
+}
+
+
+/* ================================
+   Komorebi Workspaces
+   ================================ */
+
+.komorebi-workspaces,
+.komorebi-active-layout {
+	margin: 0;
+	padding: 0;
+}
+
+.komorebi-workspaces .ws-btn {
+	font-size: 16px;
+	background-color: transparent;
+	margin: 0 4px;
+	color: #95a0ad;
+}
+
+.komorebi-workspaces .ws-btn.populated {
+	color: #a0c3ee;
+}
+
+.komorebi-workspaces .ws-btn:hover,
+.komorebi-workspaces .ws-btn.populated:hover,
+.komorebi-workspaces .ws-btn.active {
+	color: #c2daf7;
+}
+
+
+/* ================================
+   Apps Widget
+   ================================ */
+
+.apps-widget {
+	padding: 0 4px;
+}
+
+.apps-widget .widget-container {
+	background-color: rgba(255, 255, 255, 0.1);
+	margin: 5px 0 4px 0;
+	border-radius: 13px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.apps-widget .label {
+	font-size: 14px;
+	padding: 0 2px 1px 2px;
+}
+
+.apps-widget .label:hover {
+	color: #ffffff;
+}
+
+
+/* ================================
+   Active Window
+   ================================ */
+
+.active-window-widget .icon {
+	padding: 0;
+}
+
+
+/* ================================
+   Power Menu Widget
+   ================================ */
+
+.uptime {
+	font-size: 14px;
+	margin-bottom: 10px;
+	color: #ffffff;
+	font-weight: 600;
+	font-family: "Segoe UI";
+}
+
+.power-menu-widget .label {
+	color: #f38ba8;
+	font-size: 13px;
+}
+
+.power-menu-popup {
+	background-color: rgba(24, 24, 37, 0.9);
+	border-radius: 12px;
+	border: 4px solid rgb(41, 42, 58);
+}
+
+.power-menu-popup .button {
+	padding: 0;
+	width: 240px;
+	height: 120px;
+	border-radius: 8px;
+	background-color: rgb(41, 42, 58);
+	font-family: "Segoe UI";
+	color: white;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	margin: 8px;
+}
+
+.power-menu-popup .button.hover {
+	background-color: rgb(55, 56, 75);
+	border: 1px solid rgb(55, 56, 75);
+}
+
+.power-menu-popup .button .label {
+	margin-bottom: 8px;
+	font-size: 16px;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.95);
+	font-family: "Segoe UI";
+}
+
+.power-menu-popup .button .icon {
+	font-size: 48px;
+	padding-top: 8px;
+	color: rgba(255, 255, 255, 0.25);
+}
+
+.power-menu-popup .button.cancel .icon {
+	color: rgba(243, 139, 168, 0.55);
+}
+
+.power-menu-popup .button.cancel .label {
+	color: rgba(243, 139, 168, 0.95);
+}
+
+.power-menu-popup .button.shutdown .icon {
+	color: rgba(137, 180, 250, 0.55);
+}
+
+.power-menu-popup .button.shutdown .label {
+	color: rgba(137, 180, 250, 0.95);
+}
+
+
+/* ================================
+   Volume Widget
+   ================================ */
+
+.volume-widget .icon {
+	color: #89b4fa;
+	margin: 0 1px 0 0;
+}
+
+.volume-widget .label {
+	padding: 0 1px;
+}
+
+
+/* ================================
+   Old Weather Widget
+   ================================ */
+
+.weather-widget .icon {
+	font-size: 16px;
+	margin: 0 2px 1px 0;
+}
+
+.weather-widget .icon.sunnyDay {
+	color: rgb(221, 210, 107);
+}
+
+.weather-widget .icon.clearNight {
+	color: rgb(107, 189, 221);
+	font-size: 22px;
+	margin: 1px 2px 0 0;
+}
+
+
+/* ================================
+   Media Widget
+   ================================ */
+
+.media-widget {
+	padding: 0;
+	padding-left: 2px;
+	margin: 0 8px 0 0;
+	border-radius: 16px;
+}
+
+.media-widget .label {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.media-widget .btn {
+	color: #acb2c9;
+	padding: 0 3px;
+	margin: 4px 0;
+	font-weight: 500;
+	font-family: "Segoe Fluent Icons";
+}
+
+.media-widget .btn:hover {
+	color: #ffffff;
+}
+
+.media-widget .btn.play {
+	background-color: rgba(255, 255, 255, 0.1);
+	border-radius: 14px;
+	font-size: 16px;
+}
+
+.media-widget .btn.disabled:hover,
+.media-widget .btn.disabled {
+	color: #7d8297;
+	font-size: 12px;
+	background-color: rgba(0, 0, 0, 0);
+}
+
+
+/* ================================
+   Taskbar Widget
+   ================================ */
+
+.taskbar-widget {
+	padding: 0;
+	margin: 0;
+}
+
+.taskbar-widget .app-container {
+	padding: 0 6px;
+}
+
+.taskbar-widget .app-container .app-title {
+	padding-left: 4px;
+}
+
+.win-button-widget .label {
+	font-size: 18px;
+}
+
+
+/* ================================
+   YASB Open-Meteo Widget
+   Catppuccin Mocha
+   ================================ */
+
+.open-meteo-widget {
+	padding: 0 2px;
+}
+
+.open-meteo-widget .widget-container {
+	background-color: transparent;
+	border-radius: 10px;
+	padding: 0 2px;
+}
+
+.open-meteo-widget .icon {
+	font-size: 18px;
+	color: #cba6f7;
+	margin: 0 1px 0 0;
+}
+
+.open-meteo-widget .label {
+	font-size: 13px;
+	font-family: "Segoe UI";
+	font-weight: 500;
+	color: #cdd6f4;
+	padding: 0 1px;
+}
+
+.open-meteo-widget .label.alt {
+	color: #bac2de;
+}
+
+.open-meteo-widget .icon.sunnyDay {
+	color: #f9e2af;
+}
+
+.open-meteo-widget .icon.clearNight {
+	color: #b4befe;
+}
+
+.open-meteo-widget .icon.cloudyDay,
+.open-meteo-widget .icon.cloudyNight {
+	color: #a6adc8;
+}
+
+.open-meteo-widget .icon.drizzleDay,
+.open-meteo-widget .icon.drizzleNight {
+	color: #89b4fa;
+}
+
+.open-meteo-widget .icon.rainyDay,
+.open-meteo-widget .icon.rainyNight {
+	color: #74c7ec;
+}
+
+.open-meteo-widget .icon.snowyDay,
+.open-meteo-widget .icon.snowyNight {
+	color: #cdd6f4;
+}
+
+.open-meteo-widget .icon.foggyDay,
+.open-meteo-widget .icon.foggyNight {
+	color: #9399b2;
+}
+
+.open-meteo-widget .icon.thunderstormDay,
+.open-meteo-widget .icon.thunderstormNight {
+	color: #cba6f7;
+}
+
+.open-meteo-widget .icon.default {
+	color: #b4befe;
+}
+
+
+/* ================================
+   Open-Meteo Card
+   ================================ */
+
+.open-meteo-card {
+	background-color: rgba(30, 30, 46, 0.65);
+	border: 1px solid rgba(203, 166, 247, 0.18);
+	border-radius: 16px;
+	min-width: 500px;
+	color: #cdd6f4;
+
+	backdrop-filter: blur(22px);
+	-webkit-backdrop-filter: blur(22px);
+}
+
+.open-meteo-card-today .label {
+	font-size: 13px;
+	font-family: "Segoe UI";
+	font-weight: 500;
+	color: #a6adc8;
+}
+
+.open-meteo-card-today .label.location {
+	font-size: 32px;
+	font-weight: 700;
+	font-family: "Segoe UI";
+	color: #f5e0dc;
+}
+
+.open-meteo-card-today .label.sunrisesunset {
+	font-size: 18px;
+	font-family: "Segoe UI";
+	font-weight: 600;
+	color: #f9e2af;
+}
+
+.open-meteo-card-today .label.sunrisesunset-icon {
+	font-size: 18px;
+	color: #f9e2af;
+	font-family: "JetBrainsMono NFP";
+}
+
+
+/* ================================
+   Open-Meteo Day Cards
+   ================================ */
+
+.open-meteo-card-day {
+	border: 1px solid rgba(180, 190, 254, 0.12);
+	border-radius: 12px;
+	background-color: rgba(49, 50, 68, 0.45);
+	padding: 6px;
+	min-width: 70px;
+}
+
+.open-meteo-card-day .day-name {
+	font-family: "Segoe UI";
+	color: #bac2de;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.open-meteo-card-day .day-temp-max {
+	font-family: "Segoe UI";
+	font-weight: 700;
+	font-size: 16px;
+	color: #f5e0dc;
+}
+
+.open-meteo-card-day .day-temp-min {
+	font-family: "Segoe UI";
+	color: #a6adc8;
+	font-weight: 500;
+	font-size: 13px;
+}
+
+.open-meteo-card-day.active {
+	background-color: rgba(137, 180, 250, 0.16);
+	border: 1px solid rgba(137, 180, 250, 0.35);
+}
+
+.open-meteo-card-day:hover {
+	background-color: rgba(203, 166, 247, 0.12);
+	border: 1px solid rgba(203, 166, 247, 0.25);
+}
+
+
+/* ================================
+   Open-Meteo Hourly Data
+   ================================ */
+
+.open-meteo-card .hourly-container {
+	border: 1px solid rgba(180, 190, 254, 0.08);
+	border-radius: 12px;
+	background-color: rgba(17, 17, 27, 0.22);
+	min-height: 120px;
+}
+
+.open-meteo-card .hourly-data {
+	font-size: 11px;
+	font-weight: 700;
+	font-family: "Segoe UI";
+	color: #cdd6f4;
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.temperature {
+	color: #f9e2af;
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.rain {
+	color: #89b4fa;
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.snow {
+	color: #cdd6f4;
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.wind {
+	color: #bac2de;
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.time {
+	color: #a6adc8;
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data .hourly-rain-animation {
+	color: rgba(137, 180, 250, 0.7);
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data .hourly-snow-animation {
+	color: rgba(205, 214, 244, 0.75);
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data-buttons {
+	margin-top: 11px;
+	margin-left: 11px;
+}
+
+.open-meteo-card .hourly-data-button {
+	border-radius: 8px;
+	min-height: 24px;
+	min-width: 24px;
+	max-width: 24px;
+	max-height: 24px;
+	font-size: 14px;
+	color: #7f849c;
+	background-color: rgba(49, 50, 68, 0.45);
+	border: 1px solid rgba(180, 190, 254, 0.08);
+}
+
+.open-meteo-card .hourly-data-button.active {
+	color: #cdd6f4;
+	background-color: rgba(203, 166, 247, 0.22);
+	border: 1px solid rgba(203, 166, 247, 0.38);
+}
+
+
+/* ================================
+   Open-Meteo Search / No Data
+   ================================ */
+
+.open-meteo-card .search-head {
+	font-size: 18px;
+	font-family: "Segoe UI";
+	font-weight: 700;
+	color: #f5e0dc;
+}
+
+.open-meteo-card .search-description {
+	font-size: 14px;
+	font-family: "Segoe UI";
+	font-weight: 400;
+	color: #bac2de;
+	padding-bottom: 8px;
+}
+
+.open-meteo-card .no-data-icon {
+	font-size: 88px;
+	color: #cba6f7;
+}
+
+.open-meteo-card .no-data-text {
+	font-size: 16px;
+	font-family: "Segoe UI";
+	font-weight: 400;
+	color: #bac2de;
+}
+
+.open-meteo-card .search-input {
+	padding: 8px 12px;
+	border: 1px solid rgba(180, 190, 254, 0.22);
+	border-radius: 10px;
+	background-color: rgba(17, 17, 27, 0.65);
+	color: #cdd6f4;
+	font-family: "Segoe UI";
+	font-size: 14px;
+}
+
+.open-meteo-card .search-input:focus {
+	border: 1px solid #cba6f7;
+	background-color: rgba(24, 24, 37, 0.85);
+}
+
+.open-meteo-card .search-results {
+	border: 1px solid rgba(180, 190, 254, 0.12);
+	border-radius: 10px;
+	background-color: rgba(24, 24, 37, 0.30);
+	color: #cdd6f4;
+	font-size: 13px;
+	font-family: "Segoe UI";
+
+	backdrop-filter: blur(14px);
+	-webkit-backdrop-filter: blur(14px);
+}
+
+.open-meteo-card .search-results::item {
+	padding: 7px 8px;
+	border-radius: 8px;
+}
+
+.open-meteo-card .search-results::item:hover {
+	background-color: rgba(203, 166, 247, 0.14);
+	color: #f5e0dc;
+}
+
+
+/* ================================
+   Language Widget
+   ================================ */
+
+.language-widget {
+	padding: 0 2px;
+}
+
+.language-widget .widget-container {
+	background-color: transparent;
+	border-radius: 10px;
+	padding: 0 2px;
+}
+
+.language-widget .label {
+	font-size: 13px;
+	font-family: "Segoe UI";
+	font-weight: 500;
+	color: #cdd6f4;
+	padding: 0 1px;
+}
+
+.language-widget .icon {
+	font-size: 15px;
+	color: #b4befe;
+}
+
+
+/* ================================
+   Language Menu
+   macOS / Catppuccin Mocha
+   ================================ */
+
+.language-menu {
+	background-color: rgba(30, 30, 46, 0.70);
+	border: 1px solid rgba(203, 166, 247, 0.22);
+	border-radius: 16px;
+	padding: 8px;
+	min-width: 292px;
+
+	color: #cdd6f4;
+	font-family: "Segoe UI";
+	font-size: 13px;
+
+	backdrop-filter: blur(24px);
+	-webkit-backdrop-filter: blur(24px);
+}
+
+.language-menu .header {
+	background-color: transparent;
+	color: #f5e0dc;
+
+	font-family: "Segoe UI";
+	font-size: 13px;
+	font-weight: 600;
+
+	padding: 5px 10px 8px 10px;
+	margin-bottom: 4px;
+}
+
+.language-menu .language-item {
+	background-color: rgba(49, 50, 68, 0.24);
+	border: 1px solid rgba(180, 190, 254, 0.08);
+	border-radius: 11px;
+
+	padding: 8px 10px;
+	margin: 3px 0;
+	min-height: 44px;
+
+	color: #cdd6f4;
+}
+
+.language-menu .language-item:hover {
+	background-color: rgba(203, 166, 247, 0.13);
+	border: 1px solid rgba(203, 166, 247, 0.20);
+}
+
+.language-menu .language-item.active {
+	background-color: rgba(137, 180, 250, 0.15);
+	border: 1px solid rgba(137, 180, 250, 0.28);
+}
+
+.language-menu .language-item .code {
+	font-family: "Segoe UI";
+	font-size: 12px;
+	font-weight: 700;
+	color: #b4befe;
+	min-width: 30px;
+}
+
+.language-menu .language-item .icon {
+	font-size: 14px;
+	color: #b4befe;
+	margin-right: 7px;
+}
+
+.language-menu .language-item .name {
+	font-family: "Segoe UI";
+	font-size: 13px;
+	font-weight: 500;
+	color: #cdd6f4;
+}
+
+.language-menu .language-item .layout {
+	font-family: "Segoe UI";
+	font-size: 12px;
+	font-weight: 400;
+	color: #a6adc8;
+	margin-top: 1px;
+}
+
+.language-menu .footer {
+	background-color: transparent;
+	border-top: 1px solid rgba(180, 190, 254, 0.11);
+
+	margin-top: 7px;
+	padding: 8px 10px 4px 10px;
+
+	font-family: "Segoe UI";
+	font-size: 12px;
+	font-weight: 500;
+	color: #89b4fa;
+}
+
+.language-menu .footer:hover {
+	color: #b4befe;
+	background-color: rgba(137, 180, 250, 0.08);
+	border-radius: 9px;
+}
+
+/* ================================
+   Open-Meteo Card — match taskbar style
+   glass / muted / compact
+   ================================ */
+
+.open-meteo-card {
+	background-color: rgba(36, 39, 53, 0.58);
+	border: 1px solid rgba(255, 255, 255, 0.10);
+	border-radius: 14px;
+	min-width: 640px;
+	color: #cdd6f4;
+
+	backdrop-filter: blur(28px);
+	-webkit-backdrop-filter: blur(28px);
+}
+
+/* Header / today */
+
+.open-meteo-card-today .label {
+	font-size: 13px;
+	font-family: "Segoe UI";
+	font-weight: 400;
+	color: rgba(205, 214, 244, 0.68);
+}
+
+.open-meteo-card-today .label.location {
+	font-size: 30px;
+	font-weight: 700;
+	font-family: "Segoe UI";
+	color: rgba(245, 224, 220, 0.95);
+}
+
+.open-meteo-card-today .label.sunrisesunset {
+	font-size: 17px;
+	font-family: "Segoe UI";
+	font-weight: 600;
+	color: rgba(249, 226, 175, 0.88);
+}
+
+.open-meteo-card-today .label.sunrisesunset-icon {
+	font-size: 17px;
+	color: rgba(249, 226, 175, 0.88);
+	font-family: "JetBrainsMono NFP";
+}
+
+/* Forecast day cards — less bubbly */
+
+.open-meteo-card-day {
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 10px;
+	background-color: rgba(255, 255, 255, 0.045);
+	padding: 6px;
+	min-width: 76px;
+}
+
+.open-meteo-card-day.active {
+	background-color: rgba(137, 180, 250, 0.12);
+	border: 1px solid rgba(137, 180, 250, 0.20);
+}
+
+.open-meteo-card-day:hover {
+	background-color: rgba(255, 255, 255, 0.075);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.open-meteo-card-day .day-name {
+	font-family: "Segoe UI";
+	color: rgba(205, 214, 244, 0.72);
+	font-size: 12px;
+	font-weight: 500;
+}
+
+.open-meteo-card-day .day-temp-max {
+	font-family: "Segoe UI";
+	font-weight: 700;
+	font-size: 16px;
+	color: rgba(245, 224, 220, 0.95);
+}
+
+.open-meteo-card-day .day-temp-min {
+	font-family: "Segoe UI";
+	color: rgba(205, 214, 244, 0.58);
+	font-weight: 400;
+	font-size: 13px;
+}
+
+/* Hourly block — like one glass panel */
+
+.open-meteo-card .hourly-container {
+	border: 1px solid rgba(255, 255, 255, 0.075);
+	border-radius: 12px;
+	background-color: rgba(255, 255, 255, 0.035);
+	min-height: 120px;
+}
+
+.open-meteo-card .hourly-data {
+	font-size: 11px;
+	font-weight: 600;
+	font-family: "Segoe UI";
+	color: rgba(205, 214, 244, 0.86);
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.temperature {
+	color: rgba(249, 226, 175, 0.92);
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.rain {
+	color: rgba(137, 180, 250, 0.92);
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.snow {
+	color: rgba(205, 214, 244, 0.92);
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.wind {
+	color: rgba(205, 214, 244, 0.72);
+	background-color: transparent;
+}
+
+.open-meteo-card .hourly-data.time {
+	color: rgba(205, 214, 244, 0.62);
+	background-color: transparent;
+}
+
+/* Hourly buttons */
+
+.open-meteo-card .hourly-data-button {
+	border-radius: 9px;
+	min-height: 24px;
+	min-width: 24px;
+	max-width: 24px;
+	max-height: 24px;
+
+	font-size: 14px;
+	color: rgba(205, 214, 244, 0.42);
+	background-color: rgba(255, 255, 255, 0.045);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.open-meteo-card .hourly-data-button:hover {
+	color: rgba(205, 214, 244, 0.86);
+	background-color: rgba(255, 255, 255, 0.075);
+}
+
+.open-meteo-card .hourly-data-button.active {
+	color: #cdd6f4;
+	background-color: rgba(137, 180, 250, 0.14);
+	border: 1px solid rgba(137, 180, 250, 0.20);
+}
+
+/* Search inside weather */
+
+.open-meteo-card .search-head {
+	font-size: 18px;
+	font-family: "Segoe UI";
+	font-weight: 600;
+	color: rgba(245, 224, 220, 0.95);
+}
+
+.open-meteo-card .search-description {
+	font-size: 14px;
+	font-family: "Segoe UI";
+	font-weight: 400;
+	color: rgba(205, 214, 244, 0.68);
+	padding-bottom: 8px;
+}
+
+.open-meteo-card .search-input {
+	padding: 8px 12px;
+	border: 1px solid rgba(255, 255, 255, 0.10);
+	border-radius: 10px;
+	background-color: rgba(255, 255, 255, 0.045);
+	color: #cdd6f4;
+	font-family: "Segoe UI";
+	font-size: 14px;
+}
+
+.open-meteo-card .search-input:focus {
+	border: 1px solid rgba(137, 180, 250, 0.35);
+	background-color: rgba(255, 255, 255, 0.07);
+}
+
+.open-meteo-card .search-results {
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 10px;
+	background-color: rgba(36, 39, 53, 0.58);
+	color: #cdd6f4;
+	font-size: 13px;
+	font-family: "Segoe UI";
+
+	backdrop-filter: blur(22px);
+	-webkit-backdrop-filter: blur(22px);
+}
+
+.open-meteo-card .search-results::item {
+	padding: 7px 8px;
+	border-radius: 8px;
+}
+
+.open-meteo-card .search-results::item:hover {
+	background-color: rgba(255, 255, 255, 0.075);
+	color: #ffffff;
+}
+
+/* ================================
+   Open-Meteo Card — colder taskbar colors
+   ================================ */
+
+.open-meteo-card {
+	background-color: rgba(34, 38, 52, 0.62);
+	border: 1px solid rgba(160, 175, 205, 0.16);
+	box-shadow: none;
+}
+
+/* Main title */
+.open-meteo-card-today .label.location {
+	color: rgba(222, 228, 242, 0.96);
+}
+
+/* Sunrise / sunset — less yellow, more muted */
+.open-meteo-card-today .label.sunrisesunset,
+.open-meteo-card-today .label.sunrisesunset-icon {
+	color: rgba(205, 214, 244, 0.82);
+}
+
+/* Details under title */
+.open-meteo-card-today .label {
+	color: rgba(178, 189, 214, 0.74);
+}
+
+/* Day cards */
+.open-meteo-card-day {
+	background-color: rgba(58, 63, 82, 0.34);
+	border: 1px solid rgba(160, 175, 205, 0.13);
+}
+
+.open-meteo-card-day.active {
+	background-color: rgba(83, 96, 128, 0.42);
+	border: 1px solid rgba(160, 175, 205, 0.22);
+}
+
+.open-meteo-card-day:hover {
+	background-color: rgba(70, 77, 102, 0.42);
+	border: 1px solid rgba(170, 185, 215, 0.18);
+}
+
+.open-meteo-card-day .day-name {
+	color: rgba(190, 200, 222, 0.72);
+}
+
+.open-meteo-card-day .day-temp-max {
+	color: rgba(230, 234, 245, 0.94);
+}
+
+.open-meteo-card-day .day-temp-min {
+	color: rgba(170, 181, 207, 0.68);
+}
+
+/* Hourly panel */
+.open-meteo-card .hourly-container {
+	background-color: rgba(28, 31, 43, 0.28);
+	border: 1px solid rgba(160, 175, 205, 0.10);
+}
+
+/* Hourly text */
+.open-meteo-card .hourly-data {
+	color: rgba(205, 214, 244, 0.82);
+}
+
+.open-meteo-card .hourly-data.temperature {
+	color: rgba(218, 224, 239, 0.90);
+}
+
+.open-meteo-card .hourly-data.wind {
+	color: rgba(185, 196, 220, 0.76);
+}
+
+.open-meteo-card .hourly-data.time {
+	color: rgba(220, 226, 242, 0.86);
+}
+
+/* Rain/snow still readable but not neon */
+.open-meteo-card .hourly-data.rain {
+	color: rgba(145, 175, 220, 0.88);
+}
+
+.open-meteo-card .hourly-data.snow {
+	color: rgba(205, 214, 244, 0.88);
+}
+
+/* Buttons if visible */
+.open-meteo-card .hourly-data-button {
+	color: rgba(190, 200, 222, 0.42);
+	background-color: rgba(58, 63, 82, 0.28);
+	border: 1px solid rgba(160, 175, 205, 0.08);
+}
+
+.open-meteo-card .hourly-data-button:hover {
+	color: rgba(220, 226, 242, 0.9);
+	background-color: rgba(70, 77, 102, 0.42);
+}
+
+.open-meteo-card .hourly-data-button.active {
+	color: rgba(230, 234, 245, 0.95);
+	background-color: rgba(83, 96, 128, 0.48);
+	border: 1px solid rgba(160, 175, 205, 0.20);
+}
+
+.open-meteo-card .icon,
+.open-meteo-card-day .icon {
+	color: rgba(175, 195, 230, 0.90);
+}
+
+.open-meteo-card {
+	background-color: rgba(32, 36, 50, 0.68);
+}
+
+
+/* ================================
+   Language Menu
+   YASB taskbar-like glass style
+   ================================ */
+
+.language-menu {
+	background-color: rgba(32, 36, 50, 0.42);
+	border: 1px solid rgba(160, 175, 205, 0.14);
+	border-radius: 14px;
+	padding: 6px;
+	min-width: 292px;
+
+	color: #cdd6f4;
+	font-family: "Segoe UI";
+	font-size: 13px;
+
+	backdrop-filter: blur(28px);
+	-webkit-backdrop-filter: blur(28px);
+}
+
+.language-menu .header {
+	background-color: transparent;
+	color: rgba(222, 228, 242, 0.92);
+
+	font-family: "Segoe UI";
+	font-size: 13px;
+	font-weight: 600;
+
+	padding: 6px 10px 8px 10px;
+	margin: 0 0 2px 0;
+}
+
+/* Убираем ощущение больших карточек */
+.language-menu .language-item {
+	background-color: transparent;
+	border: 1px solid transparent;
+	border-radius: 9px;
+
+	padding: 8px 10px;
+	margin: 1px 0;
+	min-height: 42px;
+
+	color: #cdd6f4;
+}
+
+/* Тонкий разделитель между языками */
+.language-menu .language-item + .language-item {
+	border-top: 1px solid rgba(160, 175, 205, 0.08);
+	border-radius: 0;
+}
+
+/* Hover — мягкий, как у taskbar */
+.language-menu .language-item:hover {
+	background-color: rgba(255, 255, 255, 0.055);
+	border: 1px solid rgba(255, 255, 255, 0.07);
+	border-radius: 9px;
+}
+
+/* Active — без синей жирной плашки */
+.language-menu .language-item.active {
+	background-color: rgba(255, 255, 255, 0.075);
+	border: 1px solid rgba(160, 175, 205, 0.13);
+	border-radius: 9px;
+}
+
+.language-menu .language-item .code {
+	font-family: "Segoe UI";
+	font-size: 12px;
+	font-weight: 600;
+	color: rgba(175, 195, 230, 0.78);
+	min-width: 28px;
+}
+
+.language-menu .language-item .icon {
+	font-size: 14px;
+	color: rgba(175, 195, 230, 0.78);
+	margin-right: 7px;
+}
+
+.language-menu .language-item .name {
+	font-family: "Segoe UI";
+	font-size: 13px;
+	font-weight: 500;
+	color: rgba(222, 228, 242, 0.92);
+}
+
+.language-menu .language-item .layout {
+	font-family: "Segoe UI";
+	font-size: 12px;
+	font-weight: 400;
+	color: rgba(170, 181, 207, 0.62);
+	margin-top: 1px;
+}
+
+/* Нижняя кнопка — как аккуратная ссылка, не отдельная карточка */
+.language-menu .footer {
+	background-color: transparent;
+	border-top: 1px solid rgba(160, 175, 205, 0.10);
+
+	margin: 6px 4px 0 4px;
+	padding: 7px 4px 4px 4px;
+
+	font-family: "Segoe UI";
+	font-size: 12px;
+	font-weight: 500;
+	color: rgba(145, 175, 220, 0.80);
+}
+
+.language-menu .footer:hover {
+	color: rgba(222, 228, 242, 0.96);
+	background-color: transparent;
+}
+.vial-layer-widget .widget-container {
+    margin: 0 4px;
+}
+
+.vial-layer-widget .label {
+    font-family: "Segoe UI";
+    font-size: 12px;
+    font-weight: 600;
+    color: #cdd6f4;
+    padding: 0 6px;
+}
+
+.vial-layer-widget .label.alt {
+    color: #b4befe;
+}

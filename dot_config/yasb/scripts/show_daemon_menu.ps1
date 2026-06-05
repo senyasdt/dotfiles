@@ -5,6 +5,11 @@ Add-Type -AssemblyName System.Drawing.Drawing2D
 $startScript = Join-Path $env:USERPROFILE ".config\start-daemons.cmd"
 $stopScript = Join-Path $env:USERPROFILE ".config\stop-daemons.cmd"
 $restartScript = Join-Path $env:USERPROFILE ".config\restart-daemons.cmd"
+$startAhkScript = Join-Path $env:USERPROFILE ".config\start-autohotkey.cmd"
+$stopAhkScript = Join-Path $env:USERPROFILE ".config\stop-autohotkey.cmd"
+$openVialScript = Join-Path $env:USERPROFILE ".config\vial\scripts\open_vial_safely.cmd"
+$hiddenRunner = Join-Path $env:USERPROFILE ".config\run-hidden.vbs"
+$wscriptExe = Join-Path $env:WINDIR "System32\wscript.exe"
 
 $bgColor = [System.Drawing.Color]::FromArgb(32, 36, 50)
 $borderColor = [System.Drawing.Color]::FromArgb(76, 88, 114)
@@ -40,7 +45,7 @@ $form.ShowInTaskbar = $false
 $form.TopMost = $true
 $form.BackColor = $bgColor
 $form.KeyPreview = $true
-$form.ClientSize = New-Object System.Drawing.Size(220, 150)
+$form.ClientSize = New-Object System.Drawing.Size(220, 182)
 $form.Opacity = 0.94
 
 $borderPanel = New-Object System.Windows.Forms.Panel
@@ -84,38 +89,64 @@ function New-MenuButton {
     })
     $button.FlatAppearance.MouseDownBackColor = $hoverColor
     $button.FlatAppearance.MouseOverBackColor = $hoverColor
+    $label = $Text
+    $clickAction = $OnClick
     $button.Add_Click({
-        & $OnClick
-        $form.Close()
-    })
+        try {
+            & $clickAction
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show(
+                "Failed to run '$label': $($_.Exception.Message)",
+                "YASB Daemon Menu",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Error
+            ) | Out-Null
+        } finally {
+            $form.Close()
+        }
+    }.GetNewClosure())
     return $button
 }
 
 function Start-HiddenScript {
     param([string]$ScriptPath)
 
-    Start-Process -FilePath "powershell.exe" `
+    Start-Process -FilePath $wscriptExe `
         -ArgumentList @(
-            "-NoProfile",
-            "-WindowStyle", "Hidden",
-            "-ExecutionPolicy", "Bypass",
-            "-Command",
-            "& `"$ScriptPath`""
+            "`"$hiddenRunner`"",
+            "`"$ScriptPath`""
         ) `
+        -WorkingDirectory $env:USERPROFILE `
         -WindowStyle Hidden
 }
 
-$startButton = New-MenuButton "Start daemons" {
-    Start-HiddenScript -ScriptPath $startScript
-} 8
+function Test-AhkRunning {
+    return [bool](Get-Process AutoHotkey64, AutoHotkey32, AutoHotkey -ErrorAction SilentlyContinue | Select-Object -First 1)
+}
 
-$stopButton = New-MenuButton "Stop daemons" {
-    Start-HiddenScript -ScriptPath $stopScript
-} 46
+function Test-DaemonsRunning {
+    return [bool](Get-Process komorebi -ErrorAction SilentlyContinue | Select-Object -First 1)
+}
+
+$daemonToggleLabel = if (Test-DaemonsRunning) { "Stop daemons" } else { "Start daemons" }
+$daemonToggleScript = if (Test-DaemonsRunning) { $stopScript } else { $startScript }
+$daemonToggleButton = New-MenuButton $daemonToggleLabel {
+    Start-HiddenScript -ScriptPath $daemonToggleScript
+} 8
 
 $restartButton = New-MenuButton "Restart daemons" {
     Start-HiddenScript -ScriptPath $restartScript
+} 46
+
+$ahkToggleLabel = if (Test-AhkRunning) { "Stop AHK" } else { "Start AHK" }
+$ahkToggleScript = if (Test-AhkRunning) { $stopAhkScript } else { $startAhkScript }
+$ahkToggleButton = New-MenuButton $ahkToggleLabel {
+    Start-HiddenScript -ScriptPath $ahkToggleScript
 } 84
+
+$openVialButton = New-MenuButton "Open Vial safely" {
+    Start-HiddenScript -ScriptPath $openVialScript
+} 122
 
 $hintLabel = New-Object System.Windows.Forms.Label
 $hintLabel.Text = "YASB stays running"
@@ -123,9 +154,9 @@ $hintLabel.ForeColor = $mutedColor
 $hintLabel.BackColor = $bgColor
 $hintLabel.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 $hintLabel.AutoSize = $true
-$hintLabel.Location = New-Object System.Drawing.Point(12, 123)
+$hintLabel.Location = New-Object System.Drawing.Point(12, 155)
 
-[void]$content.Controls.AddRange(@($startButton, $stopButton, $restartButton, $hintLabel))
+[void]$content.Controls.AddRange(@($daemonToggleButton, $restartButton, $ahkToggleButton, $openVialButton, $hintLabel))
 
 $cursor = [System.Windows.Forms.Cursor]::Position
 $form.Add_SizeChanged({ Set-RoundedRegion -TargetForm $form -CornerRadius $radius })

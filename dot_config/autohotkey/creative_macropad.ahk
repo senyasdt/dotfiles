@@ -1,38 +1,38 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
+#UseHook true
 
 SendMode "Input"
 SetKeyDelay 30, 30
 
 ; ============================================================
-; Creative Macropad Profile — Universal
+; Creative Macropad Profile — Universal Candidate
 ;
-; Firmware architecture:
+; Target firmware architecture:
 ;   layer 9  -> ZBrush base
 ;   layer 10 -> Blender base
 ;   layer 11 -> Fusion 360 base
 ;   layer 12 -> Clip Studio Paint base
 ;   layer 13 -> quick tools / brushes (MO(13))
-;   layer 14 -> advanced workflow logic
+;   layer 14 -> advanced workflow (TD(4): tap F21, hold MO(14))
 ;   layer 15 -> global service layer (TG(15))
 ;
-; AHK sees normalized hotkey families, not the firmware layer numbers:
+; Important hardware nuance:
+;   base layers 9-12 preserve physical Ctrl / Shift / Space / Alt keys
+;   in firmware, because AHK handles those poorly for direct remapping.
+;   Shared F-layers 13-15 are normalized and resolved via AHK.
+;   layer 0 may switch into app bases directly:
+;     TD(0) hold -> TO(12)
+;     A+B -> TO(9), A+C -> TO(10), A+D -> TO(11)
 ;
-; Base app layers (9-12):
-;   F16..F13, F20..F17, F24..F21, >+F16..F13
+; Base layer key families available to AHK:
+;   F16..F13, F17, F24..F21, >+F16, >+F15, >+F13
 ;
-; Quick layer 13:
-;   >^F16..F13, >^F20..F17, >^F24..F21, >!F16..F13
-;
-; Advanced layer 14:
-;   <^F16..F13, <^F20..F17, <^F24..F21, <+F16..F13
-;
-; Service layer 15:
-;   <!F16..F13, <!F20..F17, <!F24..F21, <+F24..F21
-;
-; Note:
-;   Closing layer 15 by HOLD on the layer-15 F13 position is handled
-;   in firmware. AHK only handles the tap action on that position.
+; Shared layer families:
+;   layer 13 -> >^F16..F13, >^F20..F17, >^F24..F21
+;   layer 14 -> <^F16..F14, <^F20..F18, <^F24..F22, <+F16..F13
+;   layer 15 -> <!F16..F13, <!F20..F17, <!F24..F21, <+F24..F21
+;   service toggle combo -> F13 + F16 => TG(15)
 ; ============================================================
 
 Phys(key) {
@@ -77,6 +77,15 @@ SendClean(keys) {
     Send keys
 }
 
+CspSend(keys) {
+    Critical 50
+    ResetMods()
+    Sleep 35
+    SendEvent keys
+    Sleep 35
+    ResetMods()
+}
+
 BrushZ(seq) {
     ResetMods()
     Sleep 50
@@ -98,16 +107,16 @@ BrushZ(seq) {
 F12::KeyHistory
 
 ; ============================================================
-; LAYER 15 — GLOBAL SERVICE / SYSTEM
-; Sticky TG(15) layer, shared by all supported creative apps
+; LAYER 15 — APP SERVICE / SYSTEM
+; Sticky TG(15) layer with per-app service routing.
 ; ============================================================
 
-#HotIf WinActive("ahk_exe ZBrush.exe") || WinActive("ZBrush") || WinActive("ahk_exe blender.exe") || WinActive("Blender") || WinActive("ahk_exe Fusion360.exe") || WinActive("Autodesk Fusion") || WinActive("Fusion") || WinActive("ahk_exe CLIPStudioPaint.exe") || WinActive("ahk_exe CLIPStudio.exe") || WinActive("Clip Studio Paint")
+#HotIf WinActive("ahk_exe ZBrush.exe") || WinActive("ZBrush")
 
 <!F16::SendClean("^s")              ; Save
 <!F15::SendClean("^+s")             ; Save As
 <!F14::SendClean("^o")              ; Open
-<!F13::SendClean("^n")              ; New (hold on this key should close L15 in firmware)
+<!F13::SendClean("^n")              ; New
 
 <!F20::SendClean("^z")              ; Undo
 <!F19::SendClean("^+z")             ; Redo
@@ -126,6 +135,78 @@ F12::KeyHistory
 
 #HotIf
 
+#HotIf WinActive("ahk_exe blender.exe") || WinActive("Blender")
+
+<!F16::SendClean("^s")              ; Save
+<!F15::SendClean("^+s")             ; Save As
+<!F14::SendClean("^o")              ; Open
+<!F13::SendClean("^n")              ; New
+
+<!F20::SendClean("^z")              ; Undo
+<!F19::SendClean("^+z")             ; Redo
+<!F18::SendClean("^c")              ; Copy
+<!F17::SendClean("^v")              ; Paste
+
+<!F24::SendClean("#+s")             ; Screenshot Snip
+<!F23::SendClean("!{Tab}")          ; App Switch
+<!F22::SendClean("{PrintScreen}")   ; Print Screen
+<!F21::SendClean("{Esc}")           ; Cancel
+
+<+F24::SendClean("{Volume_Down}")   ; Volume Down
+<+F23::SendClean("{Volume_Up}")     ; Volume Up
+<+F22::SendClean("{Volume_Mute}")   ; Volume Mute
+<+F21::SendClean("{Media_Play_Pause}") ; Media Play Pause
+
+#HotIf
+
+#HotIf WinActive("ahk_exe Fusion360.exe") || WinActive("Autodesk Fusion") || WinActive("Fusion")
+
+<!F16::SendClean("^s")              ; Save
+<!F15::SendClean("^+s")             ; Save As
+<!F14::SendClean("^o")              ; Open
+<!F13::SendClean("^n")              ; New
+
+<!F20::SendClean("^z")              ; Undo
+<!F19::SendClean("^+z")             ; Redo
+<!F18::SendClean("^c")              ; Copy
+<!F17::SendClean("^v")              ; Paste
+
+<!F24::SendClean("#+s")             ; Screenshot Snip
+<!F23::SendClean("!{Tab}")          ; App Switch
+<!F22::SendClean("{PrintScreen}")   ; Print Screen
+<!F21::SendClean("{Esc}")           ; Cancel
+
+<+F24::SendClean("{Volume_Down}")   ; Volume Down
+<+F23::SendClean("{Volume_Up}")     ; Volume Up
+<+F22::SendClean("{Volume_Mute}")   ; Volume Mute
+<+F21::SendClean("{Media_Play_Pause}") ; Media Play Pause
+
+#HotIf
+
+#HotIf WinActive("ahk_exe CLIPStudioPaint.exe") || WinActive("ahk_exe CLIPStudio.exe") || WinActive("Clip Studio Paint")
+
+<!F16::CspSend("^s")                ; Save
+<!F15::CspSend("^+s")               ; Save As
+<!F14::CspSend("^o")                ; Open
+<!F13::CspSend("^n")                ; New
+
+<!F20::CspSend("^c")                ; Copy
+<!F19::CspSend("^v")                ; Paste
+<!F18::CspSend("#+s")               ; Screenshot Snip
+<!F17::CspSend("#e")                ; Explorer
+
+<!F24::CspSend("{Volume_Down}")     ; Volume Down
+<!F23::CspSend("{Volume_Up}")       ; Volume Up
+<!F22::CspSend("{Media_Play_Pause}") ; Media Play Pause
+<!F21::CspSend("{Volume_Mute}")     ; Volume Mute
+
+<+F24::CspSend("{Volume_Down}")     ; Lower Encoder Left
+<+F23::CspSend("{Volume_Up}")       ; Lower Encoder Right
+<+F22::CspSend("^-")                ; Upper Encoder Left / Zoom Out
+<+F21::CspSend("^=")                ; Upper Encoder Right / Zoom In
+
+#HotIf
+
 ; ============================================================
 ; ZBRUSH
 ; Base layer 9, quick layer 13, advanced layer 14
@@ -133,15 +214,12 @@ F12::KeyHistory
 
 #HotIf WinActive("ahk_exe ZBrush.exe") || WinActive("ZBrush")
 
-; BASE — ZBRUSH
+; BASE LAYER 9 — ZBRUSH
 F16::SendClean("^n")                ; Clear Tool
 F15::Phys("t")                      ; Edit
 F14::Phys("x")                      ; Symmetry
 F13::SendClean("{Esc}")             ; Esc
 
-F20::SendClean("[")                 ; Brush Size -
-F19::SendClean("]")                 ; Brush Size +
-F18::SendClean("s")                 ; Draw Size Popup
 F17::SendClean("^{F5}")             ; Solo
 
 F24::Phys("q")                      ; Draw Mode
@@ -151,7 +229,6 @@ F21::SendClean("^z")                ; Undo
 
 >+F16::SendClean("^+z")             ; Redo
 >+F15::SendClean("+f")              ; PolyFrame
->+F14::SendClean("f")               ; Frame / Fit
 >+F13::{
     KeyWait "F13"
     ResetMods()
@@ -182,26 +259,18 @@ PgUp::SendClean("]")                ; Brush Size +
 >^F22::BrushZ("sk")                 ; SnakeHook
 >^F21::BrushZ("ma")                 ; Mask Brush
 
->!F16::BrushZ("cr")                 ; Crease
->!F15::BrushZ("mo")                 ; Morph
->!F14::BrushZ("si")                 ; Smooth Stronger
->!F13::BrushZ("zb")                 ; ZModeler
-
 ; LAYER 14 — ADVANCED WORKFLOW
 <^F16::SendClean("^!c")             ; Clear Mask
 <^F15::SendClean("^!b")             ; Blur Mask
 <^F14::SendClean("^!s")             ; Sharpen Mask
-<^F13::SendClean("^w")              ; Group Masked
 
 <^F20::SendClean("^+i")             ; Invert Visibility
 <^F19::SendClean("^!h")             ; HidePt
 <^F18::SendClean("^!x")             ; Delete Hidden
-<^F17::SendClean("^+a")             ; Show All
 
 <^F24::SendClean("^d")              ; Divide
 <^F23::SendClean("+d")              ; Lower Subdivision
 <^F22::SendClean("d")               ; Higher Subdivision
-<^F21::SendClean("^!d")             ; DynaMesh Action
 
 <+F16::SendClean("!s")              ; Solo
 <+F15::SendClean("+f")              ; PolyFrame
@@ -217,15 +286,12 @@ PgUp::SendClean("]")                ; Brush Size +
 
 #HotIf WinActive("ahk_exe blender.exe") || WinActive("Blender")
 
-; BASE — BLENDER
+; BASE LAYER 10 — BLENDER
 F16::SendClean("g")                 ; Grab Move
 F15::SendClean("r")                 ; Rotate
 F14::SendClean("s")                 ; Scale
 F13::SendClean("{Esc}")             ; Cancel
 
-F20::SendClean("e")                 ; Extrude
-F19::SendClean("i")                 ; Inset
-F18::SendClean("^b")                ; Bevel
 F17::SendClean("{Tab}")             ; Edit Mode Toggle
 
 F24::SendClean("1")                 ; Vertex Select
@@ -235,7 +301,6 @@ F21::SendClean("^z")                ; Undo
 
 >+F16::SendClean("{F3}")            ; Search
 >+F15::SendClean("{NumpadDot}")     ; Frame Selected
->+F14::SendClean("/")               ; Local View
 >+F13::SendClean("x")               ; Delete Menu
 
 ; LAYER 13 — QUICK TOOLS
@@ -254,26 +319,18 @@ F21::SendClean("^z")                ; Undo
 >^F22::SendClean("!h")              ; Unhide All
 >^F21::SendClean("z")               ; Shading Pie
 
->!F16::SendClean("1")               ; Front View
->!F15::SendClean("3")               ; Right View
->!F14::SendClean("7")               ; Top View
->!F13::SendClean("0")               ; Camera View
-
 ; LAYER 14 — ADVANCED WORKFLOW
 <^F16::SendClean("^c")              ; Copy
 <^F15::SendClean("^v")              ; Paste
 <^F14::SendClean("^x")              ; Cut
-<^F13::SendClean("^z")              ; Undo
 
 <^F20::SendClean("^+z")             ; Redo
 <^F19::SendClean("!a")              ; Apply Menu
 <^F18::SendClean("!m")              ; Merge By Distance
-<^F17::SendClean("!z")              ; Shading Pie
 
 <^F24::SendClean("^a")              ; Select All
 <^F23::SendClean("^i")              ; Invert Selection
 <^F22::SendClean("^j")              ; Join
-<^F21::SendClean("^l")              ; Make Links
 
 <+F16::SendClean("t")               ; Toolbar Toggle
 <+F15::SendClean(".")               ; Pivot Pie
@@ -289,15 +346,12 @@ F21::SendClean("^z")                ; Undo
 
 #HotIf WinActive("ahk_exe Fusion360.exe") || WinActive("Autodesk Fusion") || WinActive("Fusion")
 
-; BASE — FUSION
+; BASE LAYER 11 — FUSION
 F16::SendClean("q")                 ; Press Pull
 F15::SendClean("m")                 ; Move Copy
 F14::SendClean("f")                 ; Fillet
 F13::SendClean("{Esc}")             ; Cancel
 
-F20::SendClean("e")                 ; Extrude
-F19::SendClean("o")                 ; Offset
-F18::SendClean("x")                 ; Trim
 F17::SendClean("d")                 ; Dimension
 
 F24::SendClean("p")                 ; Project
@@ -307,7 +361,6 @@ F21::SendClean("^z")                ; Undo
 
 >+F16::SendClean("l")               ; Line
 >+F15::SendClean("a")               ; Arc
->+F14::SendClean("r")               ; Rectangle
 >+F13::SendClean("{Enter}")         ; Confirm / Finish
 
 ; LAYER 13 — QUICK TOOLS
@@ -326,26 +379,18 @@ F21::SendClean("^z")                ; Undo
 >^F22::SendClean("]")               ; Next Tool
 >^F21::SendClean("^d")              ; Deselect
 
->!F16::SendClean("^c")              ; Copy
->!F15::SendClean("^v")              ; Paste
->!F14::SendClean("{Delete}")        ; Delete
->!F13::SendClean("^1")              ; Workspace 1
-
 ; LAYER 14 — ADVANCED WORKFLOW
 <^F16::SendClean("^z")              ; Undo
 <^F15::SendClean("^y")              ; Redo
 <^F14::SendClean("^c")              ; Copy
-<^F13::SendClean("^v")              ; Paste
 
 <^F20::SendClean("^x")              ; Cut
 <^F19::SendClean("^a")              ; Select All
 <^F18::SendClean("^f")              ; Find
-<^F17::SendClean("^g")              ; Repeat Find
 
 <^F24::SendClean("^s")              ; Save
 <^F23::SendClean("^o")              ; Open
 <^F22::SendClean("^n")              ; New Design
-<^F21::SendClean("{Enter}")         ; Confirm
 
 <+F16::SendClean("+n")              ; Snaps
 <+F15::SendClean("+s")              ; Sketch Toggle
@@ -361,67 +406,67 @@ F21::SendClean("^z")                ; Undo
 
 #HotIf WinActive("ahk_exe CLIPStudioPaint.exe") || WinActive("ahk_exe CLIPStudio.exe") || WinActive("Clip Studio Paint")
 
-; BASE — CLIP STUDIO
-F16::SendClean("b")                 ; Brush
-F15::SendClean("e")                 ; Eraser
-F14::SendClean("g")                 ; Fill
-F13::SendClean("{Esc}")             ; Cancel
+; BASE LAYER 12 — CLIP STUDIO
+; Physical Space / Alt stay in firmware for pan and eyedropper behavior.
+F16::CspSend("{Esc}")               ; Esc
+F15::CspSend("h")                   ; Flip Canvas
+F14::CspSend("^t")                  ; Transform
+F13::CspSend("m")                   ; Marquee
 
-F20::SendClean("p")                 ; Pen
-F19::SendClean("m")                 ; Marquee
-F18::SendClean("i")                 ; Eyedropper
-F17::SendClean("h")                 ; Hand
+F17::CspSend("g")                   ; Fill
 
-F24::SendClean("r")                 ; Rotate
-F23::SendClean("z")                 ; Zoom
-F22::SendClean("o")                 ; Object
-F21::SendClean("^z")                ; Undo
+F24::CspSend("b")                   ; Brush
+F23::CspSend("e")                   ; Eraser
+F22::CspSend("^z")                  ; Undo
+F21::CspSend("l")                   ; Lasso
 
->+F16::SendClean("^t")              ; Transform
->+F15::SendClean("^0")              ; Reset Zoom
->+F14::SendClean("^s")              ; Save
->+F13::SendClean("^h")              ; Flip Horizontal
+>+F16::CspSend("o")                 ; Move
+>+F13::CspSend("^!r")               ; Reset Rotation (assign in CSP)
 
-; LAYER 13 — QUICK TOOLS / SCRIPTS
->^F16::SendClean("p")               ; Pen
->^F15::SendClean("o")               ; Object
->^F14::SendClean("c")               ; Decoration
->^F13::SendClean("t")               ; Text
++PgDn::CspSend("[")                 ; Brush Size -
++PgUp::CspSend("]")                 ; Brush Size +
+[::CspSend("^![")                   ; Rotate Canvas Left (assign in CSP)
+]::CspSend("^!]")                   ; Rotate Canvas Right (assign in CSP)
 
->^F20::SendClean("[")               ; Brush Size -
->^F19::SendClean("]")               ; Brush Size +
->^F18::SendClean("-")               ; Zoom Out
->^F17::SendClean("=")               ; Zoom In
+; LAYER 13 — QUICK BRUSHES / SUBTOOLS
+; These use dedicated custom shortcuts so the helper can show exact subtool names.
+; Assign the same combos once in Clip Studio shortcut settings.
+>^F16::CspSend("^!1")               ; G-Pen
+>^F15::CspSend("^!2")               ; Pencil
+>^F14::CspSend("^!3")               ; Textured Pen
+>^F13::CspSend("^!4")               ; Soft Brush
 
->^F24::SendClean("^t")              ; Free Transform
->^F23::SendClean("^u")              ; Hue Saturation
->^F22::SendClean("^e")              ; Merge Down
->^F21::SendClean("^d")              ; Deselect
+>^F20::CspSend("^!5")               ; Watercolor
+>^F19::CspSend("^!6")               ; Blend
+>^F18::CspSend("^!7")               ; Smudge
+>^F17::CspSend("^!8")               ; Airbrush
 
->!F16::SendClean("^c")              ; Copy
->!F15::SendClean("^v")              ; Paste
->!F14::SendClean("^x")              ; Cut
->!F13::SendClean("{Delete}")        ; Delete
+>^F24::CspSend("^!9")               ; Texture Brush
+>^F23::CspSend("^!0")               ; Decoration Brush
+>^F22::CspSend("^!-")               ; Favorite Brush 1
+>^F21::CspSend("^!=")               ; Favorite Brush 2
 
 ; LAYER 14 — ADVANCED WORKFLOW
-<^F16::SendClean("^a")              ; Select All
-<^F15::SendClean("^d")              ; Deselect
-<^F14::SendClean("^+i")             ; Invert Selection
-<^F13::SendClean("^+u")             ; Clear
+<^F16::CspSend("^+n")               ; New Raster Layer
+<^F15::CspSend("^j")                ; Duplicate Layer
+<^F14::CspSend("^e")                ; Merge Down
 
-<^F20::SendClean("^+c")             ; Copy Merged
-<^F19::SendClean("^+v")             ; Paste Special
-<^F18::SendClean("^+x")             ; Cut Special
-<^F17::SendClean("^+t")             ; Transform
+<^F20::CspSend("^+i")               ; Invert Selection
+<^F19::CspSend("^d")                ; Deselect
+<^F18::CspSend("^!l")               ; Liquify (assign in CSP)
 
-<^F24::SendClean("^l")              ; New Layer
-<^F23::SendClean("^m")              ; Merge Layer
-<^F22::SendClean("^r")              ; Rasterize
-<^F21::SendClean("^h")              ; Flip Horizontal
+<^F24::CspSend("^!g")               ; Clip To Layer Below
+<^F23::CspSend("/")                 ; Lock Transparent Pixels
+<^F22::CspSend("q")                 ; Quick Mask
 
-<+F16::SendClean("+b")              ; Alt Brush
-<+F15::SendClean("+e")              ; Alt Eraser
-<+F14::SendClean("+g")              ; Alt Fill
-<+F13::SendClean("+m")              ; Alt Marquee
+<+F16::CspSend("^!r")               ; Reference Layer (assign in CSP)
+<+F15::CspSend("^!s")               ; Symmetry Ruler (assign in CSP)
+<+F14::CspSend("^!a")               ; Toggle Anti-Aliasing (assign in CSP)
+<+F13::CspSend("^!m")               ; Temporary Transparent Color (assign in CSP)
+
+<+F20::CspSend("^![")               ; Brush Hardness -
+<+F19::CspSend("^!]")               ; Brush Hardness +
+<+F18::CspSend("^![")               ; Canvas Rotate Left
+<+F17::CspSend("^!]")               ; Canvas Rotate Right
 
 #HotIf
