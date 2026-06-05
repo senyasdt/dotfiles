@@ -2,6 +2,7 @@
 *.log
 *.log.*
 *.bak
+*.backup
 *.tmp
 *.swp
 *.swo
