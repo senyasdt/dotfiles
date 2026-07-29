@@ -79,6 +79,7 @@ packages:
       - postman
       - maccy
       - raycast
+      - linearmouse
       - wezterm
       - karabiner-elements
   apt:
