@@ -20,6 +20,23 @@ alt-shift-j = "move down"
 alt-shift-k = "move up"
 alt-shift-l = "move right"
 
+# Traverse windows in tree order. On an accordion workspace these bindings
+# behave like komorebi's cycle-stack previous/next.
+alt-leftSquareBracket = "focus --wrap-around dfs-prev"
+alt-rightSquareBracket = "focus --wrap-around dfs-next"
+
+# Explicit container layouts: horizontal/vertical tiles and accordion stack.
+alt-x = "layout h_tiles"
+alt-y = "layout v_tiles"
+alt-a = "layout tiles accordion"
+
+# Build a BSP-like tree by grouping the focused window with its neighbour.
+# Unlike `split`, `join-with` works with container flattening enabled.
+alt-left = "join-with left"
+alt-down = "join-with down"
+alt-up = "join-with up"
+alt-right = "join-with right"
+
 alt-q = "close"
 alt-f = "fullscreen"
 alt-t = "layout floating tiling"
