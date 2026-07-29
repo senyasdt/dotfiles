@@ -16,6 +16,12 @@ url = "https://github.com/zsh-users/zsh-autosuggestions/archive/master.tar.gz"
 exact = true
 stripComponents = 1
 refreshPeriod = "672h"
+[".config/zsh/themes/spaceship-prompt"]
+type = "archive"
+url = "https://github.com/spaceship-prompt/spaceship-prompt/archive/master.tar.gz"
+exact = true
+stripComponents = 1
+refreshPeriod = "672h"
 [".oh-my-zsh"]
 type = "archive"
 url = "https://github.com/ohmyzsh/ohmyzsh/archive/master.tar.gz"

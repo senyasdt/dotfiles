@@ -43,18 +43,55 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/senyasdt/dotfiles/master
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/senyasdt/dotfiles/master/bootstrap.sh)" -- full desktop
 ```
 
+The bootstrap flow is:
+
+1. install `chezmoi`
+2. `chezmoi init`
+3. run `provision/ansible/site.yml`
+4. `chezmoi apply`
+
 Windows:
 
 ```powershell
 $env:CHEZMOI_PROFILES="full,desktop"
-chezmoi init --apply senyasdt
+chezmoi init senyasdt
+cd "$(chezmoi source-path)"
+powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\install.ps1
+chezmoi apply
 ```
 
 ## Meaning
 
 - `lite` keeps the machine headless and avoids GUI config
 - `full` enables the full CLI setup with `nvim-full`
-- `desktop` enables GUI config like `wezterm`, Windows Terminal, `komorebi`, `whkd`, Flow Launcher, AutoHotkey, and `vial`
+- `desktop` enables GUI config. Windows desktop uses `komorebi`/`komorebic`,
+  `whkd`, YASB, AutoHotkey, Flow Launcher, and `vial`. macOS desktop uses
+  AeroSpace and Karabiner-Elements.
+
+## Provisioning
+
+Linux / macOS packages and toolchains are installed by Ansible:
+
+```sh
+CHEZMOI_PROFILES=full,desktop ansible-playbook -i localhost, provision/ansible/site.yml
+```
+
+Windows packages and desktop apps are installed by PowerShell:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\install.ps1
+```
+
+Updates use explicit provision-and-apply scripts:
+
+```sh
+CHEZMOI_PROFILES=full,desktop provision/update.sh
+```
+
+```powershell
+$env:CHEZMOI_PROFILES="full,desktop"
+powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\update.ps1
+```
 
 ## Editing
 
@@ -78,5 +115,3 @@ Before global apply, inspect run-scripts and external archive noise:
 chezmoi status --exclude externals
 chezmoi status --include externals
 ```
-
-`R` status entries are run-scripts, not ordinary files. Run them only for intentional bootstrap or package updates.

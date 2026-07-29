@@ -65,6 +65,43 @@ require_cmd() {
   fi
 }
 
+ensure_ansible() {
+  if command -v ansible-playbook >/dev/null 2>&1; then
+    return
+  fi
+
+  if command -v brew >/dev/null 2>&1; then
+    log "Installing Ansible with Homebrew"
+    brew install ansible
+    return
+  fi
+
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    log "Installing Homebrew"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    if [[ -x /opt/homebrew/bin/brew ]]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -x /usr/local/bin/brew ]]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    fi
+
+    log "Installing Ansible with Homebrew"
+    brew install ansible
+    return
+  fi
+
+  if command -v apt-get >/dev/null 2>&1; then
+    log "Installing Ansible with APT"
+    "${sudo_cmd[@]}" apt-get update
+    DEBIAN_FRONTEND=noninteractive "${sudo_cmd[@]}" apt-get install -y ansible
+    return
+  fi
+
+  log_err "Cannot install ansible automatically on this OS. Install ansible-playbook and rerun bootstrap."
+  exit 1
+}
+
 print_logo "$@"
 
 profiles=("$@")
@@ -102,5 +139,15 @@ curl -fsSL 'https://get.chezmoi.io' -o "$tmp_script"
 
 log "Using CHEZMOI_PROFILES=${profiles_csv}"
 log "Running chezmoi init"
-CHEZMOI_PROFILES="$profiles_csv" sh "$tmp_script" -b "$install_dir" -- init --apply senyasdt
+CHEZMOI_PROFILES="$profiles_csv" sh "$tmp_script" -b "$install_dir" -- init senyasdt
+
+chezmoi_bin="$install_dir/chezmoi"
+source_dir="$("$chezmoi_bin" source-path)"
+
+log "Running workstation provisioning"
+ensure_ansible
+CHEZMOI_PROFILES="$profiles_csv" ansible-playbook -i localhost, "$source_dir/provision/ansible/site.yml"
+
+log "Applying dotfiles"
+CHEZMOI_PROFILES="$profiles_csv" "$chezmoi_bin" apply
 log_ok "chezmoi bootstrap completed"

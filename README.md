@@ -13,10 +13,19 @@ Profiles are intentionally split by machine type:
 Effective layout:
 
 - shared: `wezterm`, `nvim`, `bat`, `navi`
-- unix-only: `zsh`, bootstrap, package install hooks
-- windows-only: PowerShell, Windows Terminal, `komorebi`, `whkd`, VS Code, Flow Launcher, `vial-helper`
+- unix-only: `zsh`, bootstrap, shell/editor config
+- windows-only: PowerShell, Windows Terminal, `komorebi`/`komorebic`, `whkd`,
+  VS Code, Flow Launcher, YASB, AutoHotkey, `vial-helper`
+- macOS desktop: AeroSpace and Karabiner-Elements
 
 Generated runtime files, logs, active themes, caches, and helper outputs are intentionally excluded.
+
+Provisioning is split from dotfiles:
+
+- `provision/ansible/site.yml` installs Linux/macOS packages, apps, and
+  toolchains.
+- `provision/windows/install.ps1` installs Windows packages and desktop apps.
+- `chezmoi apply` applies files only.
 
 ## Quick Start
 
@@ -53,8 +62,8 @@ command -v curl >/dev/null 2>&1 || {
 }
 ```
 
-Bootstrap installs `chezmoi` into `~/.local/bin` and exports that path before
-running `chezmoi init`, so first-run hooks can call `chezmoi` reliably.
+Bootstrap installs `chezmoi` into `~/.local/bin`, initializes the source repo,
+runs `provision/ansible/site.yml`, then applies dotfiles.
 
 Bootstrap with:
 
@@ -74,12 +83,23 @@ For a GUI workstation:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/senyasdt/dotfiles/master/bootstrap.sh)" -- full desktop
 ```
 
+Update an existing Linux/macOS machine:
+
+```sh
+CHEZMOI_PROFILES=full,desktop "$(chezmoi source-path)/provision/update.sh"
+```
+
 ## Windows
 
-Install `chezmoi` natively on Windows and apply from PowerShell:
+Install `chezmoi` natively on Windows, run the explicit provisioner, then apply
+from PowerShell:
 
 ```powershell
-chezmoi init --apply senyasdt
+chezmoi init senyasdt
+cd "$(chezmoi source-path)"
+powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\install.ps1
+$env:CHEZMOI_PROFILES="full,desktop"
+chezmoi apply
 ```
 
 Or for an existing checkout:
@@ -88,17 +108,24 @@ Or for an existing checkout:
 chezmoi apply
 ```
 
+Update an existing Windows machine:
+
+```powershell
+$env:CHEZMOI_PROFILES="full,desktop"
+powershell.exe -ExecutionPolicy Bypass -File "$(chezmoi source-path)\provision\windows\update.ps1"
+```
+
 WSL is not required for Windows apply.
 
 ## Workflow
 
 - Use exactly one profile set per machine: `lite`, `full`, or `full,desktop`.
 - Edit shared config once in this repo.
+- Put packages and OS setup in `provision/`, not in `chezmoi` run-scripts.
 - Run `chezmoi status --exclude externals` and `chezmoi diff --exclude externals` before `chezmoi apply`.
 - Check external archive noise separately with `chezmoi status --include externals`.
 - Use `chezmoi add <live-path>` when a live-file change should become source truth.
 - Prefer targeted `chezmoi apply --force <live-path>` for drift cleanup.
-- Treat `R` status entries as run-scripts; run them only during intentional bootstrap or package updates.
 - Use `lite` for Raspberry Pi, servers, and SSH-only boxes.
 - Add `desktop` only on machines that actually need GUI config.
 

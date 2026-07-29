@@ -1,7 +1,15 @@
 # Oh My Zsh
 export ZSH="$HOME/.oh-my-zsh"
 export ZSH_CUSTOM="$HOME/.config/zsh"
-ZSH_THEME="spaceship"
+ZSH_THEME="spaceship-prompt/spaceship"
+
+for zsh_config in \
+  "$ZSH_CUSTOM/brew_env.zsh" \
+  "$ZSH_CUSTOM/env.zsh" \
+  "$ZSH_CUSTOM/completion.zsh"
+do
+  [ -r "$zsh_config" ] && source "$zsh_config"
+done
 
 plugins=(
   git
@@ -13,3 +21,12 @@ plugins=(
 
 source $ZSH/oh-my-zsh.sh
 
+for zsh_config in \
+  "$ZSH_CUSTOM/aliases.zsh" \
+  "$ZSH_CUSTOM/functions.zsh" \
+  "$ZSH_CUSTOM/fzf_helper.zsh" \
+  "$ZSH_CUSTOM/setup_term.zsh" \
+  "$ZSH_CUSTOM/spaceship.zsh"
+do
+  [ -r "$zsh_config" ] && source "$zsh_config"
+done

@@ -21,6 +21,9 @@ packages:
     winget:
       - wez.wezterm
       - JanDeDobbeleer.OhMyPosh
+      - Google.Chrome
+      - Telegram.TelegramDesktop
+      - JetBrains.IntelliJIDEA.Ultimate
       - Microsoft.PowerToys
       - Flow-Launcher.Flow-Launcher
       - LGUG2Z.komorebi
@@ -42,7 +45,6 @@ packages:
     full:
       - tree-sitter
       - eza
-      - bubblewrap
       - fd
       - tldr
       - bat
@@ -63,15 +65,21 @@ packages:
     ai: 
       # - gemini-cli
     linux:
+      - bubblewrap
       - xclip
     darwin:
       - python
-    desktop:
+    desktop_darwin_formulae:
       - codex
+    desktop_darwin_casks:
+      - nikitabobko/tap/aerospace
       - google-chrome
+      - telegram
+      - intellij-idea
       - postman
       - maccy
       - wezterm
+      - karabiner-elements
   apt:
     linux:
       - build-essential

@@ -1,0 +1,101 @@
+---
+- name: Provision local workstation
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars_files:
+    - ../../.chezmoidata/packages.yaml
+
+  vars:
+    profile_string: "{{ lookup('env', 'CHEZMOI_PROFILES') | default('full', true) }}"
+    active_profiles: "{{ profile_string.split(',') }}"
+    is_desktop: "{{ 'desktop' in active_profiles }}"
+    is_full: "{{ 'full' in active_profiles or is_desktop }}"
+    is_lite: "{{ 'lite' in active_profiles }}"
+    homebrew_prefix: >-
+      {{ '/home/linuxbrew/.linuxbrew'
+         if ansible_facts.system == 'Linux'
+         else ('/opt/homebrew' if ansible_facts.architecture == 'arm64' else '/usr/local') }}
+    brew_bin: "{{ homebrew_prefix }}/bin/brew"
+    brew_formulae: >-
+      {{ packages.brew.common
+         + (packages.brew.full if is_full else [])
+         + (packages.brew.linux if ansible_facts.system == 'Linux' else [])
+         + (packages.brew.darwin if ansible_facts.system == 'Darwin' else [])
+         + (packages.brew.desktop_darwin_formulae if ansible_facts.system == 'Darwin' and is_desktop else []) }}
+
+  tasks:
+    - name: Install Debian base packages
+      become: true
+      ansible.builtin.apt:
+        name: "{{ packages.apt.linux + (packages.apt.full if is_full else []) }}"
+        state: present
+        update_cache: true
+      when: ansible_facts.os_family == "Debian"
+
+    - name: Check Homebrew
+      ansible.builtin.stat:
+        path: "{{ brew_bin }}"
+      register: homebrew_bin
+      when: ansible_facts.system in ["Darwin", "Linux"]
+
+    - name: Install Homebrew
+      ansible.builtin.shell: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      args:
+        creates: "{{ brew_bin }}"
+      when:
+        - ansible_facts.system in ["Darwin", "Linux"]
+        - not homebrew_bin.stat.exists
+
+    - name: Install Homebrew formulae
+      ansible.builtin.shell: |
+        if "{{ brew_bin }}" list --formula "{{ item }}" >/dev/null 2>&1; then
+          echo "already installed"
+          exit 0
+        fi
+        "{{ brew_bin }}" install "{{ item }}"
+      loop: "{{ brew_formulae }}"
+      register: brew_formula_install
+      changed_when: brew_formula_install.rc == 0 and 'already installed' not in (brew_formula_install.stdout + brew_formula_install.stderr)
+      when: ansible_facts.system in ["Darwin", "Linux"]
+
+    - name: Install macOS desktop casks
+      ansible.builtin.shell: |
+        if "{{ brew_bin }}" list --cask "{{ item }}" >/dev/null 2>&1; then
+          echo "already installed"
+          exit 0
+        fi
+        "{{ brew_bin }}" install --cask "{{ item }}"
+      loop: "{{ packages.brew.desktop_darwin_casks }}"
+      register: brew_cask_install
+      changed_when: brew_cask_install.rc == 0 and 'already installed' not in (brew_cask_install.stdout + brew_cask_install.stderr)
+      when:
+        - ansible_facts.system == "Darwin"
+        - is_desktop
+
+    - name: Check Cargo
+      ansible.builtin.command:
+        cmd: cargo --version
+      register: cargo_check
+      changed_when: false
+      failed_when: false
+      when: not is_lite
+
+    - name: Install Rust toolchain
+      ansible.builtin.shell: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      args:
+        creates: "{{ ansible_env.HOME }}/.cargo/bin/cargo"
+      when:
+        - not is_lite
+        - cargo_check.rc != 0
+
+    - name: Install Cargo packages
+      ansible.builtin.command:
+        cmd: "{{ ansible_env.HOME }}/.cargo/bin/cargo install {{ item }}"
+      loop: "{{ packages.cargo.desktop if is_desktop else [] }}"
+      when:
+        - not is_lite
+        - is_desktop

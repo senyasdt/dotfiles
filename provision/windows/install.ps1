@@ -1,9 +1,5 @@
 $ErrorActionPreference = "Stop"
 
-if ($env:OS -ne "Windows_NT") {
-    exit 0
-}
-
 function Write-Step {
     param([string]$Message)
     Write-Host "==> $Message" -ForegroundColor Cyan
@@ -65,13 +61,54 @@ if (-not (Test-Command winget)) {
 
 Install-Scoop
 
-{{- range (index .packages "windows" "scoop") }}
-Install-ScoopPackage -Package {{ . | quote }}
-{{- end }}
+$scoopPackages = @(
+    "git",
+    "python",
+    "make",
+    "gcc",
+    "neovim",
+    "ripgrep",
+    "fd",
+    "fzf",
+    "eza",
+    "bat",
+    "zoxide",
+    "yazi",
+    "jq",
+    "fastfetch",
+    "chezmoi",
+    "nodejs-lts",
+    "7zip"
+)
 
-{{- range (index .packages "windows" "winget") }}
-Install-WingetPackage -Id {{ . | quote }}
-{{- end }}
+$wingetPackages = @(
+    "wez.wezterm",
+    "JanDeDobbeleer.OhMyPosh",
+    "Google.Chrome",
+    "Telegram.TelegramDesktop",
+    "JetBrains.IntelliJIDEA.Ultimate",
+    "Microsoft.PowerToys",
+    "Flow-Launcher.Flow-Launcher",
+    "LGUG2Z.komorebi",
+    "LGUG2Z.whkd",
+    "AmN.yasb",
+    "AutoHotkey.AutoHotkey",
+    "Microsoft.VisualStudioCode"
+)
+
+$powershellModules = @(
+    "posh-git",
+    "Terminal-Icons",
+    "PSFzf"
+)
+
+foreach ($package in $scoopPackages) {
+    Install-ScoopPackage -Package $package
+}
+
+foreach ($package in $wingetPackages) {
+    Install-WingetPackage -Id $package
+}
 
 if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
     Register-PSRepository -Default
@@ -79,6 +116,6 @@ if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
 
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
 
-{{- range (index .packages "windows" "powershell_modules") }}
-Install-PowerShellModuleIfMissing -Name {{ . | quote }}
-{{- end }}
+foreach ($module in $powershellModules) {
+    Install-PowerShellModuleIfMissing -Name $module
+}

@@ -3,6 +3,7 @@
 # Repo metadata
 README.md
 bootstrap.sh
+provision/**
 nvim-full/**
 nvim-lite/**
 
@@ -20,7 +21,12 @@ Documents/WindowsPowerShell/**
 .config/whkdrc
 applications.json
 komorebi.json
-11-install-windows-packages.ps1
+{{- end }}
+
+# macOS-only targets
+{{- if ne .chezmoi.os "darwin" }}
+.aerospace.toml
+.config/karabiner/**
 {{- end }}
 
 # Unix-only targets
@@ -30,8 +36,6 @@ komorebi.json
 .config/nvim
 .config/nvim-lite
 .config/zsh/**
-20_install_ohmyzsh.sh
-10-install-packages.sh
 decrypt-private-key.sh
 {{- end }}
 
@@ -39,6 +43,8 @@ decrypt-private-key.sh
 {{- if not (has "desktop" $profiles) }}
 .wezterm.lua
 .config/wezterm/**
+.aerospace.toml
+.config/karabiner/**
 AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/**
 AppData/Roaming/FlowLauncher/**
 .config/autohotkey/**
