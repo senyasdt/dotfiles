@@ -143,10 +143,22 @@ CHEZMOI_PROFILES="$profiles_csv" sh "$tmp_script" -b "$install_dir" -- init seny
 
 chezmoi_bin="$install_dir/chezmoi"
 source_dir="$("$chezmoi_bin" source-path)"
+playbook_path="$source_dir/provision/ansible/site.yml"
+
+if [[ -d "$source_dir/.git" ]]; then
+  log "Updating chezmoi source"
+  git -C "$source_dir" pull --ff-only
+fi
+
+if [[ ! -f "$playbook_path" ]]; then
+  log_err "Ansible playbook not found: $playbook_path"
+  log_err "Check that chezmoi source points to senyasdt/dotfiles and is up to date."
+  exit 1
+fi
 
 log "Running workstation provisioning"
 ensure_ansible
-CHEZMOI_PROFILES="$profiles_csv" ansible-playbook -i localhost, "$source_dir/provision/ansible/site.yml"
+CHEZMOI_PROFILES="$profiles_csv" ansible-playbook -i localhost, "$playbook_path"
 
 log "Applying dotfiles"
 CHEZMOI_PROFILES="$profiles_csv" "$chezmoi_bin" apply
