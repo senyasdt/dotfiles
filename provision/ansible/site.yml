@@ -67,21 +67,34 @@
           echo "already installed"
           exit 0
         fi
-        install_output="$("{{ brew_bin }}" install --cask "{{ item }}" 2>&1)" || {
-          printf '%s\n' "$install_output"
-          if printf '%s\n' "$install_output" | grep -q "It seems there is already an App at"; then
-            echo "app bundle already exists"
-            exit 0
-          fi
-          exit 1
-        }
+        set +e
+        install_output="$("{{ brew_bin }}" install --cask "{{ item }}" 2>&1)"
+        install_rc=$?
         printf '%s\n' "$install_output"
+        if [ "$install_rc" -eq 0 ]; then
+          exit 0
+        fi
+        if printf '%s\n' "$install_output" | grep -q "It seems there is already an App at"; then
+          echo "app bundle already exists"
+          exit 0
+        fi
+        if printf '%s\n' "$install_output" | grep -Eq "Download failed|requested URL returned error: 403"; then
+          echo "cask download failed; skipping"
+          exit 0
+        fi
+        if printf '%s\n' "$install_output" | grep -Eq "sudo: a terminal is required|sudo: a password is required"; then
+          echo "cask requires interactive sudo; skipping"
+          exit 0
+        fi
+        exit "$install_rc"
       loop: "{{ packages.brew.desktop_darwin_casks }}"
       register: brew_cask_install
       changed_when: >-
         brew_cask_install.rc == 0
         and 'already installed' not in (brew_cask_install.stdout + brew_cask_install.stderr)
         and 'app bundle already exists' not in (brew_cask_install.stdout + brew_cask_install.stderr)
+        and 'cask download failed; skipping' not in (brew_cask_install.stdout + brew_cask_install.stderr)
+        and 'cask requires interactive sudo; skipping' not in (brew_cask_install.stdout + brew_cask_install.stderr)
       when:
         - ansible_facts.system == "Darwin"
         - is_desktop
