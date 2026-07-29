@@ -75,32 +75,40 @@
     {
       "workspaces": [
         {
-          "name": "I",
+          "name": "1",
           "layout": "BSP"
         },
         {
-          "name": "II",
+          "name": "2",
           "layout": "BSP"
         },
         {
-          "name": "III",
+          "name": "3",
           "layout": "Columns"
         },
         {
-          "name": "IV",
+          "name": "4",
           "layout": "Rows"
         },
         {
-          "name": "V",
+          "name": "5",
           "layout": "VerticalStack"
         },
         {
-          "name": "VI",
+          "name": "6",
           "layout": "HorizontalStack"
         },
         {
-          "name": "VII",
+          "name": "7",
           "layout": "Grid"
+        },
+        {
+          "name": "8",
+          "layout": "BSP"
+        },
+        {
+          "name": "9",
+          "layout": "BSP"
         }
       ]
     }

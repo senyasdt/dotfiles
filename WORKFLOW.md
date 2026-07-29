@@ -62,8 +62,21 @@ After changing a managed file on a machine:
 
 ```sh
 chezmoi add <path>
-chezmoi diff
-chezmoi apply
+chezmoi status --exclude externals
+chezmoi diff --exclude externals
 ```
 
-Then commit from the repo.
+Then commit from the repo and apply only the needed paths:
+
+```sh
+chezmoi apply --force <path>
+```
+
+Before global apply, inspect run-scripts and external archive noise:
+
+```sh
+chezmoi status --exclude externals
+chezmoi status --include externals
+```
+
+`R` status entries are run-scripts, not ordinary files. Run them only for intentional bootstrap or package updates.

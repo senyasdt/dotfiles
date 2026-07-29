@@ -89,8 +89,13 @@ WSL is not required for Windows apply.
 
 ## Workflow
 
+- Use exactly one profile set per machine: `lite`, `full`, or `full,desktop`.
 - Edit shared config once in this repo.
-- Run `chezmoi diff` before `chezmoi apply` on a new machine.
+- Run `chezmoi status --exclude externals` and `chezmoi diff --exclude externals` before `chezmoi apply`.
+- Check external archive noise separately with `chezmoi status --include externals`.
+- Use `chezmoi add <live-path>` when a live-file change should become source truth.
+- Prefer targeted `chezmoi apply --force <live-path>` for drift cleanup.
+- Treat `R` status entries as run-scripts; run them only during intentional bootstrap or package updates.
 - Use `lite` for Raspberry Pi, servers, and SSH-only boxes.
 - Add `desktop` only on machines that actually need GUI config.
 
