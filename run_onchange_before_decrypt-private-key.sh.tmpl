@@ -13,7 +13,19 @@ if [ ! -t 0 ] && [ ! -t 1 ] && [ ! -t 2 ]; then
 fi
 
 if [ ! -f "${HOME}/.config/chezmoi/key.txt" ]; then
+    chezmoi_bin="$(command -v chezmoi 2>/dev/null || true)"
+    if [ -z "$chezmoi_bin" ] && [ -x "${HOME}/.local/bin/chezmoi" ]; then
+        chezmoi_bin="${HOME}/.local/bin/chezmoi"
+    fi
+    if [ -z "$chezmoi_bin" ] && [ -x "${HOME}/bin/chezmoi" ]; then
+        chezmoi_bin="${HOME}/bin/chezmoi"
+    fi
+    if [ -z "$chezmoi_bin" ]; then
+        echo "chezmoi executable not found" >&2
+        exit 1
+    fi
+
     mkdir -p "${HOME}/.config/chezmoi"
-    chezmoi age decrypt --output "${HOME}/.config/chezmoi/key.txt" --passphrase "{{ .chezmoi.sourceDir }}/key.txt.age"
+    "$chezmoi_bin" age decrypt --output "${HOME}/.config/chezmoi/key.txt" --passphrase "{{ .chezmoi.sourceDir }}/key.txt.age"
     chmod 600 "${HOME}/.config/chezmoi/key.txt"
 fi

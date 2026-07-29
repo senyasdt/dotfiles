@@ -53,6 +53,9 @@ command -v curl >/dev/null 2>&1 || {
 }
 ```
 
+Bootstrap installs `chezmoi` into `~/.local/bin` and exports that path before
+running `chezmoi init`, so first-run hooks can call `chezmoi` reliably.
+
 Bootstrap with:
 
 ```sh

@@ -92,6 +92,9 @@ if command -v apt-get >/dev/null 2>&1; then
 fi
 
 require_cmd curl
+install_dir="${HOME}/.local/bin"
+mkdir -p "$install_dir"
+export PATH="$install_dir:$PATH"
 tmp_script="$(mktemp)"
 
 log "Downloading chezmoi installer"
@@ -99,5 +102,5 @@ curl -fsSL 'https://get.chezmoi.io' -o "$tmp_script"
 
 log "Using CHEZMOI_PROFILES=${profiles_csv}"
 log "Running chezmoi init"
-CHEZMOI_PROFILES="$profiles_csv" sh "$tmp_script" -- init --apply senyasdt
+CHEZMOI_PROFILES="$profiles_csv" sh "$tmp_script" -b "$install_dir" -- init --apply senyasdt
 log_ok "chezmoi bootstrap completed"
