@@ -298,14 +298,14 @@ wezterm.on("augment-command-palette", function(window, pane)
 	return entries
 end)
 
--- ───────────────────────── Fullscreen on startup  ────────────────
+-- ───────────────────────── Window on startup  ────────────────────
 wezterm.on("gui-startup", function(cmd)
 	local tab, pane, window = wezterm.mux.spawn_window(cmd or {})
 	local gui_window = window:gui_window()
 
-	if wezterm.target_triple:find("darwin") then
-		gui_window:toggle_fullscreen()
-	else
+	-- Native fullscreen opens a separate macOS Space. Keep the window managed
+	-- by AeroSpace on the current workspace instead.
+	if not wezterm.target_triple:find("darwin") then
 		gui_window:maximize()
 	end
 end)
