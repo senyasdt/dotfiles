@@ -50,6 +50,7 @@ packages:
       - bat
       - unzip
       - lazygit
+      - gh
       - htop
       - node
       - file
