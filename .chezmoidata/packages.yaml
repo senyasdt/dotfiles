@@ -78,6 +78,7 @@ packages:
       - intellij-idea
       - postman
       - maccy
+      - raycast
       - wezterm
       - karabiner-elements
   apt:
