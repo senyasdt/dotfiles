@@ -31,6 +31,8 @@ packages:
       - AmN.yasb
       - AutoHotkey.AutoHotkey
       - Microsoft.VisualStudioCode
+    full_winget:
+      - Docker.DockerDesktop
     powershell_modules:
       - posh-git
       - Terminal-Icons
@@ -70,6 +72,8 @@ packages:
       - xclip
     darwin:
       - python
+    full_darwin_casks:
+      - docker-desktop
     desktop_darwin_formulae:
       - codex
     desktop_darwin_casks:
@@ -92,6 +96,12 @@ packages:
     full:
       - python3
       - python3-venv
+    docker:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
   cargo:
     desktop:
       - matugen

@@ -24,6 +24,15 @@
          + (packages.brew.linux if ansible_facts.system == 'Linux' else [])
          + (packages.brew.darwin if ansible_facts.system == 'Darwin' else [])
          + (packages.brew.desktop_darwin_formulae if ansible_facts.system == 'Darwin' and is_desktop else []) }}
+    brew_casks: >-
+      {{ (packages.brew.full_darwin_casks if ansible_facts.system == 'Darwin' and is_full else [])
+         + (packages.brew.desktop_darwin_casks if ansible_facts.system == 'Darwin' and is_desktop else []) }}
+    docker_apt_distribution: "{{ ansible_facts.distribution | lower }}"
+    docker_apt_architecture: >-
+      {{ 'amd64' if ansible_facts.architecture in ['x86_64', 'amd64']
+         else ('arm64' if ansible_facts.architecture in ['aarch64', 'arm64']
+         else ansible_facts.architecture) }}
+    docker_provision_user: "{{ lookup('env', 'SUDO_USER') | default(ansible_user_id, true) }}"
 
   tasks:
     - name: Install Debian base packages
@@ -33,6 +42,84 @@
         state: present
         update_cache: true
       when: ansible_facts.os_family == "Debian"
+
+    - name: Install Docker repository prerequisites
+      become: true
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: true
+      when:
+        - is_full
+        - ansible_facts.distribution in ["Debian", "Ubuntu"]
+
+    - name: Create Docker APT keyring directory
+      become: true
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+      when:
+        - is_full
+        - ansible_facts.distribution in ["Debian", "Ubuntu"]
+
+    - name: Install Docker APT signing key
+      become: true
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/{{ docker_apt_distribution }}/gpg"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+      when:
+        - is_full
+        - ansible_facts.distribution in ["Debian", "Ubuntu"]
+
+    - name: Configure Docker APT repository
+      become: true
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_apt_architecture }} signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/{{ docker_apt_distribution }}
+          {{ ansible_facts.distribution_release }} stable
+        filename: docker
+        state: present
+        update_cache: true
+      when:
+        - is_full
+        - ansible_facts.distribution in ["Debian", "Ubuntu"]
+
+    - name: Install Docker Engine
+      become: true
+      ansible.builtin.apt:
+        name: "{{ packages.apt.docker }}"
+        state: present
+      when:
+        - is_full
+        - ansible_facts.distribution in ["Debian", "Ubuntu"]
+
+    - name: Enable and start Docker Engine
+      become: true
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+      when:
+        - is_full
+        - ansible_facts.distribution in ["Debian", "Ubuntu"]
+        - ansible_facts.service_mgr == "systemd"
+
+    - name: Allow the provisioned user to run Docker
+      become: true
+      ansible.builtin.user:
+        name: "{{ docker_provision_user }}"
+        groups:
+          - docker
+        append: true
+      when:
+        - is_full
+        - ansible_facts.distribution in ["Debian", "Ubuntu"]
+        - docker_provision_user != "root"
 
     - name: Check Homebrew
       ansible.builtin.stat:
@@ -61,7 +148,7 @@
       changed_when: brew_formula_install.rc == 0 and 'already installed' not in (brew_formula_install.stdout + brew_formula_install.stderr)
       when: ansible_facts.system in ["Darwin", "Linux"]
 
-    - name: Install macOS desktop casks
+    - name: Install macOS casks
       ansible.builtin.shell: |
         if "{{ brew_bin }}" list --cask "{{ item }}" >/dev/null 2>&1; then
           echo "already installed"
@@ -87,7 +174,7 @@
           exit 0
         fi
         exit "$install_rc"
-      loop: "{{ packages.brew.desktop_darwin_casks }}"
+      loop: "{{ brew_casks }}"
       register: brew_cask_install
       changed_when: >-
         brew_cask_install.rc == 0
@@ -97,7 +184,7 @@
         and 'cask requires interactive sudo; skipping' not in (brew_cask_install.stdout + brew_cask_install.stderr)
       when:
         - ansible_facts.system == "Darwin"
-        - is_desktop
+        - brew_casks | length > 0
 
     - name: Check Cargo
       ansible.builtin.command:

@@ -1,5 +1,13 @@
 $ErrorActionPreference = "Stop"
 
+$profileString = if ($env:CHEZMOI_PROFILES) { $env:CHEZMOI_PROFILES } else { "full" }
+$profiles = @(
+    ($profileString -split ",") |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ }
+)
+$isFull = ($profiles -contains "full") -or ($profiles -contains "desktop")
+
 function Write-Step {
     param([string]$Message)
     Write-Host "==> $Message" -ForegroundColor Cyan
@@ -95,6 +103,10 @@ $wingetPackages = @(
     "AutoHotkey.AutoHotkey",
     "Microsoft.VisualStudioCode"
 )
+
+if ($isFull) {
+    $wingetPackages += "Docker.DockerDesktop"
+}
 
 $powershellModules = @(
     "posh-git",
