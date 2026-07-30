@@ -20,6 +20,9 @@ alt-shift-j = "move down"
 alt-shift-k = "move up"
 alt-shift-l = "move right"
 
+# Move the current workspace and all of its windows to the next monitor.
+alt-semicolon = "move-workspace-to-monitor --wrap-around next"
+
 # Traverse windows in tree order. On an accordion workspace these bindings
 # behave like komorebi's cycle-stack previous/next.
 alt-leftSquareBracket = "focus --wrap-around dfs-prev"
