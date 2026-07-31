@@ -105,6 +105,7 @@ $wingetPackages = @(
 )
 
 if ($isFull) {
+    $scoopPackages += "mise"
     $wingetPackages += "Docker.DockerDesktop"
 }
 

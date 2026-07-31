@@ -28,6 +28,17 @@ The `full` profile installs a platform-native Docker runtime:
 Linux group membership takes effect after signing out and back in. Docker
 Desktop may request permissions on its first launch.
 
+The `full` profile also installs `mise` for project-specific versions of Java,
+Go, Node.js, Python, and other development tools. Zsh uses `mise activate`;
+native Windows uses Scoop's mise shims. No language versions are installed or
+pinned globally by provisioning. Choose them per project, for example:
+
+```sh
+mise use java@temurin-21 go@latest
+```
+
+Use `mise use -g ...` only when a machine-wide default is intentional.
+
 macOS desktop installs AeroSpace and Karabiner-Elements. Windows desktop uses
 komorebi/komorebic, whkd, YASB, and AutoHotkey.
 
