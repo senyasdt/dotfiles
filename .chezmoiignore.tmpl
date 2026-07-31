@@ -39,6 +39,11 @@ komorebi.json
 decrypt-private-key.sh
 {{- end }}
 
+# Full workstation layer
+{{- if not (has "full" $profiles) }}
+.config/mise/**
+{{- end }}
+
 # GUI / desktop layer
 {{- if not (has "desktop" $profiles) }}
 .wezterm.lua
