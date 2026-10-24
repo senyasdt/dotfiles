@@ -18,7 +18,7 @@ $session=[Diagnostics.Process]::GetCurrentProcess().SessionId
 function Write-Utf8($path,$content){[IO.File]::WriteAllText($path,$content,(New-Object Text.UTF8Encoding($false)))}
 function Expand-Template($file){
     $shortRoot=(New-Object -ComObject Scripting.FileSystemObject).GetFolder($root).ShortPath
-    if($shortRoot.Contains(' ')){throw 'YASB 2.0.0 requires a helper path without spaces. Choose a different profile directory.'}
+    if($shortRoot.Contains(' ')){throw 'YASB requires a helper path without spaces. Choose a different profile directory.'}
     [Environment]::ExpandEnvironmentVariables([IO.File]::ReadAllText($file).Replace('__BRIDGE_CMD__',$shortRoot).Replace('__BRIDGE__',$root).Replace('__LAUNCHER__',$launcher).Replace('__USERPROFILE__',$profileRoot))
 }
 function Run-Wait($exe,$arguments,[int]$seconds=12){
@@ -86,8 +86,13 @@ function Ensure-Launcher {
     }
 }
 function Mode($value){[IO.Directory]::CreateDirectory((Join-Path $root 'runtime'))|Out-Null;Write-Utf8 (Join-Path $root 'runtime\profile.json') (@{mode=$value;updatedAt=[DateTimeOffset]::Now.ToString('o')}|ConvertTo-Json)}
+function Assert-YasbVersion {
+    if(!(Test-Path -LiteralPath $yasb)){throw 'Install YASB 2.0.7 or newer first'}
+    $version=(Get-Item -LiteralPath $yasb).VersionInfo.ProductVersion
+    if($version -notmatch '^(\d+\.\d+\.\d+)' -or [version]$Matches[1] -lt [version]'2.0.7'){throw 'This profile requires YASB 2.0.7 or newer. Upgrade AmN.yasb before activation.'}
+}
 function Start-Profile {
-    if(!(Test-Path -LiteralPath $yasb)){throw 'Install YASB 2.0.0 first'}
+    Assert-YasbVersion
     if(!(Test-Path -LiteralPath $bridge)){throw 'Run -Action Build first'}
     if(!(Owned-Processes 'yasb' $yasb).Count){Start-Process -FilePath $yasb -WorkingDirectory (Split-Path $yasb) -WindowStyle Hidden}
     if(!(Owned-Processes 'DesktopBridge' $bridge).Count){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}
@@ -105,6 +110,7 @@ function Restore-Current {
     if('FinderWidgets' -in $s.running){Start-Process -FilePath (Join-Path $finder 'FinderWidgets.exe') -WorkingDirectory $finder -WindowStyle Hidden}
     Restore-ThemeEnvironment;Mode 'previous';Write-Output 'Restored the desktop from before the Catppuccin experiment.'
 }
+if($Action -in @('Apply','Refresh','Start','RestorePreDock')){Assert-YasbVersion}
 if($Action -eq 'Build'){
     $resumeYasb=(Owned-Processes 'yasb' $yasb).Count -gt 0
     $resumeBridge=(Owned-Processes 'DesktopBridge' $bridge).Count -gt 0

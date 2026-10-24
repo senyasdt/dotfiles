@@ -126,9 +126,9 @@ widgets:
       tooltip: true
       tooltip_label: 'Left: add/check domain | Right: check clipboard domain'
       callbacks:
-        on_left: exec wscript.exe "C:\Users\druzh\.config\yasb\scripts\vpn_domain_submit_launcher.vbs"
-        on_middle: exec wscript.exe "C:\Users\druzh\.config\yasb\scripts\vpn_domain_submit_launcher.vbs"
-        on_right: exec wscript.exe "C:\Users\druzh\.config\yasb\scripts\vpn_domain_check_launcher.vbs"
+        on_left: exec wscript.exe "__USERPROFILE__\.config\yasb\scripts\vpn_domain_submit_launcher.vbs"
+        on_middle: exec wscript.exe "__USERPROFILE__\.config\yasb\scripts\vpn_domain_submit_launcher.vbs"
+        on_right: exec wscript.exe "__USERPROFILE__\.config\yasb\scripts\vpn_domain_check_launcher.vbs"
       exec_options:
         use_shell: false
   language:
@@ -218,8 +218,8 @@ widgets:
     type: yasb.volume.VolumeWidget
     options:
       label: <span>{icon}</span> {level}
-      label_alt: '{volume}'
-      volume_icons:
+      label_alt: '{level}'
+      icons:
       - 
       - 
       - 
@@ -317,7 +317,7 @@ widgets:
       layout_icons:
         bsp: BSP
         monocle: MONO
-        maximised: MAX
+        maximized: MAX
         floating: FLOAT
         paused: PAUSED
       callbacks:

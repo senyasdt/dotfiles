@@ -2,10 +2,11 @@ param([switch]$Apply)
 $ErrorActionPreference = "Stop"
 
 $profiles = if ($env:CHEZMOI_PROFILES) { $env:CHEZMOI_PROFILES } else { "full" }
+$theme=if($env:WINDOWS_DESKTOP_THEME){$env:WINDOWS_DESKTOP_THEME}else{'classic'}
 $sourcePath = chezmoi source-path
 if($LASTEXITCODE -ne 0){throw 'Cannot locate chezmoi source'}
 if(-not $Apply){
-    & (Join-Path $sourcePath 'provision\windows\restore.ps1') -Profiles $profiles -Bar $(if($env:WINDOWS_DESKTOP_BAR){$env:WINDOWS_DESKTOP_BAR}else{'none'})
+    & (Join-Path $sourcePath 'provision\windows\restore.ps1') -Profiles $profiles -Bar $(if($env:WINDOWS_DESKTOP_BAR){$env:WINDOWS_DESKTOP_BAR}else{'none'}) -Theme $theme
     Write-Host 'Review git status and chezmoi diff; use -Apply to pull and restore.'
     return
 }
@@ -15,4 +16,4 @@ if($LASTEXITCODE -ne 0 -or $dirty){throw 'Source checkout must be clean before a
 git -C $sourcePath pull --ff-only
 if($LASTEXITCODE -ne 0){throw 'Git pull failed; nothing was provisioned.'}
 
-& (Join-Path $sourcePath 'provision\windows\restore.ps1') -Profiles $profiles -Bar $(if($env:WINDOWS_DESKTOP_BAR){$env:WINDOWS_DESKTOP_BAR}else{'none'}) -Apply
+& (Join-Path $sourcePath 'provision\windows\restore.ps1') -Profiles $profiles -Bar $(if($env:WINDOWS_DESKTOP_BAR){$env:WINDOWS_DESKTOP_BAR}else{'none'}) -Theme $theme -Apply
