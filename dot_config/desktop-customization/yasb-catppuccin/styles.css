@@ -1,4 +1,4 @@
-/* Cold blue/teal. Compact Segoe UI panel based on the owner's pre-patch YASB. */
+/* Cold translucent blue/teal. Compact layout based on the owner's pre-patch YASB. */
 * {
     font-family: "Segoe UI", "JetBrainsMono NFP", "JetBrainsMono Nerd Font";
     font-size: 13px;
@@ -9,19 +9,19 @@
     padding: 0;
 }
 .bar.catppuccin-top {
-    background-color: rgba(18, 31, 40, 220);
-    border: 1px solid #243c48;
+    background-color: rgba(18, 31, 40, 64);
+    border: 1px solid rgba(143, 191, 214, 35);
     border-radius: 6px;
 }
 .bar.catppuccin-dock {
-    background-color: rgba(18, 31, 40, 235);
-    border: 1px solid #36505e;
+    background-color: rgba(18, 31, 40, 128);
+    border: 1px solid rgba(128, 203, 196, 60);
     border-radius: 16px;
 }
 .widget { padding: 0 4px; margin: 0; border-radius: 5px; }
 .widget .label { padding: 0 2px; }
 .widget .icon { color: #8fbfd6; font-size: 16px; }
-.widget:hover { background-color: #243c48; }
+.widget:hover { background-color: rgba(143, 191, 214, 26); }
 .launchpad-widget .label { color: #80cbc4; font-size: 18px; }
 .komorebi-workspaces { padding: 0 3px; }
 .komorebi-workspaces .widget-container { padding: 0; }
@@ -50,7 +50,7 @@
 .media-widget .btn { padding: 0 5px; color: #80cbc4; }
 .systray .unpinned-visibility-btn { color: #9bb5c2; padding: 0 3px; }
 .systray .icon { border-radius: 4px; margin: 0 3px; }
-.systray-popup { background-color: #14232d; border: 1px solid #36505e; border-radius: 14px; padding: 10px; }
+.systray-popup { background-color: rgba(20, 35, 45, 190); border: 1px solid #36505e; border-radius: 14px; padding: 10px; }
 .catppuccin-dock .widget { padding: 0 8px; margin: 5px 1px; border-radius: 13px; }
 .catppuccin-dock .launchpad-widget .label { font-size: 28px; color: #80cbc4; padding: 0 7px; }
 .catppuccin-dock .quick-launch-widget .label { font-size: 23px; color: #8fbfd6; padding: 0 6px; }
@@ -61,14 +61,14 @@
 .taskbar-widget .app-container.foreground { background-color: #243c48; border-bottom: 2px solid #80cbc4; }
 .taskbar-widget .app-container:hover { background-color: #36505e; }
 .taskbar-widget .app-container.flashing { background-color: #9bd1ca; }
-.taskbar-preview, .taskbar-preview .header { background-color: #14232d; border-radius: 12px; padding: 8px; }
-QToolTip { background-color: #14232d; color: #d3e6eb; border: 1px solid #36505e; border-radius: 7px; padding: 8px 12px; }
-.context-menu { background-color: #14232d; border: 1px solid #36505e; border-radius: 10px; padding: 6px; }
+.taskbar-preview, .taskbar-preview .header { background-color: rgba(20, 35, 45, 190); border-radius: 12px; padding: 8px; }
+QToolTip { background-color: rgba(20, 35, 45, 190); color: #d3e6eb; border: 1px solid #36505e; border-radius: 7px; padding: 8px 12px; }
+.context-menu { background-color: rgba(20, 35, 45, 190); border: 1px solid #36505e; border-radius: 10px; padding: 6px; }
 .context-menu::item { padding: 8px 24px 8px 12px; border-radius: 6px; }
 .context-menu::item:selected { background-color: #36505e; color: #d3e6eb; }
 .context-menu::separator { height: 1px; background-color: #243c48; margin: 5px; }
 .launchpad { background-color: rgba(11, 22, 29, 195); }
-.launchpad .launchpad-container { background-color: #14232d; border: 1px solid #36505e; border-radius: 22px; padding: 24px; }
+.launchpad .launchpad-container { background-color: rgba(20, 35, 45, 190); border: 1px solid #36505e; border-radius: 22px; padding: 24px; }
 .launchpad .search-container { background-color: transparent; padding: 4px 16px 20px; }
 .launchpad .search-input { background-color: #243c48; border: 1px solid #36505e; border-radius: 12px; padding: 13px 18px; color: #d3e6eb; font-size: 15px; }
 .launchpad .search-input:focus { border: 1px solid #80cbc4; }
@@ -83,12 +83,12 @@ QScrollBar:vertical { background-color: transparent; width: 6px; margin: 3px; }
 QScrollBar::handle:vertical { background-color: #476674; border-radius: 3px; min-height: 24px; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
-.app-dialog { background-color: #14232d; padding: 20px; }
+.app-dialog { background-color: rgba(20, 35, 45, 190); padding: 20px; }
 .app-dialog QLineEdit { background-color: #243c48; border-radius: 7px; padding: 9px; }
 .app-dialog .button { background-color: #36505e; border-radius: 7px; padding: 8px 18px; }
 .app-dialog .button.save, .app-dialog .button.add { background-color: #80cbc4; color: #14232d; }
 .calendar, .volume-slider, .audio-menu, .language-menu, .weather-card, .open-meteo-card {
-    background-color: #14232d; border: 1px solid #36505e; border-radius: 14px; padding: 14px;
+    background-color: rgba(20, 35, 45, 190); border: 1px solid #36505e; border-radius: 14px; padding: 14px;
 }
 .calendar .calendar-table { background-color: transparent; }
 .calendar .calendar-table::item:selected { background-color: #80cbc4; color: #14232d; border-radius: 6px; }

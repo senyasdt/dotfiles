@@ -86,7 +86,7 @@ internal static class DesktopBridge {
         public override Color SeparatorLight {get{return ToolStripDropDownBackground;}}
     }
     static void Menu(string kind){
-        Application.EnableVisualStyles();var menu=new ContextMenuStrip{BackColor=Color.FromArgb(20,35,45),ForeColor=Color.FromArgb(211,230,235),ShowImageMargin=false,Font=new Font("Segoe UI",10)};
+        Application.EnableVisualStyles();var menu=new ContextMenuStrip{BackColor=Color.FromArgb(20,35,45),ForeColor=Color.FromArgb(211,230,235),ShowImageMargin=false,Opacity=0.94,Font=new Font("Segoe UI",10)};
         menu.Renderer=new ToolStripProfessionalRenderer(new ColdMenuColors());
         if(kind=="ahk"){
             var state=Read(Path.Combine(LauncherRoot,@"runtime\status.json"));
@@ -108,14 +108,17 @@ internal static class DesktopBridge {
         menu.AutoClose=true;
         var before=GetForegroundWindow();uint own=(uint)Process.GetCurrentProcess().Id;
         bool priorLeft=(GetAsyncKeyState(1)&0x8000)!=0,priorRight=(GetAsyncKeyState(2)&0x8000)!=0;
-        using(var dismiss=new System.Windows.Forms.Timer{Interval=75}){
+        GetAsyncKeyState(27); // clear an Escape press from before this popup
+        using(var dismiss=new System.Windows.Forms.Timer{Interval=30}){
             dismiss.Tick+=delegate{
-                bool left=(GetAsyncKeyState(1)&0x8000)!=0,right=(GetAsyncKeyState(2)&0x8000)!=0;
-                bool outside=((left&&!priorLeft)||(right&&!priorRight))&&!InsideMenu(menu,Cursor.Position);
+                int leftState=GetAsyncKeyState(1),rightState=GetAsyncKeyState(2);
+                bool left=(leftState&0x8000)!=0,right=(rightState&0x8000)!=0;
+                // Also latch a complete quick click between timer ticks.
+                bool outside=((leftState&1)!=0||(rightState&1)!=0||(left&&!priorLeft)||(right&&!priorRight))&&!InsideMenu(menu,Cursor.Position);
                 priorLeft=left;priorRight=right;
                 IntPtr foreground=GetForegroundWindow();uint pid;GetWindowThreadProcessId(foreground,out pid);
                 bool changed=foreground!=IntPtr.Zero&&foreground!=before&&pid!=own;
-                if((GetAsyncKeyState(27)&0x8000)!=0||outside||changed)menu.Close(ToolStripDropDownCloseReason.AppClicked);
+                if((GetAsyncKeyState(27)&0x8001)!=0||outside||changed)menu.Close(ToolStripDropDownCloseReason.AppClicked);
             };
             menu.Closed+=delegate{dismiss.Stop();Application.ExitThread();};
             menu.Show(Cursor.Position);menu.Focus();dismiss.Start();Application.Run();
