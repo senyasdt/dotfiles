@@ -36,6 +36,7 @@ internal static class DesktopBridge {
     [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hwnd,int command);
     [DllImport("user32.dll")] static extern bool GetCursorPos(out Point point);
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr hwnd,int attr,out int value,int size);
     static Dictionary<string,object> Read(string path) {try {using(var stream=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var reader=new StreamReader(stream,Encoding.UTF8))return Json.DeserializeObject(reader.ReadToEnd()) as Dictionary<string,object>??new Dictionary<string,object>();}catch{return new Dictionary<string,object>();}}
     static string Get(Dictionary<string,object> d,string k,string fallback) {object v;return d.TryGetValue(k,out v)&&v!=null?Convert.ToString(v):fallback;}
@@ -44,31 +45,67 @@ internal static class DesktopBridge {
     static string Quote(string value){return "\""+value.Replace("\"","")+"\"";}
     static void Run(string file,string args){Process.Start(new ProcessStartInfo(file,args){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden});}
     static void Command(string operation,string path=null){Run(Path.Combine(LauncherRoot,"ScriptLauncher.exe"),operation+(path==null?"":" "+Quote(path)));}
+    static readonly string[][] Services={
+        new[]{"","Запустить помощники","StartAll"},new[]{"","Остановить помощники","StopAll"},new[]{"","Перезапустить помощники","RestartAll"},
+        new[]{"Komorebi и горячие клавиши","Запустить","KomorebiStart"},new[]{"Komorebi и горячие клавиши","Остановить","KomorebiStop"},new[]{"Komorebi и горячие клавиши","Перезапустить","KomorebiRestart"},
+        new[]{"AHK","Включить все скрипты","AhkEnable"},new[]{"AHK","Выключить все скрипты","AhkDisable"},new[]{"AHK","Перезапустить разрешённые","AhkRestart"},new[]{"AHK","Возобновить после общей паузы","AhkResume"},
+        new[]{"Vial helper","Запустить","VialStart"},new[]{"Vial helper","Остановить","VialStop"},new[]{"Vial helper","Перезапустить","VialRestart"},
+        new[]{"ZMK helper","Запустить","ZmkStart"},new[]{"ZMK helper","Остановить","ZmkStop"},new[]{"ZMK helper","Перезапустить","ZmkRestart"},
+        new[]{"","Открыть Vial безопасно…","OpenVial"}
+    };
+    static void Service(string action){if(!Services.Any(s=>s[2]==action))throw new ArgumentException("Unknown helper action");Run("powershell.exe","-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Services.ps1"))+" -Action "+action+" -Notify");}
     static void Open(string target){Process.Start(new ProcessStartInfo(target){UseShellExecute=true});}
     static Dictionary<string,object> State(string kind){
         if(kind=="ahk"){
             var s=Read(Path.Combine(LauncherRoot,@"runtime\status.json"));var mode=Get(s,"mode","offline");var scripts=Items(s,"scripts").Select(v=>v as Dictionary<string,object>).Where(v=>v!=null).ToArray();
             string detail=String.Join("\n",scripts.Select(v=>Get(v,"name","")+": "+Get(v,"mode","?")));
-            return new Dictionary<string,object>{{"label",mode=="blocked"?"AHK · игра":mode=="waiting"?"AHK · пауза":"AHK "+Get(s,"managedRunning","—")},{"tooltip",detail+"\nЛКМ: управление скриптами; ПКМ: выключить все"}};
+            return new Dictionary<string,object>{{"label",mode=="blocked"?"AHK · игра":mode=="paused"?"AHK · стоп":mode=="waiting"?"AHK · пауза":"AHK "+Get(s,"managedRunning","—")},{"tooltip",detail+"\nЛКМ: управление скриптами; ПКМ: выключить все"}};
         }
         string folder=kind=="vial"?"vial-helper":"zmk-yasb";var state=Read(Path.Combine(Data,folder+@"\state.json"));
         string prefix=kind=="vial"?"VIAL":"ZMK";string label=Get(state,"label","OFF");
         return new Dictionary<string,object>{{"label",prefix+" · "+label},{"tooltip",Get(state,"tooltip",Get(state,"effective","Нет подключения"))+(kind=="zmk"?"\nБатареи: "+Get(state,"battery_halves","—"):"\nЛКМ: раскладка и подписи AHK")}};
     }
     static ToolStripMenuItem Item(string text,Action action){var item=new ToolStripMenuItem(text);item.Click+=delegate{try{action();}catch(Exception e){MessageBox.Show(e.Message,"Catppuccin");}};return item;}
+    static bool InsideMenu(ToolStripDropDown menu,System.Drawing.Point cursor){
+        if(menu.Visible&&menu.Bounds.Contains(cursor))return true;
+        foreach(ToolStripItem item in menu.Items){var child=item as ToolStripMenuItem;if(child!=null&&child.HasDropDownItems&&child.DropDown.Visible&&InsideMenu(child.DropDown,cursor))return true;}
+        return false;
+    }
     static void Menu(string kind){
         Application.EnableVisualStyles();var menu=new ContextMenuStrip{BackColor=Color.FromArgb(30,30,46),ForeColor=Color.FromArgb(205,214,244),ShowImageMargin=false,Font=new Font("Segoe UI",10)};
         if(kind=="ahk"){
             var state=Read(Path.Combine(LauncherRoot,@"runtime\status.json"));
             foreach(var v in Items(state,"scripts")){var s=v as Dictionary<string,object>;if(s==null)continue;string path=Get(s,"path","");var item=Item(Get(s,"name","")+" · "+Get(s,"mode","?"),()=>Command("--toggle",path));item.Checked=Get(s,"enabled","False")=="True";menu.Items.Add(item);}
-            menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Включить все",()=>Command("--enable-all")));menu.Items.Add(Item("Выключить все",()=>Command("--disable-all")));menu.Items.Add(Item("Перезапустить разрешённые",()=>Command("--restart-all")));menu.Items.Add(Item("Настроить правила…",()=>Open(Path.Combine(LauncherRoot,"config.json"))));
+            menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Включить все",()=>Service("AhkEnable")));menu.Items.Add(Item("Выключить все",()=>Service("AhkDisable")));menu.Items.Add(Item("Перезапустить разрешённые",()=>Service("AhkRestart")));menu.Items.Add(Item("Возобновить после общей паузы",()=>Service("AhkResume")));menu.Items.Add(Item("Настроить правила…",()=>Open(Path.Combine(LauncherRoot,"config.json"))));
+        }else if(kind=="services"){
+            var groups=new Dictionary<string,ToolStripMenuItem>();
+            foreach(var row in Services){string action=row[2];var item=Item(row[1],()=>Service(action));if(row[0].Length==0){menu.Items.Add(item);continue;}ToolStripMenuItem group;if(!groups.TryGetValue(row[0],out group)){group=new ToolStripMenuItem(row[0]);groups.Add(row[0],group);menu.Items.Add(group);}group.DropDownItems.Add(item);}
+            menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Скрипты AHK и правила…",()=>Run(Path.Combine(Root,"DesktopBridge.exe"),"--menu ahk")));
         }else{
             menu.Items.Add(Item("Библиотека Windows",()=>Run("explorer.exe","shell:AppsFolder")));
             menu.Items.Add(Item("Настройки Windows",()=>Open("ms-settings:")));
             menu.Items.Add(Item("Вернуть состояние перед экспериментом",()=>Run("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Manage.ps1"))+" -Action RestoreCurrent")));
             menu.Items.Add(Item("Вернуться к YASB до MyDockFinder",()=>Run("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Manage.ps1"))+" -Action RestorePreDock")));
         }
-        menu.Closed+=delegate{Application.ExitThread();};menu.Show(Cursor.Position);Application.Run();menu.Dispose();
+        // YASB's bar does not activate itself. Its child popup can therefore lack
+        // WinForms' usual owner activation; AutoClose alone misses outside clicks.
+        // This timer exists only for the lifetime of this popup, without a hook.
+        menu.AutoClose=true;
+        var before=GetForegroundWindow();uint own=(uint)Process.GetCurrentProcess().Id;
+        bool priorLeft=(GetAsyncKeyState(1)&0x8000)!=0,priorRight=(GetAsyncKeyState(2)&0x8000)!=0;
+        using(var dismiss=new System.Windows.Forms.Timer{Interval=75}){
+            dismiss.Tick+=delegate{
+                bool left=(GetAsyncKeyState(1)&0x8000)!=0,right=(GetAsyncKeyState(2)&0x8000)!=0;
+                bool outside=((left&&!priorLeft)||(right&&!priorRight))&&!InsideMenu(menu,Cursor.Position);
+                priorLeft=left;priorRight=right;
+                IntPtr foreground=GetForegroundWindow();uint pid;GetWindowThreadProcessId(foreground,out pid);
+                bool changed=foreground!=IntPtr.Zero&&foreground!=before&&pid!=own;
+                if((GetAsyncKeyState(27)&0x8000)!=0||outside||changed)menu.Close(ToolStripDropDownCloseReason.AppClicked);
+            };
+            menu.Closed+=delegate{dismiss.Stop();Application.ExitThread();};
+            menu.Show(Cursor.Position);menu.Focus();dismiss.Start();Application.Run();
+        }
+        menu.Dispose();
     }
     static bool Allowed(string process){return !new[]{"yasb","DesktopBridge","Dock_64","dock","ScreenRound","FinderWidgets","SearchHost","StartMenuExperienceHost","ShellExperienceHost","TextInputHost","LockApp"}.Contains(process,StringComparer.OrdinalIgnoreCase);}
     internal static bool DockShouldShow(bool occupied,bool atEdge,bool hover,bool popup,bool fullscreen){return !fullscreen&&(!occupied||atEdge||hover||popup);}
@@ -110,6 +147,8 @@ internal static class DesktopBridge {
         try{
             if(args.Length>0&&args[0]=="--read"){Output(State(args.Length>1?args[1]:"ahk"));return 0;}
             if(args.Length>0&&args[0]=="--menu"){Menu(args.Length>1?args[1]:"main");return 0;}
+            if(args.Length>0&&args[0]=="--service"){Service(args.Length>1?args[1]:"RestartAll");return 0;}
+            if(args.Length>0&&args[0]=="--list-services"){Output(Services.Select(s=>new{group=s[0],label=s[1],action=s[2]}).ToArray());return 0;}
             if(args.Length>0&&args[0]=="--stop"){try{using(var e=EventWaitHandle.OpenExisting(EventName))e.Set();}catch(WaitHandleCannotBeOpenedException){}return 0;}
             if(args.Length>0&&args[0]=="--show-taskbar"){NativeTaskbar(true);return 0;}
             if(args.Length>0&&args[0]=="--test"){if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}

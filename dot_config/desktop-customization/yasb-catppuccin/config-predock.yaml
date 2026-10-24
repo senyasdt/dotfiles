@@ -99,10 +99,10 @@ widgets:
       label: 
       class_name: win-button-widget
       tooltip: true
-      tooltip_label: Управление AHK · прежние правила блокировки для игр
+      tooltip_label: 'ЛКМ: перезапустить помощники · ПКМ: меню запуска/остановки, AHK и Vial'
       callbacks:
-        on_left: exec "__BRIDGE__\DesktopBridge.exe" --menu ahk
-        on_right: exec "__BRIDGE__\DesktopBridge.exe" --menu main
+        on_left: exec "__BRIDGE__\DesktopBridge.exe" --service RestartAll
+        on_right: exec "__BRIDGE__\DesktopBridge.exe" --menu services
   language:
     type: yasb.language.LanguageWidget
     options:
