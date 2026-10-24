@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -20,6 +20,7 @@ internal static class DesktopBridge {
     static KomorebiFeed komorebi;
     static DateTime nextTaskbarCheck=DateTime.MinValue,nextProcessCheck=DateTime.MinValue;
     static HashSet<uint> yasbIds=new HashSet<uint>();
+    static DateTime lastYasbSeen=DateTime.MinValue;
     static readonly int Session=Process.GetCurrentProcess().SessionId;
     static string LauncherRoot { get { var settings=Read(Path.Combine(Root,"settings.json")); string configured=Get(settings,"scriptLauncherRoot",""); if(configured.Length>0)configured=Environment.ExpandEnvironmentVariables(configured);if(File.Exists(Path.Combine(configured,"ScriptLauncher.exe")))return configured;return Path.Combine(Home,@".config\desktop-customization\script-launcher"); } }
     [StructLayout(LayoutKind.Sequential)] struct Rect {public int Left,Top,Right,Bottom;public Rectangle Value {get {return Rectangle.FromLTRB(Left,Top,Right,Bottom);}}}
@@ -128,10 +129,12 @@ internal static class DesktopBridge {
     static bool Allowed(string process){return !new[]{"yasb","DesktopBridge","Dock_64","dock","ScreenRound","FinderWidgets","SearchHost","StartMenuExperienceHost","ShellExperienceHost","TextInputHost","LockApp"}.Contains(process,StringComparer.OrdinalIgnoreCase);}
     internal static bool DockShouldShow(bool occupied,bool atEdge,bool hover,bool popup,bool fullscreen){return !fullscreen&&(!occupied||atEdge||hover||popup);}
     static void NativeTaskbar(bool show){if(!show&&DateTime.UtcNow<nextTaskbarCheck)return;nextTaskbarCheck=DateTime.UtcNow.AddSeconds(2);EnumWindows(delegate(IntPtr hwnd,IntPtr x){var cls=new StringBuilder(128);GetClassName(hwnd,cls,cls.Capacity);if(cls.ToString()=="Shell_TrayWnd"||cls.ToString()=="Shell_SecondaryTrayWnd") {uint pid;GetWindowThreadProcessId(hwnd,out pid);try{using(var p=Process.GetProcessById((int)pid)){if(p.ProcessName=="explorer"&&IsWindowVisible(hwnd)!=show)ShowWindow(hwnd,show?4:0);}}catch{}}return true;},IntPtr.Zero);}
+    internal static bool ShouldRestoreTaskbar(bool yasbRunning,DateTime lastSeen,DateTime now){return !yasbRunning&&now-lastSeen>=TimeSpan.FromSeconds(8);}
     static void Tick(){
         if(DateTime.UtcNow>=nextProcessCheck){var next=new HashSet<uint>();foreach(var p in Process.GetProcessesByName("yasb")){using(p){if(p.SessionId==Session)next.Add((uint)p.Id);}}yasbIds=next;nextProcessCheck=DateTime.UtcNow.AddSeconds(2);}
         var ids=yasbIds;int session=Session;
-        if(ids.Count==0){NativeTaskbar(true);return;}
+        if(ids.Count==0){if(ShouldRestoreTaskbar(false,lastYasbSeen,DateTime.UtcNow))NativeTaskbar(true);return;}
+        lastYasbSeen=DateTime.UtcNow;
         bool feedOnline=komorebi!=null&&Screen.AllScreens.Any(s=>komorebi.ForScreen(s.DeviceName).HasValue);
         var docks=new List<Tuple<IntPtr,Rectangle>>();var occupants=new HashSet<string>();bool occupied=false,popup=false,fullscreen=false;Point cursor;GetCursorPos(out cursor);IntPtr fg=GetForegroundWindow();
         EnumWindows(delegate(IntPtr hwnd,IntPtr data){
@@ -169,7 +172,7 @@ internal static class DesktopBridge {
             if(args.Length>0&&args[0]=="--list-services"){Output(Services.Select(s=>new{group=s[0],label=s[1],action=s[2]}).ToArray());return 0;}
             if(args.Length>0&&args[0]=="--stop"){try{using(var e=EventWaitHandle.OpenExisting(EventName))e.Set();}catch(WaitHandleCannotBeOpenedException){}return 0;}
             if(args.Length>0&&args[0]=="--show-taskbar"){NativeTaskbar(true);return 0;}
-            if(args.Length>0&&args[0]=="--test"){if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
+            if(args.Length>0&&args[0]=="--test"){var now=new DateTime(2026,10,24,0,0,10,DateTimeKind.Utc);if(ShouldRestoreTaskbar(true,now.AddSeconds(-20),now)||ShouldRestoreTaskbar(false,now.AddSeconds(-2),now)||!ShouldRestoreTaskbar(false,now.AddSeconds(-8),now)||!ShouldRestoreTaskbar(false,DateTime.MinValue,now))return 2;if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
             bool created;using(var mutex=new Mutex(true,@"Local\Druzh.CatppuccinDesktop",out created)){if(!created)return 0;Directory.CreateDirectory(Runtime);Application.EnableVisualStyles();using(var stop=new EventWaitHandle(false,EventResetMode.ManualReset,EventName)){
                 komorebi=new KomorebiFeed(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"));
                 try{int n=0;while(!stop.WaitOne(400)){try{Tick();}catch(Exception e){if(n++%20==0){string log=Path.Combine(Runtime,"bridge.log");if(File.Exists(log)&&new FileInfo(log).Length>262144)File.WriteAllText(log,"");File.AppendAllText(log,DateTime.Now.ToString("o")+" "+e.Message+"\n");}}}}
