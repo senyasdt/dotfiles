@@ -70,17 +70,17 @@ QToolTip { background-color: rgba(32, 34, 39, 190); color: #d6d9df; border: 1px 
 .context-menu::item { padding: 8px 24px 8px 12px; border-radius: 6px; }
 .context-menu::item:selected { background-color: #4b515c; color: #d6d9df; }
 .context-menu::separator { height: 1px; background-color: #343840; margin: 5px; }
-.launchpad { background-color: rgba(24, 26, 30, 195); }
-.launchpad .launchpad-container { background-color: rgba(32, 34, 39, 190); border: 1px solid #4b515c; border-radius: 22px; padding: 24px; }
+.launchpad { background-color: transparent; }
+.launchpad .launchpad-container { background-color: rgba(32, 34, 39, 190); border: none; border-radius: 8px; padding: 25px; }
 .launchpad .search-container { background-color: transparent; padding: 4px 16px 20px; }
-.launchpad .search-input { background-color: #343840; border: 1px solid #4b515c; border-radius: 12px; padding: 13px 18px; color: #d6d9df; font-size: 15px; }
-.launchpad .search-input:focus { border: 1px solid #acb9ca; }
+.launchpad .search-input { background-color: #343840; border: 1px solid transparent; border-radius: 6px; padding: 13px 18px; color: #d6d9df; font-size: 15px; }
+.launchpad .search-input:focus { border: 1px solid #626b79; }
 .launchpad .launchpad-scroll-area, .launchpad #grid-container, .launchpad .launchpad-scroll-area QWidget { background-color: transparent; }
-.launchpad .app-icon { background-color: transparent; border: 1px solid transparent; border-radius: 14px; padding: 10px 5px; }
-.launchpad .app-icon:hover, .launchpad .app-icon:focus { background-color: #343840; border: 1px solid #626b79; }
+.launchpad .app-icon { background-color: transparent; border: 1px solid transparent; border-radius: 8px; padding: 10px 5px; }
+.launchpad .app-icon:hover, .launchpad .app-icon:focus { background-color: #343840; border: 1px solid transparent; }
 .launchpad .app-icon .title { color: #d6d9df; font-family: "Segoe UI"; font-size: 12px; padding-top: 8px; }
 .launchpad .app-icon .icon { background-color: transparent; }
-.launchpad .group-icon { background-color: #343840; border-radius: 14px; }
+.launchpad .group-icon { background-color: #343840; border-radius: 8px; }
 .launchpad .group-back-button { background-color: #4b515c; border-radius: 8px; padding: 8px 16px; }
 QScrollBar:vertical { background-color: transparent; width: 6px; margin: 3px; }
 QScrollBar::handle:vertical { background-color: #626b79; border-radius: 3px; min-height: 24px; }
