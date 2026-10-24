@@ -18,7 +18,7 @@ bars:
       enabled: true
       dark_mode: true
       round_corners: true
-      border_color: '#45475a'
+      border_color: '#36505e'
     animation:
       enabled: false
     window_flags:
@@ -36,18 +36,18 @@ bars:
     widgets:
       left:
       - library
-      - workspaces
-      - layout
       - active_window
       center:
       - clock
+      - workspaces
+      - layout
       right:
-      - media
       - vpn_domain_submit
       - zmk
       - vial
       - ahk
       - daemon_reset
+      - media
       - language
       - open_meteo
       - volume
@@ -66,7 +66,7 @@ bars:
       enabled: true
       dark_mode: true
       round_corners: true
-      border_color: '#45475a'
+      border_color: '#36505e'
     animation:
       enabled: false
     window_flags:
@@ -166,7 +166,7 @@ widgets:
         blur: true
         round_corners: true
         round_corners_type: normal
-        border_color: '#45475a'
+        border_color: '#36505e'
         alignment: right
         direction: down
         icon_size: 48
@@ -252,7 +252,7 @@ widgets:
       window_style:
         enable_blur: true
         round_corners: true
-        border_color: '#45475a'
+        border_color: '#36505e'
       window_animation:
         fade_in_duration: 120
         fade_out_duration: 100
