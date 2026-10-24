@@ -73,20 +73,20 @@ internal static class DesktopBridge {
     }
     sealed class ColdMenuColors : ProfessionalColorTable {
         public ColdMenuColors(){UseSystemColors=false;}
-        public override Color ToolStripDropDownBackground {get{return Color.FromArgb(20,35,45);}}
-        public override Color MenuBorder {get{return Color.FromArgb(54,80,94);}}
-        public override Color MenuItemBorder {get{return Color.FromArgb(91,153,158);}}
-        public override Color MenuItemSelected {get{return Color.FromArgb(36,60,72);}}
+        public override Color ToolStripDropDownBackground {get{return Color.FromArgb(32,34,39);}}
+        public override Color MenuBorder {get{return Color.FromArgb(75,81,92);}}
+        public override Color MenuItemBorder {get{return Color.FromArgb(139,150,166);}}
+        public override Color MenuItemSelected {get{return Color.FromArgb(52,56,64);}}
         public override Color MenuItemSelectedGradientBegin {get{return MenuItemSelected;}}
         public override Color MenuItemSelectedGradientEnd {get{return MenuItemSelected;}}
         public override Color MenuItemPressedGradientBegin {get{return MenuItemSelected;}}
         public override Color MenuItemPressedGradientMiddle {get{return MenuItemSelected;}}
         public override Color MenuItemPressedGradientEnd {get{return MenuItemSelected;}}
-        public override Color SeparatorDark {get{return Color.FromArgb(54,80,94);}}
+        public override Color SeparatorDark {get{return Color.FromArgb(75,81,92);}}
         public override Color SeparatorLight {get{return ToolStripDropDownBackground;}}
     }
     static void Menu(string kind){
-        Application.EnableVisualStyles();var menu=new ContextMenuStrip{BackColor=Color.FromArgb(20,35,45),ForeColor=Color.FromArgb(211,230,235),ShowImageMargin=false,Opacity=0.94,Font=new Font("Segoe UI",10)};
+        Application.EnableVisualStyles();var menu=new ContextMenuStrip{BackColor=Color.FromArgb(32,34,39),ForeColor=Color.FromArgb(214,217,223),ShowImageMargin=false,Opacity=0.94,Font=new Font("Segoe UI",10)};
         menu.Renderer=new ToolStripProfessionalRenderer(new ColdMenuColors());
         if(kind=="ahk"){
             var state=Read(Path.Combine(LauncherRoot,@"runtime\status.json"));

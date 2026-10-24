@@ -18,7 +18,7 @@ bars:
       enabled: true
       dark_mode: true
       round_corners: true
-      border_color: '#36505e'
+      border_color: '#4b515c'
     animation:
       enabled: false
     window_flags:
@@ -66,7 +66,7 @@ bars:
       enabled: true
       dark_mode: true
       round_corners: true
-      border_color: '#36505e'
+      border_color: '#4b515c'
     animation:
       enabled: false
     window_flags:
@@ -176,7 +176,7 @@ widgets:
         blur: true
         round_corners: true
         round_corners_type: normal
-        border_color: '#36505e'
+        border_color: '#4b515c'
         alignment: right
         direction: down
         icon_size: 48
@@ -262,7 +262,7 @@ widgets:
       window_style:
         enable_blur: true
         round_corners: true
-        border_color: '#36505e'
+        border_color: '#4b515c'
       window_animation:
         fade_in_duration: 120
         fade_out_duration: 100
