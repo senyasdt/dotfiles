@@ -82,11 +82,21 @@ bars:
       left: 0
       right: 0
       bottom: 10
-    widgets:
+    layouts:
       left:
+        alignment: left
+        stretch: false
+      center:
+        alignment: center
+        stretch: false
+      right:
+        alignment: right
+        stretch: false
+    widgets:
+      left: []
+      center:
       - library
       - pinned
-      center:
       - taskbar
       right: []
 widgets:
@@ -317,7 +327,8 @@ widgets:
       class_name: systray
       label_collapsed: 
       label_expanded: 
-      icon_size: 16
+      icon_size: 28
+      icons_per_row: 6
       show_unpinned: false
       show_unpinned_button: true
       show_in_popup: true
@@ -396,23 +407,23 @@ widgets:
     options:
       label: '{data}'
       class_name: pinned-apps
-      image_icon_size: 30
+      image_icon_size: 32
       app_list:
-      - icon: 
+      - icon: __BRIDGE__\runtime\pinned-icons\explorer.png
         launch: explorer.exe
         name: Проводник
-      - icon: 
+      - icon: __BRIDGE__\runtime\pinned-icons\terminal.png
         launch: wt.exe
         name: Терминал
   taskbar:
     type: yasb.taskbar.TaskbarWidget
     options:
-      icon_size: 30
+      icon_size: 32
       tooltip: true
       monitor_exclusive: true
       show_only_visible: true
       strict_filtering: true
-      hide_empty: false
+      hide_empty: true
       animation:
         enabled: false
       preview:

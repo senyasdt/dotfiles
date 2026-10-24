@@ -49,14 +49,17 @@
 .media-widget .label { color: #9bb5c2; font-size: 11px; }
 .media-widget .btn { padding: 0 5px; color: #80cbc4; }
 .systray .unpinned-visibility-btn { color: #9bb5c2; padding: 0 3px; }
-.systray .icon { border-radius: 4px; margin: 0 3px; }
-.systray-popup { background-color: rgba(20, 35, 45, 190); border: 1px solid #36505e; border-radius: 14px; padding: 10px; }
-.catppuccin-dock .widget { padding: 0 8px; margin: 5px 1px; border-radius: 13px; }
+.systray .button { padding: 2px; margin: 0 2px; border-radius: 5px; }
+.systray-popup { background-color: rgba(20, 35, 45, 190); border: 1px solid #36505e; border-radius: 14px; padding: 16px; }
+.systray-popup .button { min-width: 36px; min-height: 36px; padding: 6px; margin: 3px; border-radius: 8px; background-color: transparent; }
+.systray-popup .button:hover { background-color: rgba(143, 191, 214, 40); }
+.catppuccin-dock .widget { padding: 0 5px; margin: 4px 1px; border-radius: 11px; }
 .catppuccin-dock .launchpad-widget .label { font-size: 28px; color: #80cbc4; padding: 0 7px; }
 .catppuccin-dock .quick-launch-widget .label { font-size: 23px; color: #8fbfd6; padding: 0 6px; }
-.catppuccin-dock .pinned-apps .label { font-size: 28px; color: #9bd1ca; padding: 0 9px; }
-.catppuccin-dock .taskbar-widget { border-left: 1px solid #36505e; padding-left: 10px; }
-.taskbar-widget .app-container { padding: 8px; margin: 0 2px; border-radius: 11px; border-bottom: 2px solid transparent; }
+.catppuccin-dock .pinned-apps .label { padding: 6px 8px; min-width: 32px; min-height: 32px; }
+.catppuccin-dock .taskbar-widget { border-left: 1px solid rgba(143,191,214,60); padding-left: 6px; }
+.taskbar-widget .app-container { padding: 6px; margin: 0 3px; border-radius: 10px; border-bottom: 2px solid transparent; }
+.taskbar-widget .app-icon { padding: 0; margin: 0; }
 .taskbar-widget .app-container.running { border-bottom: 2px solid #476674; }
 .taskbar-widget .app-container.foreground { background-color: #243c48; border-bottom: 2px solid #80cbc4; }
 .taskbar-widget .app-container:hover { background-color: #36505e; }
