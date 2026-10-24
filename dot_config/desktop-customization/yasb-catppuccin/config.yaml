@@ -262,7 +262,7 @@ widgets:
       window_style:
         enable_blur: true
         round_corners: true
-        border_color: '#4b515c'
+        border_color: None
       window_animation:
         fade_in_duration: 120
         fade_out_duration: 100
