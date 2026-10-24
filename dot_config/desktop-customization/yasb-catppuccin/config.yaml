@@ -1,0 +1,415 @@
+watch_stylesheet: true
+watch_config: true
+debug: false
+komorebi:
+  start_command: komorebic start --whkd
+  stop_command: komorebic stop --whkd
+  reload_command: komorebic reload-configuration
+bars:
+  catppuccin-top:
+    enabled: true
+    screens:
+    - '*'
+    class_name: catppuccin-top
+    alignment:
+      position: top
+      align: center
+    blur_effect:
+      enabled: true
+      dark_mode: true
+      round_corners: true
+      border_color: '#45475a'
+    animation:
+      enabled: false
+    window_flags:
+      always_on_top: true
+      windows_app_bar: true
+      hide_on_fullscreen: true
+    dimensions:
+      width: 100%
+      height: 36
+    padding:
+      top: 8
+      left: 10
+      right: 10
+      bottom: 6
+    widgets:
+      left:
+      - library
+      - workspaces
+      - layout
+      - active_window
+      center:
+      - clock
+      right:
+      - media
+      - vpn_domain_submit
+      - zmk
+      - vial
+      - ahk
+      - language
+      - open_meteo
+      - volume
+      - tray
+      - desktop_menu
+      - power_menu
+  catppuccin-dock:
+    enabled: true
+    screens:
+    - '*'
+    class_name: catppuccin-dock
+    alignment:
+      position: bottom
+      align: center
+    blur_effect:
+      enabled: true
+      dark_mode: true
+      round_corners: true
+      border_color: '#45475a'
+    animation:
+      enabled: false
+    window_flags:
+      always_on_top: true
+      windows_app_bar: false
+      hide_on_fullscreen: true
+      auto_hide: false
+    dimensions:
+      width: auto
+      height: 64
+    padding:
+      top: 0
+      left: 0
+      right: 0
+      bottom: 10
+    widgets:
+      left:
+      - library
+      - pinned
+      center:
+      - taskbar
+      right: []
+widgets:
+  vpn_domain_submit:
+    type: yasb.custom.CustomWidget
+    options:
+      label: VPN +
+      class_name: vpn-domain-submit-widget
+      tooltip: true
+      tooltip_label: 'Left: add/check domain | Right: check clipboard domain'
+      callbacks:
+        on_left: exec wscript.exe "C:\Users\druzh\.config\yasb\scripts\vpn_domain_submit_launcher.vbs"
+        on_middle: exec wscript.exe "C:\Users\druzh\.config\yasb\scripts\vpn_domain_submit_launcher.vbs"
+        on_right: exec wscript.exe "C:\Users\druzh\.config\yasb\scripts\vpn_domain_check_launcher.vbs"
+      exec_options:
+        use_shell: false
+  language:
+    type: yasb.language.LanguageWidget
+    options:
+      label: '{lang[language_code]}'
+      label_alt: '{lang[full_layout_name]}'
+      update_interval: 5
+      callbacks:
+        on_left: toggle_menu
+        on_right: toggle_label
+      language_menu:
+        blur: true
+        round_corners: true
+        round_corners_type: normal
+        border_color: None
+        alignment: right
+        direction: down
+        offset_top: 8
+        offset_left: 0
+        show_layout_icon: true
+        layout_icon: 
+  open_meteo:
+    type: yasb.open_meteo.OpenMeteoWidget
+    options:
+      label: <span>{icon}</span> {temp}
+      label_alt: '{location}: Min {min_temp}, Max {max_temp}, Humidity {humidity}'
+      tooltip: true
+      update_interval: 1800
+      hide_decimal: true
+      units: metric
+      callbacks:
+        on_left: toggle_card
+        on_middle: do_nothing
+        on_right: toggle_label
+      icons:
+        sunnyDay: 
+        clearNight: 
+        cloudyDay: 
+        cloudyNight: 
+        drizzleDay: "\uDB81\uDE7E"
+        drizzleNight: "\uDB81\uDE7E"
+        rainyDay: 
+        rainyNight: 
+        snowyDay: 
+        snowyNight: 
+        foggyDay: 
+        foggyNight: 
+        thunderstormDay: 
+        thunderstormNight: 
+        default: 
+      weather_card:
+        blur: true
+        round_corners: true
+        round_corners_type: normal
+        border_color: '#45475a'
+        alignment: right
+        direction: down
+        icon_size: 48
+        show_hourly_forecast: true
+        time_format: 24h
+        hourly_point_spacing: 76
+        hourly_icon_size: 24
+        icon_smoothing: true
+        temp_line_width: 2
+        current_line_color: '#8EAEE8'
+        current_line_width: 1
+        current_line_style: dot
+        hourly_gradient:
+          enabled: false
+          top_color: '#8EAEE8'
+          bottom_color: '#2A3E68'
+        hourly_forecast_buttons:
+          enabled: false
+          default_view: temperature
+          temperature_icon: "\uDB81\uDD99"
+          rain_icon: "\uDB81\uDD96"
+          snow_icon: "\uDB81\uDD98"
+        weather_animation:
+          enabled: false
+          snow_overrides_rain: true
+          temp_line_animation_style: both
+          rain_effect_intensity: 1.0
+          snow_effect_intensity: 1.0
+          scale_with_chance: true
+  volume:
+    type: yasb.volume.VolumeWidget
+    options:
+      label: <span>{icon}</span> {level}
+      label_alt: '{volume}'
+      volume_icons:
+      - 
+      - 
+      - 
+      - 
+      - 
+      callbacks:
+        on_right: exec cmd.exe /c start ms-settings:sound
+  power_menu:
+    type: yasb.power_menu.PowerMenuWidget
+    options:
+      label: 
+      uptime: true
+      blur: false
+      blur_background: true
+      animation_duration: 150
+      button_row: 3
+      buttons:
+        lock:
+        - 
+        - Lock
+        signout:
+        - "\uDB80\uDF43"
+        - Sign out
+        shutdown:
+        - 
+        - Shut Down
+        restart:
+        - 
+        - Restart
+        hibernate:
+        - 
+        - Hibernate
+        cancel:
+        - "\uDB81\uDF3A"
+        - Cancel
+  library:
+    type: yasb.launchpad.LaunchpadWidget
+    options:
+      label: 
+      search_placeholder: Все приложения · начни вводить название
+      app_icon_size: 56
+      group_apps: false
+      window:
+        width: 1040
+        height: 720
+        fullscreen: false
+        overlay_block: true
+      window_style:
+        enable_blur: true
+        round_corners: true
+        border_color: '#45475a'
+      window_animation:
+        fade_in_duration: 120
+        fade_out_duration: 100
+      keybindings:
+      - keys: alt+f12
+        action: toggle_launchpad
+  workspaces:
+    type: komorebi.workspaces.WorkspaceWidget
+    options:
+      label_offline: K OFF
+      label_workspace_btn: '{index}'
+      label_workspace_active_btn: '{index}'
+      label_default_name: '{index}'
+      label_zero_index: false
+      hide_empty_workspaces: false
+      hide_if_offline: false
+  layout:
+    type: komorebi.active_layout.ActiveLayoutWidget
+    options:
+      label: '{icon}'
+      hide_if_offline: false
+      layouts:
+      - bsp
+      layout_icons:
+        bsp: BSP
+        monocle: MONO
+        maximised: MAX
+        floating: FLOAT
+        paused: PAUSED
+      callbacks:
+        on_left: toggle_monocle
+        on_right: do_nothing
+  clock:
+    type: yasb.clock.ClockWidget
+    options:
+      label: '{%a, %d %b  %H:%M}'
+      label_alt: '{%A, %d %B %Y  %H:%M}'
+  active_window:
+    type: yasb.active_window.ActiveWindowWidget
+    options:
+      label: '{win[title]}'
+      label_no_window: Рабочий стол
+      label_icon: true
+      label_icon_size: 16
+      max_length: 28
+      monitor_exclusive: true
+  media:
+    type: yasb.media.MediaWidget
+    options:
+      label: '{title}'
+      label_alt: '{artist}'
+      max_field_size:
+        label: 18
+        label_alt: 18
+      show_thumbnail: false
+      hide_empty: true
+      controls_only: false
+      controls_left: true
+  tray:
+    type: yasb.systray.SystrayWidget
+    options:
+      class_name: systray
+      label_collapsed: 
+      label_expanded: 
+      icon_size: 16
+      show_unpinned: false
+      show_unpinned_button: true
+      show_in_popup: true
+      show_battery: false
+      show_volume: false
+      show_network: true
+      use_hook: false
+  ahk:
+    type: yasb.custom.CustomWidget
+    options:
+      label: '{data[label]}'
+      class_name: ahk-widget
+      callbacks:
+        on_left: exec "__BRIDGE__\DesktopBridge.exe" --menu ahk
+        on_right: exec "__LAUNCHER__\ScriptLauncher.exe" --disable-all
+      label_alt: '{data[label]}'
+      tooltip: true
+      tooltip_label: '{data[tooltip]}'
+      exec_options:
+        run_cmd: __BRIDGE_CMD__\DesktopBridge.exe --read ahk
+        run_interval: 2000
+        return_format: json
+        use_shell: false
+        encoding: utf-8
+        hide_empty: false
+  vial:
+    type: yasb.custom.CustomWidget
+    options:
+      label: '{data[label]}'
+      class_name: vial-widget
+      callbacks:
+        on_right: toggle_label
+        on_left: exec wscript.exe "%USERPROFILE%\.config\yasb\scripts\vial_layout_overlay_launcher.vbs"
+      label_alt: '{data[label]}'
+      tooltip: true
+      tooltip_label: '{data[tooltip]}'
+      exec_options:
+        run_cmd: __BRIDGE_CMD__\DesktopBridge.exe --read vial
+        run_interval: 1000
+        return_format: json
+        use_shell: false
+        encoding: utf-8
+        hide_empty: false
+  zmk:
+    type: yasb.custom.CustomWidget
+    options:
+      label: '{data[label]}'
+      class_name: zmk-widget
+      callbacks:
+        on_right: toggle_label
+        on_left: exec explorer.exe "%APPDATA%\zmk-yasb"
+      label_alt: '{data[label]}'
+      tooltip: true
+      tooltip_label: '{data[tooltip]}'
+      exec_options:
+        run_cmd: __BRIDGE_CMD__\DesktopBridge.exe --read zmk
+        run_interval: 1000
+        return_format: json
+        use_shell: false
+        encoding: utf-8
+        hide_empty: false
+  desktop_menu:
+    type: yasb.custom.CustomWidget
+    options:
+      label: 
+      class_name: desktop-menu
+      callbacks:
+        on_left: exec "__BRIDGE__\DesktopBridge.exe" --menu main
+        on_right: exec "__BRIDGE__\DesktopBridge.exe" --menu main
+      tooltip: true
+      tooltip_label: Профиль Catppuccin · настройки и быстрый откат
+      exec_options:
+        use_shell: false
+  pinned:
+    type: yasb.applications.ApplicationsWidget
+    options:
+      label: '{data}'
+      class_name: pinned-apps
+      image_icon_size: 30
+      app_list:
+      - icon: 
+        launch: explorer.exe
+        name: Проводник
+      - icon: 
+        launch: wt.exe
+        name: Терминал
+  taskbar:
+    type: yasb.taskbar.TaskbarWidget
+    options:
+      icon_size: 30
+      tooltip: true
+      monitor_exclusive: true
+      show_only_visible: true
+      strict_filtering: true
+      hide_empty: false
+      animation:
+        enabled: false
+      preview:
+        enabled: true
+        width: 280
+        delay: 400
+      ignore_apps:
+        processes:
+        - Dock_64.exe
+        - FinderWidgets.exe
+        - DesktopBridge.exe

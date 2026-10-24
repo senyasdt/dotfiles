@@ -126,3 +126,21 @@ Ansible remains the Linux/macOS and homelab orchestrator. Windows can later be
 managed from a Linux controller over PSRP/WinRM or SSH, invoking these same native
 scripts in the correct user context. For a single personal PC, the native restore
 entry avoids adding a controller and remote-session desktop differences.
+
+## Optional Catppuccin profile (branch yasb-catppuccin)
+
+`restore.ps1 -Profiles full,desktop -Bar yasb -Theme catppuccin` previews the
+choice; add `-Apply` for provisioning and activation. Existing HOMEPC should use
+the already installed profile's Apply/Rollback commands, not run a global restore
+over its legacy helpers and active komorebi junction.
+
+The profile provides a top panel, smart bottom dock, populated Launchpad with integrated search, AHK controls, keyboard states and VPN callbacks. MyDockFinder and
+its FinderWidgets are stopped and backed-up login entries disabled. It keeps
+komorebi, BSP and the AHK game rules. Theme outputs are excluded from ordinary
+chezmoi apply while WINDOWS_DESKTOP_THEME=catppuccin; Manage.ps1 owns them.
+Desktop Session starts the profile, without adding a second profile Startup
+shortcut on clean installations. Do not delete its private rollback directory.
+
+See the [profile guide](../../dot_config/desktop-customization/yasb-catppuccin/README.md)
+for installation, all shortcuts, both rollback paths and the actual validation
+limits. Tested YASB version: 2.0.0. No clean VM/reboot test is claimed.

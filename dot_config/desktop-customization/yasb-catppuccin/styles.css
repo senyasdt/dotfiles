@@ -1,0 +1,103 @@
+/* Catppuccin Mocha. Panels and popups share one palette; no system theme patch. */
+* {
+    font-family: "JetBrainsMono NFP", "JetBrainsMono Nerd Font", "Segoe UI";
+    font-size: 12px;
+    color: #cdd6f4;
+    font-weight: 500;
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.bar.catppuccin-top {
+    background-color: rgba(24, 24, 37, 244);
+    border: 1px solid #313244;
+    border-radius: 12px;
+}
+.bar.catppuccin-dock {
+    background-color: rgba(24, 24, 37, 245);
+    border: 1px solid #45475a;
+    border-radius: 20px;
+}
+.widget { padding: 0 7px; margin: 3px 0; border-radius: 8px; }
+.widget .label { padding: 0 2px; }
+.widget .icon { color: #b4befe; font-size: 15px; }
+.widget:hover { background-color: #313244; }
+.launchpad-widget .label { color: #cba6f7; font-size: 18px; }
+.komorebi-workspaces { padding: 0 3px; }
+.komorebi-workspaces .widget-container { padding: 0; }
+.komorebi-workspaces .ws-btn {
+    color: #6c7086; background-color: transparent; border-radius: 7px;
+    padding: 0 7px; margin: 2px; min-width: 12px; font-weight: 600;
+}
+.komorebi-workspaces .ws-btn.populated { color: #cdd6f4; background-color: #313244; }
+.komorebi-workspaces .ws-btn.active { color: #1e1e2e; background-color: #cba6f7; }
+.komorebi-workspaces .ws-btn:hover { color: #1e1e2e; background-color: #b4befe; }
+.komorebi-active-layout .label { color: #89b4fa; font-size: 10px; font-weight: 700; }
+.active-window-widget .label { color: #a6adc8; font-size: 11px; }
+.clock-widget .label { color: #f5c2e7; font-weight: 600; padding: 0 8px; }
+.ahk-widget .label { color: #a6e3a1; }
+.vial-widget .label { color: #f9e2af; }
+.zmk-widget .label { color: #89dceb; }
+.vpn-domain-submit-widget .label { color: #b4befe; }
+.language-widget .label { color: #bac2de; }
+.open-meteo-widget .label { color: #f9e2af; }
+.volume-widget .label { color: #fab387; }
+.power-menu-widget .label { color: #f38ba8; font-size: 15px; }
+.desktop-menu .label { color: #a6adc8; font-size: 16px; }
+.media-widget { background-color: #1e1e2e; }
+.media-widget .label { color: #a6adc8; font-size: 11px; }
+.media-widget .btn { padding: 0 5px; color: #cba6f7; }
+.systray .unpinned-visibility-btn { color: #a6adc8; padding: 0 3px; }
+.systray .icon { border-radius: 4px; margin: 0 3px; }
+.systray-popup { background-color: #1e1e2e; border: 1px solid #45475a; border-radius: 14px; padding: 10px; }
+.catppuccin-dock .widget { padding: 0 8px; margin: 5px 1px; border-radius: 13px; }
+.catppuccin-dock .launchpad-widget .label { font-size: 28px; color: #cba6f7; padding: 0 7px; }
+.catppuccin-dock .quick-launch-widget .label { font-size: 23px; color: #89b4fa; padding: 0 6px; }
+.catppuccin-dock .pinned-apps .label { font-size: 28px; color: #f9e2af; padding: 0 9px; }
+.catppuccin-dock .taskbar-widget { border-left: 1px solid #45475a; padding-left: 10px; }
+.taskbar-widget .app-container { padding: 8px; margin: 0 2px; border-radius: 11px; border-bottom: 2px solid transparent; }
+.taskbar-widget .app-container.running { border-bottom: 2px solid #585b70; }
+.taskbar-widget .app-container.foreground { background-color: #313244; border-bottom: 2px solid #cba6f7; }
+.taskbar-widget .app-container:hover { background-color: #45475a; }
+.taskbar-widget .app-container.flashing { background-color: #f9e2af; }
+.taskbar-preview, .taskbar-preview .header { background-color: #1e1e2e; border-radius: 12px; padding: 8px; }
+QToolTip { background-color: #1e1e2e; color: #cdd6f4; border: 1px solid #45475a; border-radius: 7px; padding: 8px 12px; }
+.context-menu { background-color: #1e1e2e; border: 1px solid #45475a; border-radius: 10px; padding: 6px; }
+.context-menu::item { padding: 8px 24px 8px 12px; border-radius: 6px; }
+.context-menu::item:selected { background-color: #45475a; color: #cdd6f4; }
+.context-menu::separator { height: 1px; background-color: #313244; margin: 5px; }
+.launchpad { background-color: rgba(17,17,27,195); }
+.launchpad .launchpad-container { background-color: #1e1e2e; border: 1px solid #45475a; border-radius: 22px; padding: 24px; }
+.launchpad .search-container { background-color: transparent; padding: 4px 16px 20px; }
+.launchpad .search-input { background-color: #313244; border: 1px solid #45475a; border-radius: 12px; padding: 13px 18px; color: #cdd6f4; font-size: 15px; }
+.launchpad .search-input:focus { border: 1px solid #cba6f7; }
+.launchpad .launchpad-scroll-area, .launchpad #grid-container, .launchpad .launchpad-scroll-area QWidget { background-color: transparent; }
+.launchpad .app-icon { background-color: transparent; border: 1px solid transparent; border-radius: 14px; padding: 10px 5px; }
+.launchpad .app-icon:hover, .launchpad .app-icon:focus { background-color: #313244; border: 1px solid #585b70; }
+.launchpad .app-icon .title { color: #cdd6f4; font-family: "Segoe UI"; font-size: 12px; padding-top: 8px; }
+.launchpad .app-icon .icon { background-color: transparent; }
+.launchpad .group-icon { background-color: #313244; border-radius: 14px; }
+.launchpad .group-back-button { background-color: #45475a; border-radius: 8px; padding: 8px 16px; }
+QScrollBar:vertical { background-color: transparent; width: 6px; margin: 3px; }
+QScrollBar::handle:vertical { background-color: #585b70; border-radius: 3px; min-height: 24px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
+.app-dialog { background-color: #1e1e2e; padding: 20px; }
+.app-dialog QLineEdit { background-color: #313244; border-radius: 7px; padding: 9px; }
+.app-dialog .button { background-color: #45475a; border-radius: 7px; padding: 8px 18px; }
+.app-dialog .button.save, .app-dialog .button.add { background-color: #cba6f7; color: #1e1e2e; }
+.calendar, .volume-slider, .audio-menu, .language-menu, .weather-card, .open-meteo-card {
+    background-color: #1e1e2e; border: 1px solid #45475a; border-radius: 14px; padding: 14px;
+}
+.calendar .calendar-table { background-color: transparent; }
+.calendar .calendar-table::item:selected { background-color: #cba6f7; color: #1e1e2e; border-radius: 6px; }
+.calendar .day-label, .calendar .month-label, .calendar .date-label { color: #cba6f7; }
+.language-menu .layout-item { padding: 10px 16px; border-radius: 7px; }
+.language-menu .layout-item:hover, .language-menu .layout-item.active { background-color: #313244; color: #cba6f7; }
+.volume-slider QSlider::groove:horizontal { background: #45475a; height: 5px; border-radius: 2px; }
+.volume-slider QSlider::sub-page:horizontal { background: #fab387; border-radius: 2px; }
+.volume-slider QSlider::handle:horizontal { background: #fab387; width: 14px; margin: -5px 0; border-radius: 7px; }
+.power-menu-popup { background-color: rgba(17,17,27,235); border: 1px solid #45475a; border-radius: 20px; padding: 24px; }
+.power-menu-popup .button { background-color: #313244; border-radius: 14px; padding: 24px; margin: 8px; }
+.power-menu-popup .button:hover { background-color: #45475a; }
+.power-menu-popup .button .icon { color: #cba6f7; font-size: 32px; }

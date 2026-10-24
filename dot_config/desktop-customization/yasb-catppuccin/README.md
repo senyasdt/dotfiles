@@ -1,0 +1,127 @@
+# YASB · Catppuccin Mocha
+
+Опциональный Windows desktop-профиль, ветка `yasb-catppuccin`. Проверен с YASB
+2.0.0 / CLI 1.1.7 и komorebi 0.1.41 на HOMEPC 24 октября 2026 года.
+Оформление вдохновлено [Villoh — Win11 Catppuccin Edition](https://www.reddit.com/r/desktops/comments/1rvjrok/win11_catppuccin_edition/).
+Требования владельца взяты из обсуждения и
+[общего чата](https://chatgpt.com/share/6adc0b89-947c-83eb-94a2-2db9fe41c81e).
+
+## Что включено
+
+- Верхняя панель Mocha: девять пространств komorebi, BSP/monocle, активное окно,
+  часы, музыка, VPN, Vial/ZMK, AHK, раскладка, погода, звук, трей, меню профиля.
+- Нижний док: библиотека приложений, поиск внутри Launchpad, Проводник,
+  Терминал и открытые окна. ЛКМ по окну переключает его, ПКМ — меню, наведение — preview.
+- Launchpad с поиском: импорт Start Menu + AppsFolder, включая packaged apps.
+  Импортер извлекает существующие значки Windows; private каталог не хранится в Git.
+- Alt+F12 регистрирует сам YASB. Одиночный Win вызывает тот же shortcut через
+  управляемый AHK; сочетания Win+E и другие сохраняют прежнюю логику Win-tap.
+  Когда правила игры закрыли AHK, доступны мышь и родной Alt+F12 YASB.
+- AHK: ЛКМ открывает меню отдельных скриптов, ПКМ выключает все. Ручное
+  выключение и игровые правила остаются у существующего ScriptLauncher.
+  Vial: ЛКМ открывает прежний overlay; ZMK: ЛКМ открывает папку данных.
+  VPN: ЛКМ добавляет/проверяет домен, ПКМ проверяет домен из буфера.
+- `…` вверху: настройки, системная библиотека и оба варианта отката.
+
+Это оформление YASB. Тема Explorer, темы приложений, wallpaper и системные
+патчи Windows этим профилем не устанавливаются. komorebi/whkd, HID-прошивки,
+текущая IPC junction и правила игр не заменяются.
+
+## Быстрый возврат
+
+Запускать обычным пользователем, администратор не нужен:
+
+- **Restore Previous.cmd**: точный config/CSS/Win-helper/MyDock INI и прежний
+  Startup из private snapshot перед экспериментом; запускает ранее работавшие
+  MyDockFinder/FinderWidgets/YASB. Возвращает прежние theme/bar user env.
+- **Restore Before MyDock.cmd**: прежнее расположение YASB и CSS, стандартная
+  панель задач, обычный Win. Legacy кнопка рестарта теперь открывает безопасное
+  меню AHK; старый daemon chain не возвращается. Конфиг не содержит API key.
+- **Apply Catppuccin.cmd**: снова включает этот профиль, snapshot не перезаписывает.
+- **Show Windows Taskbar.cmd**: останавливает помощник дока и показывает
+  стандартную панель задач, оставляя верхний YASB.
+
+Ярлыки также созданы в **Start Menu → Desktop Profiles**; рабочий стол ими не
+засоряется. Файлы `private/`, `runtime/`, настройки текущего ПК и EXE не коммитятся.
+Private snapshot содержит чувствительные старые настройки: хранить отдельно от Git.
+
+На HOMEPC текущая установка находится в
+`%USERPROFILE%/WorkingFolder/desktop-customization/yasb-catppuccin`.
+Не удалять эту папку: оттуда работает помощник, Startup и откат. Исходники на
+ветке находятся в `dot_config/desktop-customization/yasb-catppuccin`.
+Старые helpers WorkingFolder и активная junction komorebi оставлены на местах.
+
+## Новая машина / ручная установка
+
+Нативный Windows `restore.ps1 -Profiles full,desktop -Bar yasb -Theme catppuccin`
+показывает план; с `-Apply` применяет профиль после обычного восстановления.
+Для существующей установки, где уже есть ScriptLauncher и YASB:
+
+```powershell
+# Из разложенной chezmoi папки .config/desktop-customization/yasb-catppuccin
+Copy-Item settings.example.json settings.json
+# При необходимости поправить пути существующих helpers в settings.json.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Manage.ps1 -Action Build
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Manage.ps1 -Action Apply
+```
+
+Стандартный путь helpers — `%USERPROFILE%/.config/desktop-customization`.
+Профиль требует ScriptLauncher из dotfiles, установленный YASB и Windows .NET
+Framework compiler. Импортер работает через штатный Windows PowerShell 5.1,
+включая вызов из PowerShell 7. Python для установки не нужен.
+Нужен JetBrains Mono Nerd Font (NFP): на HOMEPC он установлен; на новом ПК
+завершить font setup первого запуска YASB. Это пока ручной checkpoint.
+
+`WINDOWS_DESKTOP_THEME=catppuccin` защищает активные config/CSS/Win-helper от
+перезаписи стандартным chezmoi apply этой ветки. Их владелец — Manage.ps1;
+остальные source-файлы продолжают управляться chezmoi. Проверять diff перед apply.
+Если есть Desktop Session, он запускает профиль; отдельный Startup ярлык тогда
+не создаётся. На текущем HOMEPC до миграции остаётся отдельный YASB Catppuccin.
+Защищённая задача YASB Reborn ещё существует; single-instance исключает второй
+YASB, её будущая admin cleanup — отдельный ранее подготовленный шаг.
+
+## Как устроен док
+
+DesktopBridge — нативный .NET helper. Получает события komorebi через отдельный
+named pipe; CLI вызывается при подключении/переподключении, не в цикле.
+Пустое активное пространство: док виден. Есть managed tiling/floating окна:
+док скрыт, появляется у нижнего края по центру и остаётся под мышью/при popup.
+Полноэкранное активное окно скрывает док. Если komorebi недоступен, используется
+проверка обычных видимых окон. Служебные unmanaged окна вне komorebi не мешают
+показу на пустом пространстве; fullscreen проверяется отдельно.
+
+Определение края/полноэкранного окна обновляется каждые 400 мс; процессы YASB и
+native taskbar проверяются реже. Статус пишется при изменении или раз в 10 секунд,
+лог ограничен по размеру. При нормальном выходе helper или остановке YASB
+стандартная панель задач возвращается. При принудительном завершении helper
+использовать rescue/rollback: произвольный crash не равен штатному выходу.
+
+`runtime/dock-status.json`, `Manage.ps1 -Action Status` — диагностика.
+`Manage.ps1 -Action ImportApps` **пересобирает** каталог из установленных приложений:
+ручной порядок/группы Launchpad при этом сбрасываются. После импорта следующие
+открытия Launchpad видят новый каталог. Для portable приложений добавить ярлык
+в Start Menu либо добавить приложение через меню Launchpad.
+
+## Проверка и ограничения
+
+Проверены сборка, политика дока, JSONSchema YASB, реальные AHK/HID JSON, живое
+переключение пустого/занятого пространства и оба отката. В точном откате четыре
+файла совпали с SHA256 private snapshot. Все 9 BSP и исправленный IPC сохранены.
+Библиотека импортировала 392 приложения; это каталог данной машины, не гарантия
+полного обнаружения незарегистрированных portable EXE.
+
+Визуальный проход, клики меню, фактическое открытие приложений из Launchpad,
+новый Win-tap, проверка fullscreen/края мышью, несколько мониторов, reboot и
+реальные игры не подтверждены. Computer Use не получил доступ к приложению до
+тайм-аута; это не результат визуального теста. Регистрация Alt+F12 видна в логах.
+Прежний Win-tap/Win+E был подтверждён владельцем до замены адресата на YASB.
+
+Open-Meteo уже возвращал сетевую ошибку до эксперимента и продолжает показывать
+неполученные данные. Сетевые/VPN настройки профилем не изменяются.
+Игровая блокировка AHK остаётся опросом процессов: не обещает успеть до первой
+проверки античита. Чистая VM, повторный restore и вход после reboot ещё нужны,
+прежде чем считать весь Windows recovery полностью проверенным.
+
+Quick Launch не включён: в установленной версии наблюдались частые перестроения
+его индекса при изменениях Windows Packages. Поиск находится в Launchpad;
+отдельный индексатор для него не нужен.

@@ -1,6 +1,7 @@
 param(
     [string[]]$Profiles=$(if($env:CHEZMOI_PROFILES){$env:CHEZMOI_PROFILES}else{'full'}),
     [ValidateSet('none','yasb','mydockfinder')][string]$Bar='none',
+    [ValidateSet('classic','catppuccin')][string]$Theme='classic',
     [switch]$Plan
 )
 $ErrorActionPreference = "Stop"
@@ -99,6 +100,7 @@ $wingetPackages = @(
 if($activeProfiles -contains 'lite'){$scoopPackages=@('git','ripgrep','fd','fzf','bat','jq','chezmoi')}
 if($desktop){$scoopPackages+=@('komorebi','whkd')}else{$wingetPackages=@()}
 if($desktop -and $Bar -eq 'yasb'){$wingetPackages+='AmN.yasb'}
+if($Theme -eq 'catppuccin'){$wingetPackages=@($wingetPackages|Where-Object {$_ -ne 'Flow-Launcher.Flow-Launcher'})}
 
 $powershellModules = @(
     "posh-git",

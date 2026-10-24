@@ -1,0 +1,5 @@
+{
+  "scriptLauncherRoot": "%USERPROFILE%\\.config\\desktop-customization\\script-launcher",
+  "finderWidgetsRoot": "%USERPROFILE%\\.config\\desktop-customization\\finder-widgets",
+  "myDockExecutable": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\MyDockFinder\\Dock_64.exe"
+}

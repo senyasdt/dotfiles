@@ -82,6 +82,17 @@ komorebi.json
 .config/yamusic-tui/**
 {{- end }}
 
+
+# The optional profile owns these live outputs. Apply it through Manage.ps1.
+{{- if eq (env "WINDOWS_DESKTOP_THEME" | default "classic") "catppuccin" }}
+.config/yasb/config.yaml
+.config/yasb/styles.css
+.config/autohotkey/mydockfinder-hotkeys.ahk
+{{- end }}
+
+.config/desktop-customization/yasb-catppuccin/private/**
+.config/desktop-customization/yasb-catppuccin/settings.json
+
 # Generated / local state
 .oh-my-zsh/cache/**
 .config/zsh/themes/**
