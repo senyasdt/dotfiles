@@ -7,7 +7,7 @@ komorebi:
   reload_command: "komorebic reload-configuration"
 bars:
   status-bar:
-    enabled: true
+    enabled: {{ eq (env "WINDOWS_DESKTOP_BAR" | default "none") "yasb" }}
     screens: ["*"]
     class_name: "yasb-bar"
     alignment:
@@ -33,8 +33,36 @@ bars:
     widgets:
       left: ["win_button", "active_window"]
       center: ["clock", "komorebi_workspaces", "komorebi_active_layout"]
-      right: ["vial_layer", "daemon_reset", "media", "language", "open_meteo", "volume", "apps", "power_menu"]
+      right: ["vpn_domain_submit", "zmk_layer", "vial_layer", "daemon_reset", "media", "language", "open_meteo", "volume", "apps", "power_menu"]
 widgets:
+  vpn_domain_submit:
+    type: "yasb.custom.CustomWidget"
+    options:
+      label: "VPN +"
+      class_name: "vpn-domain-submit-widget"
+      tooltip: true
+      tooltip_label: "Left: add/check domain | Right: check clipboard domain"
+      callbacks:
+        on_left: 'exec cmd /c wscript.exe "%USERPROFILE%\.config\yasb\scripts\vpn_domain_submit_launcher.vbs"'
+        on_middle: 'exec cmd /c wscript.exe "%USERPROFILE%\.config\yasb\scripts\vpn_domain_submit_launcher.vbs"'
+        on_right: 'exec cmd /c wscript.exe "%USERPROFILE%\.config\yasb\scripts\vpn_domain_check_launcher.vbs"'
+  zmk_layer:
+    type: "yasb.custom.CustomWidget"
+    options:
+      label: "ZMK {data[status]} - {data[label]}"
+      label_alt: "ZMK {data[status]} - {data[label]} - {data[battery_halves]}"
+      class_name: "zmk-layer-widget"
+      tooltip: true
+      tooltip_label: "{data[tooltip]}"
+      exec_options:
+        run_cmd: '%USERPROFILE%\.config\yasb\scripts\yasb-state-reader.exe -path %APPDATA%\zmk-yasb\state.json'
+        run_interval: 250
+        return_format: "json"
+        hide_empty: false
+        use_shell: false
+        encoding: "utf-8"
+      callbacks:
+        on_right: "toggle_label"
   vial_layer:
     type: "yasb.custom.CustomWidget"
     options:
@@ -43,15 +71,15 @@ widgets:
       class_name: "vial-layer-widget"
       tooltip: false
       exec_options:
-        run_cmd: 'cmd /c type %APPDATA%\vial-helper\state.json'
+        run_cmd: 'cmd /c ""%USERPROFILE%\.config\yasb\scripts\yasb-state-reader.exe" -path "%APPDATA%\vial-helper\state.json""'
         run_interval: 250
         return_format: "json"
         hide_empty: false
-        use_shell: true
+        use_shell: false
         encoding: "utf-8"
       callbacks:
-        on_left: 'exec pythonw %USERPROFILE%\.config\yasb\scripts\vial_layout_overlay.py'
-        on_middle: "toggle_label"
+        on_left: 'exec cmd /c wscript.exe "%USERPROFILE%\.config\yasb\scripts\vial_layout_overlay_launcher.vbs"'
+        on_right: "toggle_label"
   daemon_reset:
     type: "yasb.custom.CustomWidget"
     options:
@@ -232,7 +260,7 @@ widgets:
     options:
       label: "<span>{icon}</span> {temp}"
       label_alt: "{location}: Min {min_temp}, Max {max_temp}, Humidity {humidity}"
-      api_key: "626c3c359f4846da9d7192833261105" # Get your free API key from https://www.weatherapi.com/
+      api_key: {{ env "WEATHER_API_KEY" | default "" | quote }}
       update_interval: 600 # Update interval in seconds, Min 600 seconds
       hide_decimal: true
       location: "Saint Petersburg Russia" # You can use "USA Los Angeles 90006" {COUNTRY CITY ZIP_CODE}, or just city.

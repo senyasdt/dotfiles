@@ -91,31 +91,23 @@ CHEZMOI_PROFILES=full,desktop "$(chezmoi source-path)/provision/update.sh"
 
 ## Windows
 
-Install `chezmoi` natively on Windows, run the explicit provisioner, then apply
-from PowerShell:
-
-```powershell
-chezmoi init senyasdt
-cd "$(chezmoi source-path)"
-powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\install.ps1
-$env:CHEZMOI_PROFILES="full,desktop"
-chezmoi apply
-```
-
-Or for an existing checkout:
-
-```powershell
-chezmoi apply
-```
-
-Update an existing Windows machine:
+The current recovery entry point is [Windows workstation restore](provision/windows/README.md).
+Run it natively as the intended desktop user. The default is plan-only:
 
 ```powershell
 $env:CHEZMOI_PROFILES="full,desktop"
-powershell.exe -ExecutionPolicy Bypass -File "$(chezmoi source-path)\provision\windows\update.ps1"
+chezmoi init git@github.com:senyasdt/dotfiles.git
+$src = chezmoi source-path
+& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Bar none
+& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Bar none -Apply
 ```
 
-WSL is not required for Windows apply.
+Windows uses a native PowerShell provisioner; Ansible remains for Linux/macOS.
+The grouped AHK manager and tray widgets are built from source after apply.
+MyDockFinder and YASB are optional bar choices; the independent **All Applications**
+shortcut remains available without either. Existing HOMEPC migration requires
+reviewing old Startup/tasks and its repaired komorebi junction first; this source
+update alone does not migrate the running helpers. WSL is not required.
 
 ## Workflow
 

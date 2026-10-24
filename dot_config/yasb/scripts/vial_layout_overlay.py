@@ -89,6 +89,15 @@ MAX_COMBO_ROWS = 6
 MAX_TAP_DANCE_ROWS = 4
 
 TD_RE = re.compile(r"^TD\((\d+)\)$")
+INT_RE = re.compile(r"-?\d+")
+
+APP_LAYER_TOKENS = (
+    "zbrush",
+    "blender",
+    "fusion",
+    "clip paint",
+    "clip studio",
+)
 
 
 # ============================================================
@@ -220,6 +229,77 @@ def compact_label(label: str, max_len: int = 18) -> str:
     return label[:max_len - 1] + "…"
 
 
+def display_title(binding: dict, fallback: str = "") -> str:
+    for key in ("title", "comment"):
+        value = str(binding.get(key, "")).strip()
+        if value:
+            return value
+    return fallback
+
+
+def token_match(hint: str, value: str) -> bool:
+    hint_words = re.findall(r"[a-z0-9]+", hint.lower())
+    value_words = re.findall(r"[a-z0-9]+", value.lower())
+    if not hint_words or not value_words:
+        return False
+
+    if all(word in value_words for word in hint_words):
+        return True
+    if all(word in hint_words for word in value_words):
+        return True
+
+    hint_joined = "".join(hint_words)
+    value_joined = "".join(value_words)
+    return bool(hint_joined and value_joined and (hint_joined in value_joined or value_joined in hint_joined))
+
+
+def is_app_layer_name(name: str) -> bool:
+    value = str(name or "").strip().lower()
+    return any(token_match(value, token) for token in APP_LAYER_TOKENS)
+
+
+def effective_layer_indexes(state: dict) -> list[int]:
+    values = state.get("effective", [])
+
+    if isinstance(values, list):
+        candidates = values
+    else:
+        candidates = INT_RE.findall(str(values or ""))
+
+    result = []
+
+    for value in candidates:
+        try:
+            index = int(value)
+        except (TypeError, ValueError):
+            continue
+        if index >= 0:
+            result.append(index)
+
+    return result
+
+
+def layer_context_hint(layer_index: int, state: dict, layer_names: dict) -> str:
+    layer_name = layer_names.get(str(layer_index), f"L{layer_index}")
+    if is_app_layer_name(layer_name):
+        return layer_name.lower()
+
+    for index in reversed(effective_layer_indexes(state)):
+        if index == layer_index:
+            continue
+
+        effective_name = layer_names.get(str(index), "")
+        if is_app_layer_name(effective_name):
+            return effective_name.lower()
+
+    for key in ("label", "name"):
+        state_name = str(state.get(key, "")).strip()
+        if is_app_layer_name(state_name):
+            return state_name.lower()
+
+    return layer_name.lower()
+
+
 def ahk_bindings_map(ahk_data: dict) -> dict:
     if not isinstance(ahk_data, dict):
         return {}
@@ -238,6 +318,7 @@ def context_match_score(binding: dict, active_window: dict) -> int | None:
       - None if contextual binding does NOT match
 
     Score priority:
+      layer app match      400
       exe match            300
       title contains       200
       class match          reserved, currently ignored
@@ -257,6 +338,7 @@ def context_match_score(binding: dict, active_window: dict) -> int | None:
 
     active_exe = active_window.get("exe_lower", "")
     active_title = active_window.get("title_lower", "")
+    layer_hint = active_window.get("layer_hint_lower", "")
 
     for context in contexts:
         if not isinstance(context, dict):
@@ -271,11 +353,15 @@ def context_match_score(binding: dict, active_window: dict) -> int | None:
         value_lower = value.lower()
 
         if kind == "exe":
-            if active_exe and active_exe == value_lower:
+            if layer_hint and token_match(layer_hint, value_lower.removesuffix(".exe")):
+                best_score = max(best_score or 0, 400)
+            elif active_exe and active_exe == value_lower:
                 best_score = max(best_score or 0, 300)
 
         elif kind == "title_contains":
-            if active_title and value_lower in active_title:
+            if layer_hint and token_match(layer_hint, value_lower):
+                best_score = max(best_score or 0, 390)
+            elif active_title and value_lower in active_title:
                 best_score = max(best_score or 0, 200)
 
         elif kind == "class":
@@ -291,6 +377,8 @@ def binding_for_label(label: str, ahk_bindings: dict, active_window: dict) -> di
         return None
 
     variants = ahk_bindings.get(label, [])
+    if isinstance(variants, dict):
+        return variants
     if not isinstance(variants, list):
         return None
 
@@ -321,7 +409,7 @@ def action_title_for_label(
     binding = binding_for_label(label, ahk_bindings, active_window)
 
     if binding:
-        title = str(binding.get("title", "")).strip()
+        title = display_title(binding)
         if title:
             return title
 
@@ -606,7 +694,7 @@ class LayoutOverlay:
         )
 
         if binding:
-            title = compact_label(str(binding.get("title", raw_label)), 14)
+            title = compact_label(display_title(binding, raw_label), 14)
 
             canvas.create_text(
                 x + w / 2,
@@ -863,6 +951,7 @@ class LayoutOverlay:
 
         layer_names = layout.get("layer_names", {})
         layer_name = layer_names.get(str(layer_index), f"L{layer_index}")
+        self.active_window["layer_hint_lower"] = layer_context_hint(layer_index, state, layer_names)
         self.layer_label.config(text=f"{layer_name} · Layer {layer_index}")
 
         rows = layout.get("layers", {}).get(str(layer_index), [])

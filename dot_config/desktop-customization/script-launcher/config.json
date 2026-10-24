@@ -1,0 +1,21 @@
+{
+  "defaultInterpreter": "%ProgramFiles%\\AutoHotkey\\v2\\AutoHotkey64.exe",
+  "pollIntervalMs": 1000,
+  "resumeDelaySeconds": 15,
+  "groups": {
+    "desktop": {
+      "scripts": [
+        "%USERPROFILE%\\.config\\autohotkey\\creative_macropad.ahk",
+        "%USERPROFILE%\\.config\\autohotkey\\mydockfinder-hotkeys.ahk",
+        "%USERPROFILE%\\.config\\autohotkey\\zmk-text-replacements.ahk"
+      ],
+      "closeWhileRunning": [
+        "r5apex.exe",
+        "r5apex_dx12.exe",
+        "bf6.exe",
+        "C:\\Program Files\\EA Games\\Apex\\EAAntiCheat.GameServiceLauncher.exe",
+        "C:\\Program Files\\EA Games\\Battlefield 6\\EAAntiCheat.GameServiceLauncher.exe"
+      ]
+    }
+  }
+}

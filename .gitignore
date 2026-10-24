@@ -7,6 +7,13 @@
 *.swp
 *.swo
 *~
+dot_config/desktop-customization/**/runtime/
+dot_config/desktop-customization/**/backup/
+dot_config/desktop-customization/**/test-output/
+dot_config/desktop-customization/**/*.exe
+dot_config/desktop-customization/**/status.json
+dot_config/desktop-customization/**/status.txt
+dot_config/desktop-customization/komorebi-runtime/
 
 nvim-full/.tmp-state/
 nvim.log

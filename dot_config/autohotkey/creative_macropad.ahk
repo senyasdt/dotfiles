@@ -106,6 +106,141 @@ BrushZ(seq) {
 
 F12::KeyHistory
 
+IsCreativeAppActive() {
+    return WinActive("ahk_exe ZBrush.exe")
+        || WinActive("ZBrush")
+        || WinActive("ahk_exe blender.exe")
+        || WinActive("Blender")
+        || WinActive("ahk_exe Fusion360.exe")
+        || WinActive("Autodesk Fusion")
+        || WinActive("Fusion")
+        || WinActive("ahk_exe CLIPStudioPaint.exe")
+        || WinActive("ahk_exe CLIPStudio.exe")
+        || WinActive("Clip Studio Paint")
+}
+
+RunOrActivate(winSelector, runTarget := "") {
+    if WinExist(winSelector) {
+        WinActivate
+        return
+    }
+
+    if (runTarget != "") {
+        Run runTarget
+    }
+}
+
+ToggleAlwaysOnTop() {
+    hwnd := WinExist("A")
+    if !hwnd {
+        return
+    }
+
+    exStyle := WinGetExStyle(hwnd)
+    WinSetAlwaysOnTop !(exStyle & 0x8), "ahk_id " hwnd
+}
+
+MoveActiveWindow(direction) {
+    hwnd := WinExist("A")
+    if !hwnd {
+        return
+    }
+
+    MonitorGetWorkArea 1, &left, &top, &right, &bottom
+    width := right - left
+    height := bottom - top
+
+    switch direction {
+        case "left":
+            WinMove left, top, width // 2, height, "ahk_id " hwnd
+        case "right":
+            WinMove left + (width // 2), top, width // 2, height, "ahk_id " hwnd
+    }
+}
+
+OpenWezTerm() {
+    RunOrActivate("ahk_exe wezterm-gui.exe", "wezterm-gui.exe")
+}
+
+OpenBrowser() {
+    RunOrActivate("ahk_exe chrome.exe", "chrome.exe")
+}
+
+OpenExplorer() {
+    RunOrActivate("ahk_class CabinetWClass", "explorer.exe")
+}
+
+OpenLazyVim() {
+    if WinExist("ahk_exe wezterm-gui.exe") {
+        WinActivate
+        Send "^+t"
+        Sleep 120
+        Send "nvim{Enter}"
+        return
+    }
+
+    Run 'wezterm-gui.exe start -- nvim'
+}
+
+OpenEverything() {
+    RunOrActivate("ahk_exe Everything.exe", "Everything.exe")
+}
+
+; ============================================================
+; CORNE / GENERAL DESKTOP
+; Global bindings outside creative apps
+; ============================================================
+
+#HotIf !IsCreativeAppActive()
+F13::{
+    ToolTip "F13 OK"
+    SendText "a"
+    SetTimer () => ToolTip(), -500
+}
+F14::OpenBrowser()
+F15::OpenLazyVim()
+F16::OpenExplorer()
+F17::OpenEverything()
+F18::ToggleAlwaysOnTop()
+F19::Run "taskmgr.exe"
+F20::Run "snippingtool"
+F21::Send "#v"
+F22::DllCall("LockWorkStation")
+F23::Run "calc.exe"
+F24::Send "#d"
+#HotIf
+
+#HotIf WinActive("ahk_exe wezterm-gui.exe")
+^F13::Send "^+t"
+^F14::Send "^+w"
+^F15::Send "^+["
+^F16::Send "^+]"
+^F17::Send "nvim{Enter}"
+^F18::Send ":Telescope find_files{Enter}"
+^F19::Send ":Telescope live_grep{Enter}"
+^F20::Send ":LazyGit{Enter}"
+^F21::Send ":bd{Enter}"
+^F22::Send ":qa{Enter}"
+#HotIf
+
+#HotIf WinActive("ahk_exe chrome.exe") || WinActive("ahk_exe msedge.exe") || WinActive("ahk_exe firefox.exe")
++F13::Send "^t"
++F14::Send "^+t"
++F15::Send "^w"
++F16::Send "^+{Tab}"
++F17::Send "^{Tab}"
++F18::Send "^l"
+#HotIf
+
+#HotIf !IsCreativeAppActive()
++F13::Send "#^{Left}"
++F14::Send "#^{Right}"
++F15::MoveActiveWindow("left")
++F16::MoveActiveWindow("right")
++F17::WinMaximize "A"
++F18::WinClose "A"
+#HotIf
+
 ; ============================================================
 ; LAYER 15 — APP SERVICE / SYSTEM
 ; Sticky TG(15) layer with per-app service routing.
@@ -408,10 +543,18 @@ F21::SendClean("^z")                ; Undo
 
 ; BASE LAYER 12 — CLIP STUDIO
 ; Physical Space / Alt stay in firmware for pan and eyedropper behavior.
-F16::CspSend("{Esc}")               ; Esc
+; Overlay labels for direct firmware keys on Vial layer 12.
+; @bind m :: Select
+; @bind w :: Auto Select
+; @bind b :: Brush
+; @bind e :: Eraser
+; @bind p :: Pen
+; @bind <^z :: Undo
+; @bind <^t :: Transform
+; @bind space :: Pan
+F13::CspSend("{Esc}")               ; Esc
 F15::CspSend("h")                   ; Flip Canvas
 F14::CspSend("^t")                  ; Transform
-F13::CspSend("m")                   ; Marquee
 
 F17::CspSend("g")                   ; Fill
 
@@ -431,15 +574,15 @@ F21::CspSend("l")                   ; Lasso
 ; LAYER 13 — QUICK BRUSHES / SUBTOOLS
 ; These use dedicated custom shortcuts so the helper can show exact subtool names.
 ; Assign the same combos once in Clip Studio shortcut settings.
->^F16::CspSend("^!1")               ; G-Pen
->^F15::CspSend("^!2")               ; Pencil
->^F14::CspSend("^!3")               ; Textured Pen
->^F13::CspSend("^!4")               ; Soft Brush
+>^F16::CspSend("{Numpad1}")               ; G-Pen
+>^F15::CspSend("{Numpad2}")               ; Pencil
+>^F14::CspSend("{Numpad3}")               ; Textured Pen
+>^F13::CspSend("{Numpad4}")               ; Soft Brush
 
->^F20::CspSend("^!5")               ; Watercolor
->^F19::CspSend("^!6")               ; Blend
->^F18::CspSend("^!7")               ; Smudge
->^F17::CspSend("^!8")               ; Airbrush
+>^F20::CspSend("{Numpad5}")               ; Watercolor
+>^F19::CspSend("{Numpad6}")               ; Blend
+>^F18::CspSend("{Numpad7}")               ; Smudge
+>^F17::CspSend("{Numpad8}")               ; Airbrush
 
 >^F24::CspSend("^!9")               ; Texture Brush
 >^F23::CspSend("^!0")               ; Decoration Brush

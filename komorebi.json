@@ -84,23 +84,23 @@
         },
         {
           "name": "3",
-          "layout": "Columns"
+          "layout": "BSP"
         },
         {
           "name": "4",
-          "layout": "Rows"
+          "layout": "BSP"
         },
         {
           "name": "5",
-          "layout": "VerticalStack"
+          "layout": "BSP"
         },
         {
           "name": "6",
-          "layout": "HorizontalStack"
+          "layout": "BSP"
         },
         {
           "name": "7",
-          "layout": "Grid"
+          "layout": "BSP"
         },
         {
           "name": "8",
@@ -111,6 +111,23 @@
           "layout": "BSP"
         }
       ]
+    }
+  ],
+  "ignore_rules": [
+    {
+      "kind": "Exe",
+      "id": "Dock_64.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "dock.exe",
+      "matching_strategy": "Equals"
+    },
+    {
+      "kind": "Exe",
+      "id": "ScreenRound.exe",
+      "matching_strategy": "Equals"
     }
   ]
 }
