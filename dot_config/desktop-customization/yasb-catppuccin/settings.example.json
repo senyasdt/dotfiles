@@ -1,5 +1,6 @@
 {
   "scriptLauncherRoot": "%USERPROFILE%\\.config\\desktop-customization\\script-launcher",
+  "komorebiSupportRoot": "%USERPROFILE%\\.config\\desktop-customization\\komorebi-support",
   "finderWidgetsRoot": "%USERPROFILE%\\.config\\desktop-customization\\finder-widgets",
   "myDockExecutable": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\MyDockFinder\\Dock_64.exe"
 }

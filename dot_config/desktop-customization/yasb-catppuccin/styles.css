@@ -36,6 +36,7 @@
 .active-window-widget .label { color: #a6adc8; font-size: 11px; }
 .clock-widget .label { color: #f5c2e7; font-weight: 600; padding: 0 8px; }
 .ahk-widget .label { color: #a6e3a1; }
+.services-widget .label { color: #b4befe; font-size: 15px; }
 .vial-widget .label { color: #f9e2af; }
 .zmk-widget .label { color: #89dceb; }
 .vpn-domain-submit-widget .label { color: #b4befe; }

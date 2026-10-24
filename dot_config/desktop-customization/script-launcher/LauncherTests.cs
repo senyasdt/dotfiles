@@ -81,6 +81,25 @@ internal static class LauncherTests
             host.Items.RemoveAll(p=>p.Script==A);engine.Step(now.AddSeconds(7),true);Assert(!host.Has(A)&&engine.Overrides[A]==false,"External/manual AHK exit was immediately undone");
             engine.Control("enable","all");engine.Step(now.AddSeconds(8),true);Assert(host.Has(A),"Enable after external exit failed");
 
+            host=new FakeHost();engine=Engine(host,Config(Group(new[]{A,B},"Game.exe")));
+            engine.Step(now,true);engine.Control("disable",B);engine.Step(now.AddSeconds(1),true);
+            engine.Control("restart","all");engine.Step(now.AddSeconds(2),true);
+            Assert(host.Has(A)&&!host.Has(B)&&!engine.Overrides[B],"Group restart re-enabled a manually disabled script");
+            engine.Control("pause","all");var paused=engine.Step(now.AddSeconds(3),true);
+            Assert(!host.Has(A)&&!host.Has(B)&&(string)paused["mode"]=="paused","Global pause did not stop managed scripts");
+            Assert((bool)((List<Dictionary<string,object>>)paused["scripts"])[0]["enabled"],"Pause destroyed the enabled selection");
+            host.Program("Game.exe");engine.Control("restart","all");engine.Step(now.AddSeconds(4),true);
+            Assert(engine.Suspended&&!host.Has(A),"Restart bypassed global pause");
+            engine.Control("resume","all");engine.Control("restart","all");engine.Step(now.AddSeconds(5),true);
+            Assert(!host.Has(A)&&!host.Has(B),"Resume/restart bypassed a game blocker");
+            host.Close("Game.exe");engine.Step(now.AddSeconds(6),true);engine.Step(now.AddSeconds(20),true);
+            Assert(!host.Has(A),"Resume bypassed the game grace period");
+            engine.Step(now.AddSeconds(21),true);
+            Assert(host.Has(A)&&!host.Has(B),"Resume forgot manual selection or failed after game exit");
+            engine.Control("pause","all");engine.Step(now.AddSeconds(22),true);
+            engine.Control("resume","all");engine.Step(now.AddSeconds(23),true);
+            Assert(host.Has(A)&&!host.Has(B),"Pause/resume changed manual overrides");
+
             bool rejected=false;try{Configuration.Parse("{}");}catch{rejected=true;}Assert(rejected,"Invalid config accepted");
             rejected=false;try{Config(Group(new[]{"relative.ahk"}));}catch{rejected=true;}Assert(rejected,"Relative script accepted");
             rejected=false;try{Config(Group(new[]{A},"*.exe"));}catch{rejected=true;}Assert(rejected,"Wildcard process accepted");

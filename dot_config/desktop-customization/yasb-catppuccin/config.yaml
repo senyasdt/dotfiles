@@ -47,6 +47,7 @@ bars:
       - zmk
       - vial
       - ahk
+      - daemon_reset
       - language
       - open_meteo
       - volume
@@ -89,6 +90,16 @@ bars:
       - taskbar
       right: []
 widgets:
+  daemon_reset:
+    type: yasb.custom.CustomWidget
+    options:
+      label: 
+      class_name: services-widget
+      tooltip: true
+      tooltip_label: 'ЛКМ: перезапустить помощники · ПКМ: меню запуска/остановки, AHK и Vial'
+      callbacks:
+        on_left: exec "__BRIDGE__\DesktopBridge.exe" --service RestartAll
+        on_right: exec "__BRIDGE__\DesktopBridge.exe" --menu services
   vpn_domain_submit:
     type: yasb.custom.CustomWidget
     options:

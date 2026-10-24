@@ -1,4 +1,4 @@
-﻿param([ValidateSet('Build','Apply','Start','Stop','RestoreCurrent','RestorePreDock','Status','ImportApps')][string]$Action='Status')
+﻿param([ValidateSet('Build','Apply','Refresh','Start','Stop','RestoreCurrent','RestorePreDock','Status','ImportApps')][string]$Action='Status')
 $ErrorActionPreference='Stop'
 $root=$PSScriptRoot
 $profileRoot=[Environment]::GetFolderPath('UserProfile')
@@ -27,11 +27,23 @@ function Run-Wait($exe,$arguments,[int]$seconds=12){
 }
 function Owned-Processes($name,$path){@(Get-Process -Name $name -ErrorAction SilentlyContinue|Where-Object {$_.SessionId -eq $session -and $_.Path -ieq $path})}
 function Stop-Bridge {
-    if(Test-Path -LiteralPath $bridge){Run-Wait $bridge '--stop';$deadline=[DateTime]::UtcNow.AddSeconds(8);while((Owned-Processes 'DesktopBridge' $bridge).Count -and [DateTime]::UtcNow -lt $deadline){Start-Sleep -Milliseconds 200};if((Owned-Processes 'DesktopBridge' $bridge).Count){throw 'Desktop bridge did not stop safely'}}
+    if(Test-Path -LiteralPath $bridge){
+        Run-Wait $bridge '--stop'
+        # Menus/readers use this same executable but have no daemon stop event.
+        # They are stateless UI clients; only these verified local clients close.
+        $clients=@(Get-CimInstance Win32_Process -Filter "Name = 'DesktopBridge.exe'"|Where-Object {$_.SessionId -eq $session -and $_.ExecutablePath -ieq $bridge -and $_.CommandLine -match '\s--(menu|read|list-services)(\s|$)'}|ForEach-Object ProcessId)
+        Owned-Processes 'DesktopBridge' $bridge|Where-Object Id -In $clients|Stop-Process -Force
+        $deadline=[DateTime]::UtcNow.AddSeconds(8)
+        while((Owned-Processes 'DesktopBridge' $bridge).Count -and [DateTime]::UtcNow -lt $deadline){Start-Sleep -Milliseconds 200}
+        if((Owned-Processes 'DesktopBridge' $bridge).Count){throw 'Desktop bridge did not stop safely'}
+    }
 }
 function Stop-Yasb {
     $allowed=@($yasb,(Join-Path $env:LOCALAPPDATA 'YASB-patched\yasb.exe'))
     $running=@(Get-Process -Name yasb -ErrorAction SilentlyContinue|Where-Object SessionId -EQ $session)
+    # A just-started process can briefly have no readable executable path.
+    $pathDeadline=[DateTime]::UtcNow.AddSeconds(3)
+    while(@($running|Where-Object {-not $_.Path}).Count -and [DateTime]::UtcNow -lt $pathDeadline){Start-Sleep -Milliseconds 100;$running=@(Get-Process -Name yasb -ErrorAction SilentlyContinue|Where-Object SessionId -EQ $session)}
     if(@($running|Where-Object {$_.Path -notin $allowed}).Count){throw 'Unknown YASB build is running; left untouched'}
     if($running.Count){try{Run-Wait $cli 'stop' 8}catch{Write-Warning 'YASB did not answer its CLI; stopping the verified local instance'};Start-Sleep -Milliseconds 600;Get-Process -Name yasb -ErrorAction SilentlyContinue|Where-Object {$_.SessionId -eq $session -and $_.Path -in $allowed}|Stop-Process -Force}
 }
@@ -81,7 +93,7 @@ function Start-Profile {
     if(!(Owned-Processes 'DesktopBridge' $bridge).Count){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}
 }
 function Restore-Current {
-    $s=Snapshot;Stop-Bridge;Stop-Yasb;Stop-Dock
+    $s=Snapshot;Stop-Yasb;Stop-Bridge;Stop-Dock
     foreach($name in @('yasb-config.yaml','yasb-styles.css','win-hotkeys.ahk','mydock-config.ini')){Restore-File $s $name}
     # Keep komorebi IPC, BSP, current AHK game rules and manual states intact.
     Restore-Startup $s
@@ -105,13 +117,25 @@ if($Action -eq 'Build'){
     }finally{if($resumeYasb){Start-Process -FilePath $yasb -WorkingDirectory (Split-Path $yasb) -WindowStyle Hidden};if($resumeBridge){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}}
     return
 }
+if($Action -eq 'Refresh'){
+    $statePath=Join-Path $root 'runtime\profile.json'
+    $mode=if(Test-Path -LiteralPath $statePath){(Get-Content -LiteralPath $statePath -Raw|ConvertFrom-Json).mode}else{''}
+    if($mode -notin @('catppuccin','predock')){throw 'Refresh only updates an already active YASB profile.'}
+    $suffix=if($mode -eq 'predock'){'-predock'}else{''}
+    Stop-Yasb;Stop-Bridge
+    try {
+        Write-Utf8 (Join-Path $yasbRoot 'config.yaml') (Expand-Template (Join-Path $root ('config'+$suffix+'.yaml')))
+        Copy-Item -LiteralPath (Join-Path $root ('styles'+$suffix+'.css')) -Destination (Join-Path $yasbRoot 'styles.css') -Force
+    }finally{Start-Profile}
+    Write-Output 'YASB widgets refreshed. Startup, app catalog, AHK and restore snapshots unchanged.';return
+}
 if($Action -eq 'Stop'){Stop-Bridge;return}
 if($Action -eq 'Start'){Start-Profile;return}
 if($Action -eq 'ImportApps'){& (Join-Path $root 'Import-Apps.ps1') -Refresh;return}
 if($Action -eq 'RestoreCurrent'){Restore-Current;return}
 if($Action -eq 'RestorePreDock'){
     if(!(Test-Path -LiteralPath (Join-Path $root 'config-predock.yaml'))){throw 'No pre-MyDockFinder layout supplied; use RestoreCurrent'}
-    $s=Snapshot;Stop-Bridge;Stop-Yasb;Stop-Dock
+    $s=Snapshot;Stop-Yasb;Stop-Bridge;Stop-Dock
     Copy-Item -LiteralPath (Join-Path $root 'styles-predock.css') -Destination (Join-Path $yasbRoot 'styles.css') -Force
     Write-Utf8 (Join-Path $yasbRoot 'config.yaml') (Expand-Template (Join-Path $root 'config-predock.yaml'))
     # The old layout is restored; the broken legacy daemon/startup chain is not.
@@ -129,7 +153,7 @@ if($Action -eq 'Apply'){
     if($foreign.Count){throw 'AHK manager is running from another folder. Configure the existing owner before applying.'}
     & (Join-Path $root 'Import-Apps.ps1')|Out-Null
     try{
-        Stop-Bridge;Stop-Yasb;Stop-Dock
+        Stop-Yasb;Stop-Bridge;Stop-Dock
         Write-Utf8 (Join-Path $yasbRoot 'config.yaml') (Expand-Template (Join-Path $root 'config.yaml'))
         Copy-Item -LiteralPath (Join-Path $root 'styles.css') -Destination (Join-Path $yasbRoot 'styles.css') -Force
         Copy-Item -LiteralPath (Join-Path $root 'win-launchpad.ahk') -Destination (Join-Path $profileRoot '.config\autohotkey\mydockfinder-hotkeys.ahk') -Force
