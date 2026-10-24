@@ -36,7 +36,7 @@
 .active-window-widget .label { color: #9bb5c2; font-size: 12px; }
 .clock-widget .label { color: #b6dfe4; font-weight: 600; padding: 0 6px; }
 .ahk-widget .label { color: #8dcbb5; }
-.services-widget .label { color: #8fbfd6; font-size: 15px; }
+.services-widget .label { font-family: "Segoe UI Symbol", "Segoe UI"; color: #8fbfd6; font-size: 19px; font-weight: 600; min-width: 18px; }
 .vial-widget .label { color: #9bd1ca; }
 .zmk-widget .label { color: #88c9d1; }
 .vpn-domain-submit-widget .label { color: #8fbfd6; }

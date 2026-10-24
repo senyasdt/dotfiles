@@ -93,7 +93,7 @@ widgets:
   daemon_reset:
     type: yasb.custom.CustomWidget
     options:
-      label: 
+      label: ↻
       class_name: services-widget
       tooltip: true
       tooltip_label: 'ЛКМ: перезапустить помощники · ПКМ: меню запуска/остановки, AHK и Vial'
