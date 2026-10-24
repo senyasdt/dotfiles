@@ -123,7 +123,25 @@ if($Action -eq 'Refresh'){
     if($mode -notin @('catppuccin','predock')){throw 'Refresh only updates an already active YASB profile.'}
     $suffix=if($mode -eq 'predock'){'-predock'}else{''}
     if($mode -eq 'catppuccin'){& (Join-Path $root 'Ensure-DockIcons.ps1')}
-    Stop-Yasb;Stop-Bridge
+    $desiredConfig=Expand-Template (Join-Path $root ('config'+$suffix+'.yaml'))
+    $liveConfig=Join-Path $yasbRoot 'config.yaml'
+    $styleSource=Join-Path $root ('styles'+$suffix+'.css')
+    $liveStyle=Join-Path $yasbRoot 'styles.css'
+    # Existing file watchers can apply a palette-only change without recreating
+    # app bars, tray icons or native work-area reservations.
+    if($mode -eq 'catppuccin' -and (Owned-Processes 'yasb' $yasb).Count -gt 0 -and
+       (Test-Path -LiteralPath $liveConfig) -and
+       [IO.File]::ReadAllText($liveConfig) -ceq $desiredConfig -and
+       $desiredConfig -match '(?m)^watch_stylesheet:\s*true\s*$'){
+        if(!(Test-Path -LiteralPath $liveStyle) -or
+           (Get-FileHash -LiteralPath $styleSource).Hash -ne (Get-FileHash -LiteralPath $liveStyle).Hash){
+            Copy-Item -LiteralPath $styleSource -Destination $liveStyle -Force
+            Write-Output 'YASB stylesheet updated by watcher; no processes or app bars restarted.'
+        }else{Write-Output 'YASB profile already current; no processes or app bars restarted.'}
+        return
+    }
+    # Keep the dock owner alive during a short YASB refresh.
+    Stop-Yasb;if($mode -ne 'catppuccin'){Stop-Bridge}
     try {
         Write-Utf8 (Join-Path $yasbRoot 'config.yaml') (Expand-Template (Join-Path $root ('config'+$suffix+'.yaml')))
         Copy-Item -LiteralPath (Join-Path $root ('styles'+$suffix+'.css')) -Destination (Join-Path $yasbRoot 'styles.css') -Force

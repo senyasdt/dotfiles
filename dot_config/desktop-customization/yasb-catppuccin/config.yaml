@@ -63,7 +63,7 @@ bars:
       position: bottom
       align: center
     blur_effect:
-      enabled: true
+      enabled: false
       dark_mode: true
       round_corners: true
       border_color: '#4b515c'
@@ -75,7 +75,7 @@ bars:
       hide_on_fullscreen: true
       auto_hide: false
     dimensions:
-      width: auto
+      width: 100%
       height: 64
     padding:
       top: 0
@@ -88,18 +88,26 @@ bars:
         stretch: false
       center:
         alignment: center
-        stretch: false
+        stretch: true
       right:
         alignment: right
         stretch: false
     widgets:
       left: []
       center:
-      - library
-      - pinned
-      - taskbar
+      - dock_shell
       right: []
 widgets:
+  dock_shell:
+    type: yasb.grouper.GrouperWidget
+    options:
+      class_name: dock-shell
+      widgets:
+      - dock_library
+      - pinned
+      - taskbar
+      collapse_options:
+        enabled: false
   daemon_reset:
     type: yasb.custom.CustomWidget
     options:
@@ -269,6 +277,26 @@ widgets:
       keybindings:
       - keys: alt+f12
         action: toggle_launchpad
+  dock_library:
+    type: yasb.launchpad.LaunchpadWidget
+    options:
+      label: 
+      search_placeholder: Все приложения · начни вводить название
+      app_icon_size: 56
+      group_apps: false
+      window:
+        width: 1040
+        height: 720
+        fullscreen: false
+        overlay_block: true
+      window_style:
+        enable_blur: true
+        round_corners: true
+        border_color: None
+      window_animation:
+        fade_in_duration: 120
+        fade_out_duration: 100
+      keybindings: []
   workspaces:
     type: komorebi.workspaces.WorkspaceWidget
     options:
