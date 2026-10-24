@@ -71,8 +71,23 @@ internal static class DesktopBridge {
         foreach(ToolStripItem item in menu.Items){var child=item as ToolStripMenuItem;if(child!=null&&child.HasDropDownItems&&child.DropDown.Visible&&InsideMenu(child.DropDown,cursor))return true;}
         return false;
     }
+    sealed class ColdMenuColors : ProfessionalColorTable {
+        public ColdMenuColors(){UseSystemColors=false;}
+        public override Color ToolStripDropDownBackground {get{return Color.FromArgb(20,35,45);}}
+        public override Color MenuBorder {get{return Color.FromArgb(54,80,94);}}
+        public override Color MenuItemBorder {get{return Color.FromArgb(91,153,158);}}
+        public override Color MenuItemSelected {get{return Color.FromArgb(36,60,72);}}
+        public override Color MenuItemSelectedGradientBegin {get{return MenuItemSelected;}}
+        public override Color MenuItemSelectedGradientEnd {get{return MenuItemSelected;}}
+        public override Color MenuItemPressedGradientBegin {get{return MenuItemSelected;}}
+        public override Color MenuItemPressedGradientMiddle {get{return MenuItemSelected;}}
+        public override Color MenuItemPressedGradientEnd {get{return MenuItemSelected;}}
+        public override Color SeparatorDark {get{return Color.FromArgb(54,80,94);}}
+        public override Color SeparatorLight {get{return ToolStripDropDownBackground;}}
+    }
     static void Menu(string kind){
-        Application.EnableVisualStyles();var menu=new ContextMenuStrip{BackColor=Color.FromArgb(30,30,46),ForeColor=Color.FromArgb(205,214,244),ShowImageMargin=false,Font=new Font("Segoe UI",10)};
+        Application.EnableVisualStyles();var menu=new ContextMenuStrip{BackColor=Color.FromArgb(20,35,45),ForeColor=Color.FromArgb(211,230,235),ShowImageMargin=false,Font=new Font("Segoe UI",10)};
+        menu.Renderer=new ToolStripProfessionalRenderer(new ColdMenuColors());
         if(kind=="ahk"){
             var state=Read(Path.Combine(LauncherRoot,@"runtime\status.json"));
             foreach(var v in Items(state,"scripts")){var s=v as Dictionary<string,object>;if(s==null)continue;string path=Get(s,"path","");var item=Item(Get(s,"name","")+" · "+Get(s,"mode","?"),()=>Command("--toggle",path));item.Checked=Get(s,"enabled","False")=="True";menu.Items.Add(item);}
