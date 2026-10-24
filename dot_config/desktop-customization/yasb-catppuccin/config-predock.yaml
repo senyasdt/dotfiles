@@ -194,7 +194,7 @@ widgets:
         ultrawide_vertical_stack: W-STACK
         right_main_vertical_stack: RMV-STACK
         monocle: MONOCLE
-        maximised: MAX
+        maximized: MAX
         floating: FLOATING
         paused: PAUSED
       callbacks:
@@ -268,8 +268,8 @@ widgets:
     type: yasb.volume.VolumeWidget
     options:
       label: <span>{icon}</span> {level}
-      label_alt: '{volume}'
-      volume_icons:
+      label_alt: '{level}'
+      icons:
       - 
       - 
       - 
@@ -320,11 +320,6 @@ widgets:
         launch: search
       - icon: "\uDB84\uDF55"
         launch: widget
-      container_padding:
-        top: 0
-        left: 8
-        bottom: 0
-        right: 8
   taskbar:
     type: yasb.taskbar.TaskbarWidget
     options:

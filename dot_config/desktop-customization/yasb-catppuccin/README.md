@@ -1,7 +1,8 @@
 # YASB · холодная серая полупрозрачная палитра
 
-Опциональный Windows desktop-профиль, ветка `yasb-catppuccin`. Проверен с YASB
-2.0.0 / CLI 1.1.7 и komorebi 0.1.41 на HOMEPC 24 октября 2026 года.
+Опциональный Windows desktop-профиль, ветка `yasb-catppuccin`. Требует YASB
+2.0.7 или новее; схема 2.0.7 проверена 25 октября 2026 года. Первоначальная
+живая проверка: YASB 2.0.0 / CLI 1.1.7 и komorebi 0.1.41, HOMEPC 24 октября.
 Оформление вдохновлено [Villoh — Win11 Catppuccin Edition](https://www.reddit.com/r/desktops/comments/1rvjrok/win11_catppuccin_edition/).
 Требования владельца взяты из обсуждения и
 [общего чата](https://chatgpt.com/share/6adc0b89-947c-83eb-94a2-2db9fe41c81e).
@@ -210,3 +211,38 @@ Refresh при неизменном YAML обновляет только CSS ч�
 YASB возможна краткая вспышка native taskbar со стороны shell; это наблюдалось
 при проверке и не считается устранённым. Сам bridge возвращает Windows taskbar
 после исчезновения YASB на 8–10 секунд; явная остановка bridge возвращает её сразу.
+
+## Обновление YASB, 25 октября 2026
+
+Конфиги активного профиля, варианта до MyDockFinder и классический chezmoi-шаблон
+мигрированы на [стабильный YASB 2.0.7](https://github.com/amnweb/yasb/releases/tag/v2.0.7).
+Переименованы volume_icons → icons, maximised → maximized, заменён устаревший
+{volume} на {level}; удалены старые container_padding/acrylic/center.
+VPN-кнопки активного профиля используют __USERPROFILE__, а не имя владельца.
+Manage.ps1 проверяет минимальную версию до Apply/Refresh/Start/RestorePreDock.
+
+На новом ПК restore.ps1 устанавливает AmN.yasb через WinGet; если существующий
+YASB старее 2.0.7, install.ps1 сначала выполняет точечный winget upgrade.
+update.ps1 сохраняет WINDOWS_DESKTOP_THEME при preview и Apply.
+Ansible остаётся Unix-слоем; Windows desktop настраивает provision/windows.
+На существующем HOMEPC обновлять сам YASB и вызывать Manage.ps1 -Action Refresh;
+глобальный restore поверх действующих legacy helpers и IPC junction не нужен.
+
+Для ручного обновления пакета: winget upgrade --id AmN.yasb --exact --source winget
+--accept-source-agreements --accept-package-agreements (одна строка).
+Установщик может запросить права администратора Windows.
+
+В 2.0.7 доступны adaptive bar, группировка Taskbar, Audio Visualizer и Codex Usage.
+Текущая компоновка и серая полупрозрачная палитра сохранены. Эти новые функции
+можно настраивать отдельными изменениями после проверки базового обновления.
+Cloud backup требует отдельного подключения учётной записи.
+
+Откат оформления Restore Before MyDock использует мигрированный config-predock.
+Restore Previous восстанавливает точные исторические байты snapshot; если его
+конфиг рассчитан на старую схему, потребуется также соответствующая версия YASB.
+Первоначальный snapshot не переписывается. Перед обновлением программы сохранять
+текущую папку ~/.config/yasb, профиль, бинарники и подписанный MSI прежней версии
+в private; не добавлять их в Git. Полный откат версии: остановить YASB, удалить
+только новый MSI-пакет YASB штатным деинсталлятором, установить сохранённый MSI
+и вернуть config/CSS и профиль из той же копии. Эта процедура не запускается
+автоматически; чистый restore и downgrade требуют отдельной живой проверки.

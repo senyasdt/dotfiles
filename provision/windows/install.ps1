@@ -47,6 +47,17 @@ function Install-WingetPackage {
 
     $existing = winget list --id $Id --exact --accept-source-agreements 2>$null
     if ($LASTEXITCODE -eq 0 -and $existing -match [regex]::Escape($Id)) {
+        if($Id -eq 'AmN.yasb'){
+            $yasbPath=Join-Path $env:ProgramFiles 'YASB\yasb.exe'
+            $version=if(Test-Path -LiteralPath $yasbPath){(Get-Item -LiteralPath $yasbPath).VersionInfo.ProductVersion}else{''}
+            if($version -notmatch '^(\d+\.\d+\.\d+)' -or [version]$Matches[1] -lt [version]'2.0.7'){
+                Write-Step 'Upgrading YASB for the current configuration schema'
+                winget upgrade --id $Id --exact --source winget --accept-source-agreements --accept-package-agreements
+                if($LASTEXITCODE -notin @(0,3010)){throw "WinGet upgrade failed: $Id ($LASTEXITCODE)"}
+                $version=if(Test-Path -LiteralPath $yasbPath){(Get-Item -LiteralPath $yasbPath).VersionInfo.ProductVersion}else{''}
+                if($version -notmatch '^(\d+\.\d+\.\d+)' -or [version]$Matches[1] -lt [version]'2.0.7'){throw 'YASB 2.0.7 or newer is required; configuration was not applied.'}
+            }
+        }
         return
     }
 

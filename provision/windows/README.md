@@ -143,4 +143,9 @@ shortcut on clean installations. Do not delete its private rollback directory.
 
 See the [profile guide](../../dot_config/desktop-customization/yasb-catppuccin/README.md)
 for installation, all shortcuts, both rollback paths and the actual validation
-limits. Tested YASB version: 2.0.0. No clean VM/reboot test is claimed.
+limits. Current profile requires YASB 2.0.7 or newer; all three configuration
+variants pass the 2.0.7 schema. An existing older YASB is upgraded by install.ps1
+before activation. update.ps1 preserves WINDOWS_DESKTOP_THEME on preview/apply.
+No clean VM/reboot test is claimed. Ansible remains the Unix provisioning layer;
+this native Windows path owns the desktop. For an existing HOMEPC, use the
+targeted package upgrade and profile Refresh instead of a global restore.
