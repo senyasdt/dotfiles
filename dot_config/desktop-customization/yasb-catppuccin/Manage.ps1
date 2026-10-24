@@ -64,6 +64,15 @@ function Restore-File($snapshot,$name){
 }
 function Restore-Startup($snapshot){foreach($name in @('MyDockFinder.lnk','Finder Widgets.lnk','yasb.cmd','YASB Catppuccin.lnk')){Restore-File $snapshot $name};foreach($v in $snapshot.dockRun){Set-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name $v.name -Value $v.value}}
 function Restart-WinHelper {if(Test-Path -LiteralPath (Join-Path $launcher 'ScriptLauncher.exe')){Run-Wait (Join-Path $launcher 'ScriptLauncher.exe') '--restart mydockfinder-hotkeys.ahk'}}
+function Ensure-Launcher {
+    $exe=Join-Path $launcher 'ScriptLauncher.exe'
+    if(!(Owned-Processes 'ScriptLauncher' $exe).Count){
+        Start-Process -FilePath $exe -WorkingDirectory $launcher -WindowStyle Hidden
+        $deadline=[DateTime]::UtcNow.AddSeconds(6)
+        while(!(Owned-Processes 'ScriptLauncher' $exe).Count -and [DateTime]::UtcNow -lt $deadline){Start-Sleep -Milliseconds 100}
+        if(!(Owned-Processes 'ScriptLauncher' $exe).Count){throw 'AHK manager did not start'}
+    }
+}
 function Mode($value){[IO.Directory]::CreateDirectory((Join-Path $root 'runtime'))|Out-Null;Write-Utf8 (Join-Path $root 'runtime\profile.json') (@{mode=$value;updatedAt=[DateTimeOffset]::Now.ToString('o')}|ConvertTo-Json)}
 function Start-Profile {
     if(!(Test-Path -LiteralPath $yasb)){throw 'Install YASB 2.0.0 first'}
@@ -116,6 +125,8 @@ if($Action -eq 'Apply'){
     $s=Snapshot
     if(!(Test-Path -LiteralPath $bridge)){& $PSCommandPath -Action Build}
     if(!(Test-Path -LiteralPath (Join-Path $launcher 'ScriptLauncher.exe'))){throw 'Configure scriptLauncherRoot in settings.json before applying'}
+    $foreign=@(Get-Process -Name ScriptLauncher -ErrorAction SilentlyContinue|Where-Object {$_.SessionId -eq $session -and $_.Path -ine (Join-Path $launcher 'ScriptLauncher.exe')})
+    if($foreign.Count){throw 'AHK manager is running from another folder. Configure the existing owner before applying.'}
     & (Join-Path $root 'Import-Apps.ps1')|Out-Null
     try{
         Stop-Bridge;Stop-Yasb;Stop-Dock
@@ -126,7 +137,7 @@ if($Action -eq 'Apply'){
         foreach($v in $s.dockRun){Remove-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name $v.name -ErrorAction SilentlyContinue}
         if(!(Test-Path -LiteralPath (Join-Path $startup 'Desktop Session.lnk'))){$shell=New-Object -ComObject WScript.Shell;$lnk=$shell.CreateShortcut((Join-Path $startup 'YASB Catppuccin.lnk'));$lnk.TargetPath=Join-Path $env:WINDIR 'System32\wscript.exe';$lnk.Arguments='"'+(Join-Path $root 'Start.vbs')+'"';$lnk.WorkingDirectory=$root;$lnk.Description='YASB Catppuccin and smart dock';$lnk.Save()}
         $shell=New-Object -ComObject WScript.Shell
-        Theme-Environment 'catppuccin';Mode 'catppuccin';Start-Profile;Restart-WinHelper
+        Theme-Environment 'catppuccin';Mode 'catppuccin';Ensure-Launcher;Start-Profile;Restart-WinHelper
         Start-Sleep -Seconds 5
         if(!(Owned-Processes 'yasb' $yasb).Count -or !(Owned-Processes 'DesktopBridge' $bridge).Count){throw 'Profile health check failed'}
         $dockState=Get-Content -LiteralPath (Join-Path $root 'runtime\dock-status.json') -Raw|ConvertFrom-Json
