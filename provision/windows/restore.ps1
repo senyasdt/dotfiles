@@ -27,6 +27,8 @@ if($profileText.Split(',') -contains 'desktop'){
         $themeRoot=Join-Path ([Environment]::GetFolderPath('UserProfile')) '.config\desktop-customization\yasb-catppuccin'
         & (Join-Path $themeRoot 'Manage.ps1') -Action Build
         & (Join-Path $themeRoot 'Manage.ps1') -Action Apply
+        $appearanceRoot=Join-Path ([Environment]::GetFolderPath('UserProfile')) '.config\desktop-customization\appearance'
+        & (Join-Path $appearanceRoot 'Manage-Appearance.ps1') -Action Apply
     }
 }
 # Keep future native Windows sessions/apply consistent with the chosen profile.

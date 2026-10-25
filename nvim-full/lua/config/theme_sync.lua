@@ -34,7 +34,15 @@ local forest_palette = {
   none = "NONE",
 }
 
+local cold_grey_palette = require("config.cold_grey_palette")
+
 local theme_mapping = {
+  ["cold grey"] = {
+    colorscheme = "catppuccin",
+    flavour = "macchiato",
+    palette = cold_grey_palette,
+    color_overrides = { all = cold_grey_palette },
+  },
   ["catppuccin latte"] = { colorscheme = "catppuccin", flavour = "latte" },
   ["catppuccin frappe"] = { colorscheme = "catppuccin", flavour = "frappe" },
   ["catppuccin macchiato"] = { colorscheme = "catppuccin", flavour = "macchiato" },
