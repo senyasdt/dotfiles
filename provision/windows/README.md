@@ -149,3 +149,7 @@ before activation. update.ps1 preserves WINDOWS_DESKTOP_THEME on preview/apply.
 No clean VM/reboot test is claimed. Ansible remains the Unix provisioning layer;
 this native Windows path owns the desktop. For an existing HOMEPC, use the
 targeted package upgrade and profile Refresh instead of a global restore.
+
+## Shared application appearance
+
+The Catppuccin restore path also applies the [Cold Grey application palette](../../dot_config/desktop-customization/appearance/README.md) after desktop activation. Code and Windows Terminal receive native appearance settings; WezTerm uses its existing theme selector. The helper merges appearance keys, stores a byte-exact backup with SHA256 and offers guarded Restore. It does not restart processes, change Chrome profiles, install extensions or enable another launcher. Chrome has a prepared theme-only manifest and a separate manual/native import step. WSL selection is separate.

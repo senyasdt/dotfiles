@@ -1,0 +1,13 @@
+[metadata]
+name = "Cold Grey"
+
+[colors]
+foreground = "#d6d9df"
+background = "#202227"
+cursor_bg = "#acb9ca"
+cursor_fg = "#17191d"
+cursor_border = "#acb9ca"
+selection_fg = "#d6d9df"
+selection_bg = "#414d61"
+ansi = ["#343840", "#d98f9d", "#a5bdac", "#cbb78a", "#8eaee8", "#b6a6cd", "#9bbabc", "#b8bec9"]
+brights = ["#626b79", "#d98f9d", "#a5bdac", "#cbb78a", "#8eaee8", "#b6a6cd", "#9bbabc", "#d6d9df"]

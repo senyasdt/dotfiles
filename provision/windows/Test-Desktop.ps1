@@ -13,6 +13,7 @@ foreach($file in @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1')+@(G
     [void][Management.Automation.Language.Parser]::ParseFile($file.FullName,[ref]$tokens,[ref]$errors)
     if($errors){throw ('PowerShell parse error in '+$file.FullName+': '+($errors.Message -join '; '))}
 }
+& (Join-Path $source 'provision\tests\Test-Appearance.ps1')
 $build=Join-Path ([IO.Path]::GetTempPath()) ('desktop-source-check-'+[Guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($build)|Out-Null
 $csc=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
@@ -24,4 +25,4 @@ if($LASTEXITCODE -ne 0){throw 'Launcher tests failed'}
 if($LASTEXITCODE -ne 0){throw 'Widgets failed to compile'}
 & $csc /nologo /target:winexe /platform:x64 /optimize+ ('/out:'+(Join-Path $build 'TechnicalAltGrLayoutGuard.exe')) (Join-Path $desktop 'keyboard-layout-guard\LayoutGuard.cs')
 if($LASTEXITCODE -ne 0){throw 'Layout guard failed to compile'}
-Write-Host 'Desktop checks passed: plans, PowerShell syntax, 32 engine assertions and isolated helper builds.'
+Write-Host 'Desktop checks passed: plans, PowerShell syntax, AHK engine checks, appearance rollback and isolated helper builds.'
