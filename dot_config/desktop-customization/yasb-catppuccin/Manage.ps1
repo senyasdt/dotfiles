@@ -128,7 +128,6 @@ if($Action -eq 'Refresh'){
     $mode=if(Test-Path -LiteralPath $statePath){(Get-Content -LiteralPath $statePath -Raw|ConvertFrom-Json).mode}else{''}
     if($mode -notin @('catppuccin','predock')){throw 'Refresh only updates an already active YASB profile.'}
     $suffix=if($mode -eq 'predock'){'-predock'}else{''}
-    if($mode -eq 'catppuccin'){& (Join-Path $root 'Ensure-DockIcons.ps1')}
     $desiredConfig=Expand-Template (Join-Path $root ('config'+$suffix+'.yaml'))
     $liveConfig=Join-Path $yasbRoot 'config.yaml'
     $styleSource=Join-Path $root ('styles'+$suffix+'.css')
@@ -177,7 +176,6 @@ if($Action -eq 'Apply'){
     $foreign=@(Get-Process -Name ScriptLauncher -ErrorAction SilentlyContinue|Where-Object {$_.SessionId -eq $session -and $_.Path -ine (Join-Path $launcher 'ScriptLauncher.exe')})
     if($foreign.Count){throw 'AHK manager is running from another folder. Configure the existing owner before applying.'}
     & (Join-Path $root 'Import-Apps.ps1')|Out-Null
-    & (Join-Path $root 'Ensure-DockIcons.ps1')
     try{
         Stop-Yasb;Stop-Bridge;Stop-Dock
         Write-Utf8 (Join-Path $yasbRoot 'config.yaml') (Expand-Template (Join-Path $root 'config.yaml'))
