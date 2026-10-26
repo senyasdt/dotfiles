@@ -108,6 +108,18 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: trans
 .power-menu-popup .button:hover { background-color: #4b515c; }
 .power-menu-popup .button .icon { color: #acb9ca; font-size: 32px; }
 
-/* Keep the old compact language/weather/volume rhythm. */
-.language-widget, .open-meteo-widget, .volume-widget { padding-left: 2px; padding-right: 2px; }
-.language-widget .label, .open-meteo-widget .label, .volume-widget .label { padding: 0 1px; }
+/* Give the top-right status widgets and controls distinct, padded hit areas. */
+.catppuccin-top .language-widget,
+.catppuccin-top .open-meteo-widget,
+.catppuccin-top .volume-widget { padding: 0 7px; }
+.catppuccin-top .language-widget .label,
+.catppuccin-top .open-meteo-widget .label,
+.catppuccin-top .volume-widget .label { padding: 0 2px; }
+.catppuccin-top .open-meteo-widget .icon,
+.catppuccin-top .volume-widget .icon { padding-right: 4px; }
+.catppuccin-top .systray { padding: 0 7px; }
+.catppuccin-top .systray .unpinned-visibility-btn { min-width: 20px; padding: 0 3px; }
+.catppuccin-top .desktop-menu,
+.catppuccin-top .power-menu-widget { padding: 0 7px; }
+.catppuccin-top .desktop-menu .label,
+.catppuccin-top .power-menu-widget .label { min-width: 18px; padding: 0 2px; }
