@@ -35,6 +35,7 @@ internal static class DesktopBridge {
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr hwnd,StringBuilder text,int count);
     [DllImport("user32.dll",EntryPoint="GetWindowLongW")] static extern int GetWindowLong(IntPtr hwnd,int index);
     [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hwnd,int command);
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hwnd,IntPtr after,int x,int y,int width,int height,uint flags);
     [DllImport("user32.dll")] static extern bool GetCursorPos(out Point point);
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
@@ -130,6 +131,54 @@ internal static class DesktopBridge {
     static bool Allowed(string process){return !new[]{"yasb","DesktopBridge","Dock_64","dock","ScreenRound","FinderWidgets","SearchHost","StartMenuExperienceHost","ShellExperienceHost","TextInputHost","LockApp"}.Contains(process,StringComparer.OrdinalIgnoreCase);}
     internal static bool IsDockGeometry(Rectangle r,Rectangle screen){return r.Bottom>screen.Top+screen.Height*0.7&&r.Height<=100&&r.Width>20;}
     internal static bool AtDockEdge(int x,int y,Rectangle screen){return x>=screen.Left&&x<screen.Right&&y>=screen.Bottom-3&&y<screen.Bottom;}
+    internal static int DockAnimationY(int rest,int hidden,double progress,bool show){
+        double t=Math.Max(0,Math.Min(1,progress));
+        double ease=show?1-Math.Pow(1-t,3):t*t*t;
+        return (int)Math.Round(show?hidden+(rest-hidden)*ease:rest+(hidden-rest)*ease);
+    }
+    static bool DockOwnerMatches(IntPtr hwnd,uint expected){uint current;GetWindowThreadProcessId(hwnd,out current);return current==expected;}
+    static bool MoveDockY(IntPtr hwnd,uint owner,int y){
+        Rect current;if(!DockOwnerMatches(hwnd,owner)||!GetWindowRect(hwnd,out current))return false;
+        // Keep the current X and size: Qt may recenter an auto-width dock while apps change.
+        return SetWindowPos(hwnd,IntPtr.Zero,current.Left,y,0,0,0x1|0x4|0x10);
+    }
+    static void DockVisibility(IntPtr hwnd,bool show,bool animate){
+        uint owner;GetWindowThreadProcessId(hwnd,out owner);Rect initial;
+        if(owner==0||!GetWindowRect(hwnd,out initial))return;
+        var display=Screen.FromRectangle(initial.Value);var screen=display.Bounds;
+        var hiddenRect=new Rectangle(initial.Left,screen.Bottom,initial.Right-initial.Left,initial.Bottom-initial.Top);
+        // Never slide onto another monitor positioned below this one.
+        bool clear= !Screen.AllScreens.Any(s=>s.DeviceName!=display.DeviceName&&s.Bounds.IntersectsWith(hiddenRect));
+        if(!animate||!clear){ShowWindow(hwnd,show?8:0);return;}
+        int rest=initial.Top,hidden=screen.Bottom;
+        if(show){if(!MoveDockY(hwnd,owner,hidden)){ShowWindow(hwnd,8);return;}ShowWindow(hwnd,8);}
+        var clock=Stopwatch.StartNew();int duration=show?180:160;
+        while(clock.ElapsedMilliseconds<duration){
+            if(!MoveDockY(hwnd,owner,DockAnimationY(rest,hidden,clock.Elapsed.TotalMilliseconds/duration,show)))break;
+            Thread.Sleep(15);
+        }
+        if(!DockOwnerMatches(hwnd,owner))return;
+        if(!show)ShowWindow(hwnd,0);
+        // Hidden bars retain resting geometry so discovery and future auto-width updates stay valid.
+        MoveDockY(hwnd,owner,rest);
+    }
+    static bool TestDockEasing(){
+        if(DockAnimationY(900,1000,0,true)!=1000||DockAnimationY(900,1000,1,true)!=900||DockAnimationY(900,1000,0,false)!=900||DockAnimationY(900,1000,1,false)!=1000)return false;
+        int prior=1000;for(int i=0;i<=20;i++){int next=DockAnimationY(900,1000,i/20.0,true);if(next>prior||next<900)return false;prior=next;}
+        if(DockAnimationY(900,1000,-1,true)!=1000||DockAnimationY(900,1000,2,false)!=1000)return false;
+        return true;
+    }
+    static bool TestDockMotion(){
+        if(!TestDockEasing())return false;
+        using(var form=new Form()){
+            form.FormBorderStyle=FormBorderStyle.None;form.ShowInTaskbar=false;form.Opacity=0;form.StartPosition=FormStartPosition.Manual;
+            var screen=Screen.PrimaryScreen.Bounds;form.Bounds=new Rectangle(screen.Left+100,screen.Bottom-74,96,64);
+            IntPtr hwnd=form.Handle;Rect before,after;if(!GetWindowRect(hwnd,out before))return false;
+            DockVisibility(hwnd,true,true);if(!IsWindowVisible(hwnd)||!GetWindowRect(hwnd,out after)||after.Top!=before.Top||after.Left!=before.Left)return false;
+            DockVisibility(hwnd,false,true);if(IsWindowVisible(hwnd)||!GetWindowRect(hwnd,out after)||after.Top!=before.Top||after.Left!=before.Left)return false;
+        }
+        return true;
+    }
     internal static bool DockShouldShow(bool occupied,bool atEdge,bool hover,bool popup,bool fullscreen){return !fullscreen&&(!occupied||atEdge||hover||popup);}
     static void NativeTaskbar(bool show){if(!show&&DateTime.UtcNow<nextTaskbarCheck)return;nextTaskbarCheck=DateTime.UtcNow.AddSeconds(2);EnumWindows(delegate(IntPtr hwnd,IntPtr x){var cls=new StringBuilder(128);GetClassName(hwnd,cls,cls.Capacity);if(cls.ToString()=="Shell_TrayWnd"||cls.ToString()=="Shell_SecondaryTrayWnd") {uint pid;GetWindowThreadProcessId(hwnd,out pid);try{using(var p=Process.GetProcessById((int)pid)){if(p.ProcessName=="explorer"&&IsWindowVisible(hwnd)!=show)ShowWindow(hwnd,show?4:0);}}catch{}}return true;},IntPtr.Zero);}
     internal static bool ShouldRestoreTaskbar(bool yasbRunning,DateTime lastSeen,DateTime now){return !yasbRunning&&now-lastSeen>=TimeSpan.FromSeconds(8);}
@@ -163,7 +212,7 @@ internal static class DesktopBridge {
         },IntPtr.Zero);
         NativeTaskbar(false);
         bool? managed=null;
-        foreach(var dock in docks){var display=Screen.FromRectangle(dock.Item2);var screen=display.Bounds;managed=komorebi==null?null:komorebi.ForScreen(display.DeviceName);bool edge=AtDockEdge(cursor.X,cursor.Y,screen);bool hover=IsWindowVisible(dock.Item1)&&Rectangle.Inflate(dock.Item2,12,12).Contains(cursor.X,cursor.Y);bool show=DockShouldShow(managed??occupied,edge,hover,popup,fullscreen);if(IsWindowVisible(dock.Item1)!=show)ShowWindow(dock.Item1,show?8:0);}
+        foreach(var dock in docks){var display=Screen.FromRectangle(dock.Item2);var screen=display.Bounds;managed=komorebi==null?null:komorebi.ForScreen(display.DeviceName);bool edge=AtDockEdge(cursor.X,cursor.Y,screen);bool hover=IsWindowVisible(dock.Item1)&&Rectangle.Inflate(dock.Item2,12,12).Contains(cursor.X,cursor.Y);bool show=DockShouldShow(managed??occupied,edge,hover,popup,fullscreen);if(IsWindowVisible(dock.Item1)!=show)DockVisibility(dock.Item1,show,!fullscreen);}
         string state=Json.Serialize(new{mode="active",occupied=occupied,managedWorkspaceOccupied=managed,occupants=occupants.OrderBy(x=>x).ToArray(),fullscreen=fullscreen,popup=popup,docks=docks.Count,docksVisible=docks.Count(d=>IsWindowVisible(d.Item1))});if(state!=lastState||DateTime.UtcNow-lastWrite>TimeSpan.FromSeconds(10)){File.WriteAllText(Path.Combine(Runtime,"dock-status.json"),state,new UTF8Encoding(false));lastState=state;lastWrite=DateTime.UtcNow;}
     }
     static string lastState="";static DateTime lastWrite=DateTime.MinValue;
@@ -175,7 +224,8 @@ internal static class DesktopBridge {
             if(args.Length>0&&args[0]=="--list-services"){Output(Services.Select(s=>new{group=s[0],label=s[1],action=s[2]}).ToArray());return 0;}
             if(args.Length>0&&args[0]=="--stop"){try{using(var e=EventWaitHandle.OpenExisting(EventName))e.Set();}catch(WaitHandleCannotBeOpenedException){}return 0;}
             if(args.Length>0&&args[0]=="--show-taskbar"){NativeTaskbar(true);return 0;}
-            if(args.Length>0&&args[0]=="--test"){var bounds=new Rectangle(0,0,2560,1440);if(!IsDockGeometry(new Rectangle(1245,1366,70,64),bounds)||IsDockGeometry(new Rectangle(0,0,2560,40),bounds)||IsDockGeometry(new Rectangle(0,1300,10,64),bounds)||IsDockGeometry(new Rectangle(0,1100,300,300),bounds))return 3;if(!AtDockEdge(0,1439,bounds)||!AtDockEdge(2559,1439,bounds)||AtDockEdge(1280,1400,bounds)||AtDockEdge(-1,1439,bounds)||AtDockEdge(2560,1439,bounds))return 4;var now=new DateTime(2026,10,24,0,0,10,DateTimeKind.Utc);if(ShouldRestoreTaskbar(true,now.AddSeconds(-20),now)||ShouldRestoreTaskbar(false,now.AddSeconds(-2),now)||!ShouldRestoreTaskbar(false,now.AddSeconds(-8),now)||!ShouldRestoreTaskbar(false,DateTime.MinValue,now))return 2;if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
+            if(args.Length>0&&args[0]=="--test-motion")return TestDockMotion()?0:5;
+            if(args.Length>0&&args[0]=="--test"){if(!TestDockEasing())return 5;var bounds=new Rectangle(0,0,2560,1440);if(!IsDockGeometry(new Rectangle(1245,1366,70,64),bounds)||IsDockGeometry(new Rectangle(0,0,2560,40),bounds)||IsDockGeometry(new Rectangle(0,1300,10,64),bounds)||IsDockGeometry(new Rectangle(0,1100,300,300),bounds))return 3;if(!AtDockEdge(0,1439,bounds)||!AtDockEdge(2559,1439,bounds)||AtDockEdge(1280,1400,bounds)||AtDockEdge(-1,1439,bounds)||AtDockEdge(2560,1439,bounds))return 4;var now=new DateTime(2026,10,24,0,0,10,DateTimeKind.Utc);if(ShouldRestoreTaskbar(true,now.AddSeconds(-20),now)||ShouldRestoreTaskbar(false,now.AddSeconds(-2),now)||!ShouldRestoreTaskbar(false,now.AddSeconds(-8),now)||!ShouldRestoreTaskbar(false,DateTime.MinValue,now))return 2;if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
             bool created;using(var mutex=new Mutex(true,@"Local\Druzh.CatppuccinDesktop",out created)){if(!created)return 0;Directory.CreateDirectory(Runtime);Application.EnableVisualStyles();using(var stop=new EventWaitHandle(false,EventResetMode.ManualReset,EventName)){
                 komorebi=new KomorebiFeed(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"));
                 try{int n=0;while(!stop.WaitOne(400)){try{Tick();}catch(Exception e){if(n++%20==0){string log=Path.Combine(Runtime,"bridge.log");if(File.Exists(log)&&new FileInfo(log).Length>262144)File.WriteAllText(log,"");File.AppendAllText(log,DateTime.Now.ToString("o")+" "+e.Message+"\n");}}}}

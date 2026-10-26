@@ -434,7 +434,8 @@ widgets:
       # DesktopBridge owns hiding the entire dock instead.
       hide_empty: false
       animation:
-        enabled: false
+        enabled: true
+        duration: 140
       preview:
         enabled: true
         width: 280
