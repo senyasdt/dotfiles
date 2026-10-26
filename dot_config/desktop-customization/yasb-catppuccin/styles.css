@@ -51,8 +51,8 @@
 .media-widget .btn { padding: 0 5px; color: #acb9ca; }
 .systray .unpinned-visibility-btn { color: #a8afb9; padding: 0 3px; }
 .systray .button { padding: 2px; margin: 0 2px; border-radius: 5px; }
-.systray-popup { background-color: rgba(32, 34, 39, 190); border: 1px solid #4b515c; border-radius: 14px; padding: 16px; }
-.systray-popup .button { min-width: 36px; min-height: 36px; padding: 6px; margin: 3px; border-radius: 8px; background-color: transparent; }
+.systray-popup { background-color: rgba(32, 34, 39, 96); border: none; border-radius: 10px; padding: 10px; }
+.systray-popup .button { min-width: 24px; min-height: 24px; padding: 3px; margin: 2px; border-radius: 6px; background-color: transparent; }
 .systray-popup .button:hover { background-color: rgba(161, 170, 184, 40); }
 .catppuccin-dock .widget { padding: 0 5px; margin: 4px 1px; border-radius: 11px; }
 .catppuccin-dock .launchpad-widget .label { font-size: 28px; color: #acb9ca; padding: 0 7px; }
@@ -111,15 +111,15 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: trans
 /* Give the top-right status widgets and controls distinct, padded hit areas. */
 .catppuccin-top .language-widget,
 .catppuccin-top .open-meteo-widget,
-.catppuccin-top .volume-widget { padding: 0 7px; }
+.catppuccin-top .volume-widget { padding: 0 4px; }
 .catppuccin-top .language-widget .label,
 .catppuccin-top .open-meteo-widget .label,
 .catppuccin-top .volume-widget .label { padding: 0 2px; }
 .catppuccin-top .open-meteo-widget .icon,
-.catppuccin-top .volume-widget .icon { padding-right: 4px; }
-.catppuccin-top .systray { padding: 0 7px; }
-.catppuccin-top .systray .unpinned-visibility-btn { min-width: 20px; padding: 0 3px; }
+.catppuccin-top .volume-widget .icon { padding-right: 2px; }
+.catppuccin-top .systray { padding: 0 4px; }
+.catppuccin-top .systray .unpinned-visibility-btn { min-width: 12px; padding: 0 2px; }
 .catppuccin-top .desktop-menu,
-.catppuccin-top .power-menu-widget { padding: 0 7px; }
+.catppuccin-top .power-menu-widget { padding: 0 5px; }
 .catppuccin-top .desktop-menu .label,
-.catppuccin-top .power-menu-widget .label { min-width: 18px; padding: 0 2px; }
+.catppuccin-top .power-menu-widget .label { min-width: 14px; padding: 0 2px; }
