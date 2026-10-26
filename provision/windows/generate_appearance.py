@@ -102,6 +102,15 @@ def generate():
     chrome = {'manifest_version':3,'name':name,'version':palette['version'],
               'description':'Neutral graphite and muted blue, matching YASB. Browser UI only.',
               'theme':{'colors':{k:rgb(v) for k,v in theme_colors.items()}}}
+    # Package the approved wallpaper with the colours: a separate custom NTP
+    # background can replace the user's selected theme in Chrome's UI.
+    chrome['theme']['images'] = {'theme_ntp_background': 'images/maomao-cold-grey-dark.png'}
+    chrome['theme']['properties'] = {
+        'ntp_background_alignment': 'center',
+        'ntp_background_repeat': 'no-repeat',
+    }
+    if not (APPEARANCE / 'chrome/images/maomao-cold-grey-dark.png').is_file():
+        raise FileNotFoundError('Chrome Cold Grey wallpaper is missing')
     put('dot_config/desktop-customization/appearance/chrome/manifest.json',json_text(chrome))
 
     toml = '[metadata]\nname = '+json.dumps(name)+'\n\n[colors]\n'

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Cold Grey",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Neutral graphite and muted blue, matching YASB. Browser UI only.",
     "theme": {
         "colors": {
@@ -95,6 +95,13 @@
                 56,
                 64
             ]
+        },
+        "images": {
+            "theme_ntp_background": "images/maomao-cold-grey-dark.png"
+        },
+        "properties": {
+            "ntp_background_alignment": "center",
+            "ntp_background_repeat": "no-repeat"
         }
     }
 }
