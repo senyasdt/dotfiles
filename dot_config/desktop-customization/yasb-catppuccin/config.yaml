@@ -75,7 +75,7 @@ bars:
       hide_on_fullscreen: true
       auto_hide: false
     dimensions:
-      width: 100%
+      width: auto
       height: 64
     padding:
       top: 0
@@ -88,26 +88,17 @@ bars:
         stretch: false
       center:
         alignment: center
-        stretch: true
+        stretch: false
       right:
         alignment: right
         stretch: false
     widgets:
       left: []
       center:
-      - dock_shell
+      - dock_library
+      - taskbar
       right: []
 widgets:
-  dock_shell:
-    type: yasb.grouper.GrouperWidget
-    options:
-      class_name: dock-shell
-      widgets:
-      - dock_library
-      - pinned
-      - taskbar
-      collapse_options:
-        enabled: false
   daemon_reset:
     type: yasb.custom.CustomWidget
     options:
@@ -430,19 +421,6 @@ widgets:
       tooltip_label: Профиль Catppuccin · настройки и быстрый откат
       exec_options:
         use_shell: false
-  pinned:
-    type: yasb.applications.ApplicationsWidget
-    options:
-      label: '{data}'
-      class_name: pinned-apps
-      image_icon_size: 32
-      app_list:
-      - icon: __BRIDGE__\runtime\pinned-icons\explorer.png
-        launch: explorer.exe
-        name: Проводник
-      - icon: __BRIDGE__\runtime\pinned-icons\terminal.png
-        launch: wt.exe
-        name: Терминал
   taskbar:
     type: yasb.taskbar.TaskbarWidget
     options:
