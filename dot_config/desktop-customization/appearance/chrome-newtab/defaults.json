@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "shortcuts": [
+    {"id": "gmail", "name": "Gmail", "url": "https://mail.google.com/"},
+    {"id": "drive", "name": "Google Диск", "url": "https://drive.google.com/"},
+    {"id": "translate", "name": "Переводчик", "url": "https://translate.google.com/"},
+    {"id": "chatgpt", "name": "ChatGPT", "url": "https://chatgpt.com/"},
+    {"id": "github", "name": "GitHub", "url": "https://github.com/"},
+    {"id": "youtube", "name": "YouTube", "url": "https://www.youtube.com/"}
+  ]
+}
