@@ -113,6 +113,15 @@ def generate():
         raise FileNotFoundError('Chrome Cold Grey wallpaper is missing')
     put('dot_config/desktop-customization/appearance/chrome/manifest.json',json_text(chrome))
 
+    # A separate New Tab override can use CSS contain at every window size.
+    # Keep both adapters tied to the same approved image and colour source.
+    newtab_palette = '/* Generated from appearance/palette.json. */\n:root {\n'
+    newtab_palette += ''.join(f'  --{key}: {value};\n' for key, value in c.items()) + '}\n'
+    put('dot_config/desktop-customization/appearance/chrome-newtab/palette.css', newtab_palette)
+    put('dot_config/desktop-customization/appearance/chrome-newtab/images/maomao-cold-grey-dark.png',
+        (APPEARANCE / 'chrome/images/maomao-cold-grey-dark.png').read_bytes())
+
+
     toml = '[metadata]\nname = '+json.dumps(name)+'\n\n[colors]\n'
     for key, value in {'foreground':c['text'],'background':c['background'],'cursor_bg':c['accentSoft'],
                        'cursor_fg':c['crust'],'cursor_border':c['accentSoft'],
@@ -152,11 +161,14 @@ def main():
     outputs=generate()
     different=[]
     for path,text in outputs.items():
-        if not path.exists() or path.read_text(encoding='utf-8')!=text:
+        if not path.exists() or (path.read_bytes()!=text if isinstance(text, bytes) else path.read_text(encoding='utf-8')!=text):
             different.append(str(path.relative_to(ROOT)))
             if not args.check:
                 path.parent.mkdir(parents=True,exist_ok=True)
-                path.write_text(text,encoding='utf-8')
+                if isinstance(text, bytes):
+                    path.write_bytes(text)
+                else:
+                    path.write_text(text,encoding='utf-8')
     if args.check and different:
         raise SystemExit('Appearance adapters differ: '+', '.join(different))
     print(f'{len(outputs)} appearance adapters '+('verified.' if args.check else 'generated.'))

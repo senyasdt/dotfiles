@@ -9,3 +9,4 @@ dot_config/yasb/scripts/*.vbs text eol=lf
 
 # Chrome theme artwork must remain byte-exact.
 dot_config/desktop-customization/appearance/chrome/images/*.png binary -eol
+dot_config/desktop-customization/appearance/chrome-newtab/images/*.png binary -eol
