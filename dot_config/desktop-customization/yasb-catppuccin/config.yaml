@@ -449,9 +449,12 @@ widgets:
       icon_size: 32
       tooltip: true
       monitor_exclusive: true
-      show_only_visible: true
+      # Keep apps from other komorebi workspaces in the dock.
+      show_only_visible: false
       strict_filtering: true
-      hide_empty: true
+      # YASB 2.0.7 can run a queued empty-hide after a window was added.
+      # DesktopBridge owns hiding the entire dock instead.
+      hide_empty: false
       animation:
         enabled: false
       preview:
