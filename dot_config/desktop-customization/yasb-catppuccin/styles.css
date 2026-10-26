@@ -51,7 +51,7 @@
 .media-widget .btn { padding: 0 5px; color: #acb9ca; }
 .systray .unpinned-visibility-btn { color: #a8afb9; padding: 0 3px; }
 .systray .button { padding: 2px; margin: 0 2px; border-radius: 5px; }
-.systray-popup { background-color: rgba(32, 34, 39, 96); border: none; border-radius: 10px; padding: 10px; }
+.systray-popup { background-color: rgba(40, 43, 49, 125); border: none; border-radius: 10px; padding: 10px; }
 .systray-popup .button { min-width: 24px; min-height: 24px; padding: 3px; margin: 2px; border-radius: 6px; background-color: transparent; }
 .systray-popup .button:hover { background-color: rgba(161, 170, 184, 40); }
 .catppuccin-dock .widget { padding: 0 5px; margin: 4px 1px; border-radius: 11px; }
