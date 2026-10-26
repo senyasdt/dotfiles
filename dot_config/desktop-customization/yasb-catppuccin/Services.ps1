@@ -65,6 +65,27 @@ function Hid($name,$operation) {
     $p=Start-Process -FilePath $path -ArgumentList $arguments -WorkingDirectory (Split-Path $path) -WindowStyle Hidden -PassThru
     if($p.WaitForExit(400)){throw "$name helper exited at startup (code $($p.ExitCode))."}
 }
+function Write-ServiceEvent([string]$phase,[string]$component='', $failure=$null) {
+    # Only user-triggered actions are recorded. Status polling stays read-only.
+    # Logging failures must never interrupt service control or AHK protection.
+    try {
+        $runtime=Join-Path $PSScriptRoot 'runtime'
+        [void][IO.Directory]::CreateDirectory($runtime)
+        $log=Join-Path $runtime 'services.jsonl'
+        if((Test-Path -LiteralPath $log) -and (Get-Item -LiteralPath $log).Length -ge 262144){
+            Copy-Item -LiteralPath $log -Destination ($log+'.1') -Force
+            [IO.File]::WriteAllText($log,'')
+        }
+        $processes=@{}
+        foreach($name in @('yasb','komorebi','whkd','DesktopBridge','ScriptLauncher')){
+            $processes[$name]=@(Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object SessionId -EQ $session | ForEach-Object Id)
+        }
+        $entry=[ordered]@{at=[DateTimeOffset]::Now.ToString('o');action=$Action;phase=$phase;component=$component;processes=$processes}
+        # No command lines, config contents or arbitrary error text in this log.
+        if($failure){$entry.errorType=$failure.GetType().FullName;$entry.hresult=$failure.HResult}
+        [IO.File]::AppendAllText($log,($entry|ConvertTo-Json -Depth 5 -Compress)+[Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
+    } catch {}
+}
 if($Action -eq 'Status'){
     [pscustomobject]@{ScriptLauncher=@(Exact-Processes $launcher).Count;Vial=@(Exact-Processes $vial).Count;Zmk=@(Exact-Processes $zmk).Count;Komorebi=@(Get-Process komorebi -ErrorAction SilentlyContinue|Where-Object SessionId -EQ $session).Count;Whkd=@(Get-Process whkd -ErrorAction SilentlyContinue|Where-Object SessionId -EQ $session).Count}
     return
@@ -75,8 +96,12 @@ $mutex=New-Object Threading.Mutex($false,'Local\Druzh.DesktopServices');$locked=
 try {
     try{$locked=$mutex.WaitOne(0)}catch [Threading.AbandonedMutexException]{$locked=$true}
     if(!$locked){throw 'Another helper operation is still running.'}
+    Write-ServiceEvent 'begin'
     $failures=New-Object 'Collections.Generic.List[string]'
-    function Attempt($label,[scriptblock]$operation){try{& $operation}catch{$failures.Add($label+': '+$_.Exception.Message)}}
+    function Attempt($label,[scriptblock]$operation){
+        Write-ServiceEvent 'component-begin' $label
+        try{& $operation;Write-ServiceEvent 'component-complete' $label}catch{Write-ServiceEvent 'component-failed' $label $_.Exception;$failures.Add($label+': '+$_.Exception.Message)}
+    }
     switch -Regex ($Action) {
         '^StartAll$' {Attempt 'AHK' {Ahk 'resume'};Attempt 'Komorebi' {Wm 'Start'};Attempt 'Vial' {Hid 'Vial' 'Start'};Attempt 'ZMK' {Hid 'Zmk' 'Start'};break}
         '^StopAll$' {Attempt 'AHK' {Ahk 'pause'};Attempt 'Komorebi' {Wm 'Stop'};Attempt 'Vial' {Hid 'Vial' 'Stop'};Attempt 'ZMK' {Hid 'Zmk' 'Stop'};break}
@@ -95,8 +120,10 @@ try {
         }
     }
     if($failures.Count){throw ($failures -join "`n")}
+    Write-ServiceEvent 'complete'
     Write-Output ('Completed: '+$Action)
 } catch {
+    Write-ServiceEvent 'failed' '' $_.Exception
     if($Notify){Add-Type -AssemblyName System.Windows.Forms;[void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'Desktop helpers','OK','Warning')}
     throw
 } finally {if($locked){$mutex.ReleaseMutex()};$mutex.Dispose()}
