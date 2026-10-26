@@ -60,8 +60,8 @@
 .catppuccin-dock .pinned-apps .label { padding: 6px 8px; min-width: 32px; max-width: 32px; min-height: 32px; max-height: 32px; }
 .catppuccin-dock .taskbar-widget { border-left: 1px solid rgba(161,170,184,60); padding-left: 6px; }
 /* No CSS margin: Qt still dispatches clicks inside that transparent margin.
-   The painted cell and hover area now cover the complete 48 px hit target. */
-.taskbar-widget .app-container { min-width: 32px; max-width: 32px; padding: 6px 8px; margin: 0; background-color: rgba(161, 170, 184, 18); border-radius: 8px; border-bottom: 2px solid transparent; }
+   Hover and active styles cover the complete 48 px hit target. */
+.taskbar-widget .app-container { min-width: 32px; max-width: 32px; padding: 6px 8px; margin: 0; background-color: transparent; border-radius: 8px; border-bottom: 2px solid transparent; }
 .taskbar-widget .app-icon { padding: 0; margin: 0; }
 .taskbar-widget .app-container.running { border-bottom: 2px solid #626b79; }
 .taskbar-widget .app-container.foreground { background-color: #343840; border-bottom: 2px solid #acb9ca; }
