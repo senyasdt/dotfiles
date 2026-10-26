@@ -50,6 +50,7 @@ internal static class DesktopBridge {
     static readonly string[][] Services={
         new[]{"","Запустить помощники","StartAll"},new[]{"","Остановить помощники","StopAll"},new[]{"","Перезапустить помощники","RestartAll"},
         new[]{"","Восстановить отрисовку ChatGPT","ChatGPTRender"},
+        new[]{"ChatGPT","Запустить без GPU (тест)","ChatGPTSoftwareStart"},new[]{"ChatGPT","Запустить обычно","ChatGPTNormalStart"},
         new[]{"Komorebi и горячие клавиши","Запустить","KomorebiStart"},new[]{"Komorebi и горячие клавиши","Остановить","KomorebiStop"},new[]{"Komorebi и горячие клавиши","Перезапустить","KomorebiRestart"},
         new[]{"AHK","Включить все скрипты","AhkEnable"},new[]{"AHK","Выключить все скрипты","AhkDisable"},new[]{"AHK","Перезапустить разрешённые","AhkRestart"},new[]{"AHK","Возобновить после общей паузы","AhkResume"},
         new[]{"Vial helper","Запустить","VialStart"},new[]{"Vial helper","Остановить","VialStop"},new[]{"Vial helper","Перезапустить","VialRestart"},

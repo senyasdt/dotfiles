@@ -58,6 +58,18 @@ function Test-ChatGPTRenderIdentity($Before,$After) {
         $Before.GpuStartedUtc -eq $After.GpuStartedUtc
 }
 
+function Write-ChatGPTRenderEvent([string]$Phase,$Snapshot,$Failure=$null) {
+    try {
+        $runtime=Join-Path $PSScriptRoot 'runtime';[void][IO.Directory]::CreateDirectory($runtime)
+        $log=Join-Path $runtime 'chatgpt-render.jsonl'
+        if((Test-Path -LiteralPath $log) -and (Get-Item -LiteralPath $log).Length -ge 131072){Copy-Item -LiteralPath $log -Destination ($log+'.1') -Force;[IO.File]::WriteAllText($log,'')}
+        $entry=[ordered]@{at=[DateTimeOffset]::Now.ToString('o');operation='manual-gpu-reset';phase=$Phase}
+        if($Snapshot){$entry.parentId=$Snapshot.ParentId;$entry.gpuId=$Snapshot.GpuId;$entry.window=$Snapshot.Window}
+        if($Failure){$entry.errorType=$Failure.GetType().FullName;$entry.hresult=$Failure.HResult}
+        [IO.File]::AppendAllText($log,($entry|ConvertTo-Json -Compress)+[Environment]::NewLine,(New-Object Text.UTF8Encoding($false)))
+    } catch {} # Diagnostic recording must not block recovery.
+}
+
 $sessionId=[Diagnostics.Process]::GetCurrentProcess().SessionId
 $windowsAppsRoot=Join-Path $env:ProgramFiles 'WindowsApps'
 $plan=Get-ChatGPTRenderPlan (Get-ChatGPTWindowSnapshot) @(Get-CimInstance Win32_Process -Filter "Name='ChatGPT.exe'") $sessionId $windowsAppsRoot
@@ -77,6 +89,7 @@ try {
         throw 'Графический процесс изменился перед завершением. Операция отменена.'
     }
     # This is the only termination site: the unique, revalidated GPU child.
+    Write-ChatGPTRenderEvent 'begin' $fresh
     $gpuProcess.Kill()
     if(!$gpuProcess.WaitForExit(3000)){throw 'Графический подпроцесс не завершился за 3 секунды.'}
     $deadline=[DateTime]::UtcNow.AddSeconds(8);$replacement=$null
@@ -91,7 +104,11 @@ try {
         }catch{$replacement=$null}
     }while(!$replacement -and [DateTime]::UtcNow -lt $deadline)
     if(!$replacement){throw 'Графический процесс не восстановился за 8 секунд. Основной процесс принудительно не закрывался.'}
+    Write-ChatGPTRenderEvent 'recovered' $replacement
     [pscustomobject]@{Status='Recovered';ParentId=$fresh.ParentId;PreviousGpuId=$fresh.GpuId;NewGpuId=$replacement.GpuId;MainWindowPreserved=$true}
+}catch {
+    Write-ChatGPTRenderEvent 'failed' $plan $_.Exception
+    throw
 }finally {
     if($gpuProcess){$gpuProcess.Dispose()};if($mainProcess){$mainProcess.Dispose()}
     if($locked){$mutex.ReleaseMutex()};$mutex.Dispose()
