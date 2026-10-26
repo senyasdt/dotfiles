@@ -1,6 +1,6 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
-    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender')]
+    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart')]
     [string]$Action='Status', [switch]$Notify
 )
 $ErrorActionPreference='Stop'
@@ -77,7 +77,7 @@ function Write-ServiceEvent([string]$phase,[string]$component='', $failure=$null
             [IO.File]::WriteAllText($log,'')
         }
         $processes=@{}
-        foreach($name in @('yasb','komorebi','whkd','DesktopBridge','ScriptLauncher')){
+        foreach($name in @('yasb','komorebi','whkd','DesktopBridge','ScriptLauncher','ChatGPT')){
             $processes[$name]=@(Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object SessionId -EQ $session | ForEach-Object Id)
         }
         $entry=[ordered]@{at=[DateTimeOffset]::Now.ToString('o');action=$Action;phase=$phase;component=$component;processes=$processes}
@@ -90,7 +90,7 @@ if($Action -eq 'Status'){
     [pscustomobject]@{ScriptLauncher=@(Exact-Processes $launcher).Count;Vial=@(Exact-Processes $vial).Count;Zmk=@(Exact-Processes $zmk).Count;Komorebi=@(Get-Process komorebi -ErrorAction SilentlyContinue|Where-Object SessionId -EQ $session).Count;Whkd=@(Get-Process whkd -ErrorAction SilentlyContinue|Where-Object SessionId -EQ $session).Count}
     return
 }
-$target=if($Action -eq 'ChatGPTRender'){'ChatGPT GPU subprocess (main window stays running)'}else{'Current desktop helpers (YASB stays running)'}
+$target=if($Action -eq 'ChatGPTRender'){'ChatGPT GPU subprocess (main window stays running)'}elseif($Action -like 'ChatGPT*Start'){'ChatGPT (only after the user has closed it)'}else{'Current desktop helpers (YASB stays running)'}
 if(!$PSCmdlet.ShouldProcess($target,$Action)){return}
 $mutex=New-Object Threading.Mutex($false,'Local\Druzh.DesktopServices');$locked=$false
 try {
@@ -113,6 +113,11 @@ try {
         '^Komorebi(Start|Stop|Restart)$' {Wm $Matches[1];break}
         '^(Vial|Zmk)(Start|Stop|Restart)$' {Hid $Matches[1] $Matches[2];break}
         '^ChatGPTRender$' {& (Join-Path $PSScriptRoot 'Repair-ChatGPTRendering.ps1') -Confirm:$false;break}
+        '^ChatGPT(Software|Normal)Start$' {
+            $mode=if($Matches[1] -eq 'Software'){'Software'}else{'Default'}
+            & (Join-Path $PSScriptRoot 'Start-ChatGPTRenderMode.ps1') -Mode $mode -Confirm:$false
+            break
+        }
         '^OpenVial$' {
             if(!(Test-Path -LiteralPath $safeVial)){throw 'The safe Vial launcher is missing.'}
             Start-Process powershell.exe -ArgumentList ('-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "'+$safeVial+'" -Notify') -WindowStyle Hidden
