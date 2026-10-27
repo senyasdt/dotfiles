@@ -389,3 +389,15 @@ CLI: Start-ChatGPTRenderMode.ps1 -Mode Software|Default; -Inspect только �
 runtime/chatgpt-render.jsonl (128 KiB + одна копия), чтобы отличать свои сбросы
 от других событий приложения. Сохраняются parent/GPU PID и HWND, без содержимого
 чата и текста ошибок. Автоматический сброс графики по таймеру не добавлялся.
+
+## Эксперимент Scrolling: мышь
+
+Только ветка komorebi-scrolling: существующий DesktopBridge поддерживает
+Alt+колёсико над управляемыми окнами горизонтальной ленты. Обычная прокрутка,
+BSP и AHK bindings сохраняются. Работа ограничена одним монитором; fullscreen,
+пауза, monocle/maximized и игровые блокировки ScriptLauncher отключают hook.
+Без живого проверенного guard и свежего статуса перехват не включается.
+Нового daemon или AHK-скрипта нет. Состояние — runtime/scroll-input.json.
+--test включает mouse policy и разбор Scrolling state; --test-scroll-hook
+проверяет установку/снятие hook с пустым списком HWND, пропускающим весь ввод.
+Для возврата текущего пространства использовать соседний komorebi-scrolling/BSP.cmd.
