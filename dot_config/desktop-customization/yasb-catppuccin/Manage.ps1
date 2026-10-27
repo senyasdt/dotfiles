@@ -91,10 +91,11 @@ function Assert-YasbVersion {
     $version=(Get-Item -LiteralPath $yasb).VersionInfo.ProductVersion
     if($version -notmatch '^(\d+\.\d+\.\d+)' -or [version]$Matches[1] -lt [version]'2.0.7'){throw 'This profile requires YASB 2.0.7 or newer. Upgrade AmN.yasb before activation.'}
 }
+function Start-Yasb { & (Join-Path $root 'Start-Yasb.ps1') }
 function Start-Profile {
     Assert-YasbVersion
     if(!(Test-Path -LiteralPath $bridge)){throw 'Run -Action Build first'}
-    if(!(Owned-Processes 'yasb' $yasb).Count){Start-Process -FilePath $yasb -WorkingDirectory (Split-Path $yasb) -WindowStyle Hidden}
+    if(!(Owned-Processes 'yasb' $yasb).Count){Start-Yasb}
     if(!(Owned-Processes 'DesktopBridge' $bridge).Count){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}
 }
 function Restore-Current {
@@ -105,12 +106,16 @@ function Restore-Current {
     if($s.launchpadExisted){Get-ChildItem -LiteralPath (Join-Path $s.backup 'launchpad')|ForEach-Object {Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $yasbRoot 'launchpad') -Recurse -Force}}
     elseif(Test-Path -LiteralPath (Join-Path $yasbRoot 'launchpad\apps.json')){Remove-Item -LiteralPath (Join-Path $yasbRoot 'launchpad\apps.json')}
     Restart-WinHelper
-    if('yasb' -in $s.running){Start-Process -FilePath $yasb -WorkingDirectory (Split-Path $yasb) -WindowStyle Hidden}
+    if('yasb' -in $s.running){Start-Yasb}
     if('Dock_64' -in $s.running){Start-Process -FilePath $dock -WorkingDirectory (Split-Path $dock) -WindowStyle Hidden}
     if('FinderWidgets' -in $s.running){Start-Process -FilePath (Join-Path $finder 'FinderWidgets.exe') -WorkingDirectory $finder -WindowStyle Hidden}
     Restore-ThemeEnvironment;Mode 'previous';Write-Output 'Restored the desktop from before the Catppuccin experiment.'
 }
 if($Action -in @('Apply','Refresh','Start','RestorePreDock')){Assert-YasbVersion}
+# Validate the caller before any stop/copy operation, including Build's resume.
+if($Action -in @('Apply','Refresh','Start','RestorePreDock','RestoreCurrent','Build')){
+    & (Join-Path $root 'Start-Yasb.ps1') -CheckOnly
+}
 if($Action -eq 'Build'){
     $resumeYasb=(Owned-Processes 'yasb' $yasb).Count -gt 0
     $resumeBridge=(Owned-Processes 'DesktopBridge' $bridge).Count -gt 0
@@ -120,7 +125,7 @@ if($Action -eq 'Build'){
     try{
         & (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll ('/out:'+$bridge) (Join-Path $root 'DesktopBridge.cs') (Join-Path $root 'KomorebiFeed.cs') (Join-Path $root 'ScrollingMouseNavigation.cs')
         if($LASTEXITCODE -ne 0){throw 'Build failed'};Run-Wait $bridge '--test';Write-Output 'Build and dock policy checks passed.'
-    }finally{if($resumeYasb){Start-Process -FilePath $yasb -WorkingDirectory (Split-Path $yasb) -WindowStyle Hidden};if($resumeBridge){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}}
+    }finally{if($resumeYasb){Start-Yasb};if($resumeBridge){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}}
     return
 }
 if($Action -eq 'Refresh'){
@@ -167,7 +172,7 @@ if($Action -eq 'RestorePreDock'){
     foreach($name in @('MyDockFinder.lnk','Finder Widgets.lnk','yasb.cmd','YASB Catppuccin.lnk')){ $p=Join-Path $startup $name;if(Test-Path -LiteralPath $p){Remove-Item -LiteralPath $p} }
     if(!(Test-Path -LiteralPath (Join-Path $startup 'Desktop Session.lnk'))){$shell=New-Object -ComObject WScript.Shell;$lnk=$shell.CreateShortcut((Join-Path $startup 'YASB Catppuccin.lnk'));$lnk.TargetPath=$yasb;$lnk.WorkingDirectory=Split-Path $yasb;$lnk.Description='Previous YASB panel';$lnk.Save()}
     foreach($v in $s.dockRun){Remove-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name $v.name -ErrorAction SilentlyContinue}
-    Theme-Environment 'classic';Restart-WinHelper;Run-Wait $bridge '--show-taskbar';Start-Process -FilePath $yasb -WorkingDirectory (Split-Path $yasb) -WindowStyle Hidden;Mode 'predock';Write-Output 'Restored the old YASB layout and native taskbar. IPC fixes and AHK game rules retained.';return
+    Theme-Environment 'classic';Restart-WinHelper;Run-Wait $bridge '--show-taskbar';Start-Yasb;Mode 'predock';Write-Output 'Restored the old YASB layout and native taskbar. IPC fixes and AHK game rules retained.';return
 }
 if($Action -eq 'Apply'){
     $s=Snapshot
