@@ -115,13 +115,19 @@ function Stop-Bridge {
         $p=Start-Process -FilePath $bridge -ArgumentList '--stop' -WindowStyle Hidden -PassThru
         try{if(-not $p.WaitForExit(3000)){throw 'Bridge stop request timed out.'}}finally{$p.Dispose()}
         $limit=[DateTime]::UtcNow.AddSeconds(5)
-        while(@(Owners 'DesktopBridge' $bridge).Count -and [DateTime]::UtcNow -lt $limit){Start-Sleep -Milliseconds 80}
-        if(@(Owners 'DesktopBridge' $bridge).Count){throw 'Close the helper menu before switching movement.'}
+        while(@(Bridge-Daemons).Count -and [DateTime]::UtcNow -lt $limit){Start-Sleep -Milliseconds 80}
+        if(@(Bridge-Daemons).Count){throw 'DesktopBridge daemon did not stop.'}
     }
 }
 function Copy-Bundle($from){
     foreach($file in @('komorebi.exe','komorebic.exe','build-info.json')){Copy-Item -LiteralPath (Join-Path $from $file) -Destination (Join-Path $native $file) -Force}
-    Copy-Item -LiteralPath (Join-Path $from 'DesktopBridge.exe') -Destination $bridge -Force
+    # YASB may still run brief --read clients after the daemon has stopped.
+    # Wait for the executable file to unlock; never treat these clients as a daemon.
+    $copyLimit=[DateTime]::UtcNow.AddSeconds(5)
+    while($true){
+        try{Copy-Item -LiteralPath (Join-Path $from 'DesktopBridge.exe') -Destination $bridge -Force;break}
+        catch [IO.IOException]{if([DateTime]::UtcNow -ge $copyLimit){throw};Start-Sleep -Milliseconds 40}
+    }
 }
 function Start-Bridge {
     if($bridgeOwners.Count -and -not @(Bridge-Daemons).Count){
