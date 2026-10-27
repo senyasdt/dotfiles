@@ -48,7 +48,7 @@ function Scrolling($mode) {
         & (Join-Path $scrollRoot 'Switch-Layout.ps1') -Mode Bsp -Confirm:$false
     }else{
         $columns=if($mode -eq 'One'){1}else{2}
-        & (Join-Path $scrollRoot 'Switch-Layout.ps1') -Mode Scrolling -Columns $columns -Peek 180 -Confirm:$false
+        & (Join-Path $scrollRoot 'Switch-Layout.ps1') -Mode Scrolling -Columns $columns -Peek 0 -Confirm:$false
     }
 }
 function Vial-IsOpen {
