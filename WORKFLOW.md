@@ -56,7 +56,7 @@ Windows:
 $env:CHEZMOI_PROFILES="full,desktop"
 chezmoi init senyasdt
 cd "$(chezmoi source-path)"
-powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\install.ps1
+& .\provision\windows\restore.ps1 -Profiles full,desktop -Bar none # plan; add -Apply after review
 chezmoi apply
 ```
 
@@ -64,7 +64,7 @@ chezmoi apply
 
 - `lite` keeps the machine headless and avoids GUI config
 - `full` enables the full CLI setup with `nvim-full`
-- `desktop` enables GUI config. Windows desktop uses `komorebi`/`komorebic`,
+- `desktop` enables GUI config. Windows desktop uses optional bars and a grouped AHK manager. See [Windows recovery](provision/windows/README.md). It includes `komorebi`/`komorebic`,
   `whkd`, YASB, AutoHotkey, Flow Launcher, and `vial`. macOS desktop uses
   AeroSpace and Karabiner-Elements.
 
@@ -79,7 +79,7 @@ CHEZMOI_PROFILES=full,desktop ansible-playbook -i localhost, provision/ansible/s
 Windows packages and desktop apps are installed by PowerShell:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\install.ps1
+& .\provision\windows\restore.ps1 -Profiles full,desktop -Bar none # plan; add -Apply after review
 ```
 
 Updates use explicit provision-and-apply scripts:

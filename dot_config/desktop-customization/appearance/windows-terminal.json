@@ -1,0 +1,23 @@
+{
+    "name": "Cold Grey",
+    "background": "#202227",
+    "foreground": "#d6d9df",
+    "cursorColor": "#acb9ca",
+    "selectionBackground": "#414d61",
+    "black": "#343840",
+    "red": "#d98f9d",
+    "green": "#a5bdac",
+    "yellow": "#cbb78a",
+    "blue": "#8eaee8",
+    "purple": "#b6a6cd",
+    "cyan": "#9bbabc",
+    "white": "#b8bec9",
+    "brightBlack": "#626b79",
+    "brightRed": "#d98f9d",
+    "brightGreen": "#a5bdac",
+    "brightYellow": "#cbb78a",
+    "brightBlue": "#8eaee8",
+    "brightPurple": "#b6a6cd",
+    "brightCyan": "#9bbabc",
+    "brightWhite": "#d6d9df"
+}

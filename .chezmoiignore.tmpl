@@ -2,6 +2,10 @@
 
 # Repo metadata
 README.md
+AGENTS.md
+WORKFLOW.md
+.github/**
+.codex/**
 bootstrap.sh
 provision/**
 nvim-full/**
@@ -15,6 +19,15 @@ Documents/**
 Documents/PowerShell/**
 Documents/WindowsPowerShell/**
 .config/autohotkey/**
+.config/desktop-customization/**
+.config/open-app-library.cmd
+.config/start-autohotkey.cmd
+.config/stop-autohotkey.cmd
+.config/start-daemons.cmd
+.config/stop-daemons.cmd
+.config/restart-daemons.cmd
+.config/run-hidden.vbs
+.config/yasb/**
 .config/fastfetch/**
 .config/powershell/**
 .config/vial/**
@@ -53,6 +66,16 @@ decrypt-private-key.sh
 AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/**
 AppData/Roaming/FlowLauncher/**
 .config/autohotkey/**
+.config/desktop-customization/**
+.config/open-app-library.cmd
+.config/start-autohotkey.cmd
+.config/stop-autohotkey.cmd
+.config/start-daemons.cmd
+.config/stop-daemons.cmd
+.config/restart-daemons.cmd
+.config/run-hidden.vbs
+.config/yasb/**
+AppData/Roaming/Microsoft/Start Menu/Programs/Startup/**
 .config/vial/**
 .config/whkdrc
 applications.json
@@ -63,6 +86,21 @@ komorebi.json
 {{- if env "CI" }}
 .config/yamusic-tui/**
 {{- end }}
+
+
+# The optional profile owns these live outputs. Apply it through Manage.ps1.
+{{- if eq (env "WINDOWS_DESKTOP_THEME" | default "classic") "catppuccin" }}
+.config/yasb/config.yaml
+.config/yasb/styles.css
+.config/autohotkey/mydockfinder-hotkeys.ahk
+{{- end }}
+
+.config/desktop-customization/yasb-catppuccin/private/**
+.config/desktop-customization/yasb-catppuccin/settings.json
+
+# Retired MyDockFinder tray replacement: keep source for historical rollback,
+# but do not deploy or start it on a new workstation.
+.config/desktop-customization/finder-widgets/**
 
 # Generated / local state
 .oh-my-zsh/cache/**
@@ -85,6 +123,13 @@ komorebi.json
 .config/wezterm/theme
 
 .local/state/**
+.config/desktop-customization/**/runtime/**
+.config/desktop-customization/**/backup/**
+.config/desktop-customization/**/test-output/**
+.config/desktop-customization/**/*.exe
+.config/desktop-customization/**/status.json
+.config/desktop-customization/**/status.txt
+.config/desktop-customization/komorebi-runtime/**
 
 !.config/zsh/themes/*.zsh-theme
 key.txt.age

@@ -47,7 +47,7 @@ komorebi/komorebic, whkd, YASB, and AutoHotkey.
 Run the explicit PowerShell provisioner from the chezmoi source repo:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\install.ps1
+& .\provision\windows\restore.ps1 -Profiles full,desktop -Bar none # plan; -Apply to execute
 ```
 
 After provisioning, apply dotfiles with the selected profile:
@@ -72,4 +72,4 @@ $env:CHEZMOI_PROFILES="full,desktop"
 powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\update.ps1
 ```
 
-These scripts pull the source repo, run provisioning, and apply dotfiles.
+Windows recovery, optional bars, helper builds and manual checkpoints are described in [windows/README.md](windows/README.md). Windows update.ps1 requires -Apply to pull/provision/apply and refuses a dirty source checkout. Unix update behavior is unchanged.
