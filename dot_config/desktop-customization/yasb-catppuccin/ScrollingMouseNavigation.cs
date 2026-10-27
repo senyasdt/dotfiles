@@ -33,10 +33,36 @@ internal sealed class ScrollingMouseNavigation : IDisposable {
     volatile bool stopping, guardAllowed;
     IntPtr hook;
     int busy, accumulator;
+    readonly bool smoothMotion;
     long lastStep;
+    readonly WheelIntent intent = new WheelIntent();
+    Context pendingContext;
+    IntPtr pendingForeground;
+    System.Windows.Forms.Timer drainTimer;
+    // A single replaceable intent, never a queue of stale focus commands.
+    internal sealed class WheelIntent {
+        int direction;
+        long expires, lastDispatch = -1000000;
+        internal bool Pending { get { return direction != 0; } }
+        internal void Offer(int value, long now) { direction = Math.Sign(value); expires = now + 180; }
+        internal void Clear() { direction = 0; }
+        internal int Take(long now) {
+            if(now > expires) { Clear(); return 0; }
+            if(now - lastDispatch < 80) return 0;
+            int value = direction;
+            if(value != 0) { Clear(); lastDispatch = now; }
+            return value;
+        }
+    }
+    static long NowMs() { return Stopwatch.GetTimestamp() / (Stopwatch.Frequency / 1000); }
     int accepted;
     string lastStatus = "";
     internal ScrollingMouseNavigation(string executable, Func<Context> context, string guard, string runtime, Func<int,bool> owner=null) {
+        try {
+            var profile=Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(runtime)),"komorebi-scrolling", "runtime", "motion-profile.json");
+            var settings=new JavaScriptSerializer().DeserializeObject(File.ReadAllText(profile)) as Dictionary<string,object>;
+            smoothMotion=settings!=null && Convert.ToString(settings["mode"])=="Trial";
+        } catch { smoothMotion=false; }
         cli=executable; current=context; guardPath=guard; statusPath=Path.Combine(runtime,"scroll-input.json"); callback=OnMouse;
         guardOwner=owner??VerifyGuardOwner;
         thread=new Thread(Listen) { IsBackground=true, Name="Scrolling mouse input" };
@@ -84,11 +110,13 @@ internal sealed class ScrollingMouseNavigation : IDisposable {
             hook=SetWindowsHookEx(14,callback,GetModuleHandle(null),0);
             accumulator=0; WriteStatus(hook==IntPtr.Zero?"hook-unavailable":"ready","");
         } else if(!enabled && hook!=IntPtr.Zero) {
-            UnhookWindowsHookEx(hook); hook=IntPtr.Zero; accumulator=0; WriteStatus("inactive","");
+            UnhookWindowsHookEx(hook); hook=IntPtr.Zero; accumulator=0; intent.Clear(); WriteStatus("inactive","");
         } else if(!enabled)WriteStatus("inactive","");
     }
     void Listen() {
-        using(var timer=new System.Windows.Forms.Timer { Interval=500 }) {
+        using(var timer=new System.Windows.Forms.Timer { Interval=500 })
+        using(drainTimer=new System.Windows.Forms.Timer { Interval=16 }) {
+            drainTimer.Tick+=delegate { Drain(); if(!intent.Pending)drainTimer.Stop(); };
             timer.Tick+=delegate { if(stopping)Application.ExitThread(); else CheckHook(); };
             try { CheckHook(); timer.Start(); Application.Run(); }
             finally { timer.Stop(); if(hook!=IntPtr.Zero)UnhookWindowsHookEx(hook); hook=IntPtr.Zero; WriteStatus("stopped",""); }
@@ -103,16 +131,30 @@ internal sealed class ScrollingMouseNavigation : IDisposable {
             bool modifiers=Down(0x10)||Down(0x11)||Down(0x5B)||Down(0x5C);
             if(!ShouldCapture(true,modifiers,(input.Flags&3)!=0,delta,context!=null,guardAllowed,Fullscreen(foreground),context!=null&&context.Contains(foreground)))
                 return CallNextHookEx(hook,code,message,data);
-            // Consume matched high-resolution wheel events, dispatch at most one step per 120 ms.
             int signed=kind==0x20E?-delta:delta;
             if(Math.Sign(signed)!=Math.Sign(accumulator))accumulator=0;
             accumulator+=signed;
-            if(Math.Abs(accumulator)>=120 && Stopwatch.GetTimestamp()-lastStep>=Stopwatch.Frequency*120/1000 && Interlocked.CompareExchange(ref busy,1,0)==0) {
-                string direction=accumulator>0?"left":"right"; accumulator=0; lastStep=Stopwatch.GetTimestamp();
-                ThreadPool.QueueUserWorkItem(delegate { Navigate(context,foreground,direction); });
+            if(!smoothMotion) {
+                if(Math.Abs(accumulator)>=120 && Stopwatch.GetTimestamp()-lastStep>=Stopwatch.Frequency*120/1000 && Interlocked.CompareExchange(ref busy,1,0)==0) {
+                    string direction=accumulator>0?"left":"right"; accumulator=0; lastStep=Stopwatch.GetTimestamp();
+                    ThreadPool.QueueUserWorkItem(delegate { Navigate(context,foreground,direction); });
+                }
+            } else if(Math.Abs(accumulator)>=120) {
+                intent.Offer(accumulator,NowMs()); accumulator=0;
+                pendingContext=context; pendingForeground=foreground;
+                Drain(); if(intent.Pending)drainTimer.Start();
             }
             return new IntPtr(1);
         } catch { return CallNextHookEx(hook,code,message,data); }
+    }
+    void Drain() {
+        if(!intent.Pending)return;
+        if(stopping || !guardAllowed || !Down(0x12) || Down(0x10) || Down(0x11) || Down(0x5B) || Down(0x5C)) { intent.Clear(); return; }
+        if(Interlocked.CompareExchange(ref busy,1,0)!=0)return;
+        int step=intent.Take(NowMs());
+        if(step==0) { Interlocked.Exchange(ref busy,0); return; }
+        var context=pendingContext; var foreground=pendingForeground;
+        ThreadPool.QueueUserWorkItem(delegate { Navigate(context,foreground,step>0?"left":"right"); });
     }
     void Navigate(Context requested, IntPtr foreground, string direction) {
         try {
@@ -129,6 +171,12 @@ internal sealed class ScrollingMouseNavigation : IDisposable {
         finally { Interlocked.Exchange(ref busy,0); }
     }
     internal static bool SelfTest() {
+        var intent=new WheelIntent();
+        intent.Offer(1,0); if(intent.Take(0)!=1)return false;
+        intent.Offer(1,10); intent.Offer(1,20); intent.Offer(-1,30);
+        if(intent.Take(79)!=0 || intent.Take(80)!=-1 || intent.Pending)return false;
+        intent.Offer(1,100); if(intent.Take(281)!=0 || intent.Pending)return false;
+        intent.Offer(1,300); intent.Clear(); if(intent.Take(500)!=0)return false;
         if(!ShouldCapture(true,false,false,120,true,true,false,true))return false;
         if(!ShouldCapture(true,false,false,-120,true,true,false,true))return false;
         for(int i=0;i<8;i++) {

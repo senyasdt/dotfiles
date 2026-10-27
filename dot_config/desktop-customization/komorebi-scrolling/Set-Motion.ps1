@@ -13,7 +13,11 @@ if($Mode -eq 'Instant'){
     Invoke-Client @('animation','disable','-a','movement')
 }else{
     try {
-        Invoke-Client @('animation-duration','90','-a','movement')
+        $duration=90
+        $profile=Join-Path $PSScriptRoot 'runtime\motion-profile.json'
+        if(Test-Path -LiteralPath $profile){$duration=[int]((Get-Content -LiteralPath $profile -Raw|ConvertFrom-Json).duration)}
+        if($duration -notin @(90,160)){throw 'Unexpected movement duration in motion profile.'}
+        Invoke-Client @('animation-duration',[string]$duration,'-a','movement')
         Invoke-Client @('animation-style','--style','ease-out-sine','-a','movement')
         Invoke-Client @('animation-fps','60')
         Invoke-Client @('animation','enable','-a','movement')

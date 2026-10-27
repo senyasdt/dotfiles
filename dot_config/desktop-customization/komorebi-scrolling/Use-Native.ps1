@@ -52,7 +52,11 @@ try{
         $workspace.layout='Scrolling'
         $workspace|Add-Member -NotePropertyName layout_options -NotePropertyValue ([pscustomobject]@{scrolling=[pscustomobject]@{columns=2;fixed_column_width=$true;center_focused_column=$false; width_steps=@(0.382,0.5,0.618)}}) -Force
         $workspace|Add-Member -NotePropertyName work_area_offset -NotePropertyValue ([pscustomobject]@{left=0;top=0;right=0;bottom=0}) -Force
-        $config|Add-Member -NotePropertyName animation -NotePropertyValue ([pscustomobject]@{enabled=@{movement=$true};duration=@{movement=90};style=@{movement='EaseOutSine'};fps=60}) -Force
+        $motionDuration=90
+        $motionProfile=Join-Path $runtime 'motion-profile.json'
+        if(Test-Path -LiteralPath $motionProfile){$motionDuration=[int]((Get-Content -LiteralPath $motionProfile -Raw|ConvertFrom-Json).duration)}
+        if($motionDuration -notin @(90,160)){throw 'Unexpected movement profile.'}
+        $config|Add-Member -NotePropertyName animation -NotePropertyValue ([pscustomobject]@{enabled=@{movement=$true};duration=@{movement=$motionDuration};style=@{movement='EaseOutSine'};fps=60}) -Force
         [IO.File]::WriteAllText((Join-Path $runtime 'native-config.json'),($config|ConvertTo-Json -Depth 40),(New-Object Text.UTF8Encoding($false)))
         Set-Flag '{"enabled":true}'
     }else{Set-Flag $null}

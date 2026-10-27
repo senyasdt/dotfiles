@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$BuildDirectory,[string]$Toolchain='1.99.1-x86_64-pc-windows-msvc')
+param([string]$BuildDirectory,[string]$Toolchain='1.99.1-x86_64-pc-windows-msvc',[switch]$SmoothMotion)
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
 $base='24c0ce0b1df1b5d7d62c682a7e28b32980293883'
@@ -7,6 +7,7 @@ $patches=[ordered]@{
     'upstream-independent-widths.patch'='72110153BAFC0C5011DE957A17A11022E8E1ECECBB667A1A5317CD6ADAEDDEF9'
     'outer-edge-resize.patch'='9C79EE550E343DC74EFD52C41E3C0C41D8E3EAAEB5C634D25472727E9AE14A73'
 }
+if($SmoothMotion){$patches['latest-target-movement.patch']='75E165BB2744FEC35DB2C54F7D899272504A65284D820C842594824FE8A9FAF4'}
 foreach($name in $patches.Keys){if((Get-FileHash -LiteralPath (Join-Path $PSScriptRoot $name)).Hash -ine $patches[$name]){throw "Patch hash mismatch: $name"}}
 if(-not(Get-Command cargo.exe -ErrorAction SilentlyContinue)){throw 'Install Rust with the Windows MSVC toolchain and Visual Studio C++ Build Tools first.'}
 if(-not $BuildDirectory){$BuildDirectory=Join-Path $root ('runtime\build-'+(Get-Date -Format 'yyyyMMdd-HHmmss'))}
@@ -26,6 +27,10 @@ try{
     }
     & cargo.exe test --locked -p komorebi-layouts
     if($LASTEXITCODE -ne 0){throw 'Layout tests failed'}
+    if($SmoothMotion){
+        & cargo.exe test --locked -p komorebi --lib animation::retarget -- --test-threads=1
+        if($LASTEXITCODE -ne 0){throw 'Movement retarget tests failed'}
+    }
     & cargo.exe build --locked --release -p komorebi -p komorebic
     if($LASTEXITCODE -ne 0){throw 'Native build failed'}
     # Stage a new bundle; replacing a running binary is an explicit later step.
