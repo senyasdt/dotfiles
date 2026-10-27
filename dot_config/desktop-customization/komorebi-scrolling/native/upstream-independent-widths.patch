@@ -1,0 +1,1080 @@
+From 3deacc62e932876e075d4df24f2f403fc109f3a2 Mon Sep 17 00:00:00 2001
+From: Scott Tromley <scotttromley@users.noreply.github.com>
+Date: Thu, 24 Sep 2026 11:00:46 -0400
+Subject: [PATCH] feat(layouts): per-column widths for the Scrolling layout
+
+The Scrolling layout sizes columns as `work_area / min(columns,
+container_count)`, so a strip holding fewer containers than `columns`
+widens them to fill the work area. On a 32:9 panel a single container is
+stretched across the full 7632px work area instead of occupying one
+column, which is the opposite of how scrollable tiling behaves in PaperWM
+and niri, where a column keeps its width and the rest of the strip is left
+empty.
+
+Resizing could not be used to work around this either. Three separate
+places prevented a lone column from being resized:
+
+- `calculate_scrolling_adjustment` returned early for `len <= 1`
+- `enforce_resize_for_scrolling` called `enforce_no_resize` for 0 or 1
+  containers, and always zeroed the last column's `right`
+- `is_valid_direction` rejects Left for idx 0 and Right for the last
+  container, so `resize-axis` has no valid direction with one container
+
+Add two opt-in `ScrollingLayoutOptions`, both defaulting to unset so the
+existing behaviour is unchanged when they are absent:
+
+- `fixed_column_width` keeps columns at `work_area / columns` regardless
+  of how many containers are present
+- `width_steps` defines the width presets that the new
+  `komorebic scrolling-cycle-column-width <next|previous>` snaps the
+  focused column to, mirroring PaperWM's `cycle_width_steps` and
+  `cycleWindowWidth`. Defaults to the golden ratio steps
+  `[0.382, 0.5, 0.618]`
+
+Unlike `column_ratios`, width steps are alternatives rather than a
+partition of the work area, so `validate_width_steps` clamps, sorts and
+deduplicates them without the cumulative sum rule that would otherwise
+truncate `[0.382, 0.5, 0.618]` after the second entry.
+
+Under `fixed_column_width` the strip is laid out from per-column widths
+rather than a uniform grid, which changes two things:
+
+- Widths are not run through `calculate_scrolling_adjustment`, whose
+  neighbour compensation is right for a split layout but wrong for a
+  strip. Widening a column pushes the columns to its right further along
+  and leaves their widths alone. Both edges of the resize delta feed the
+  width, so dragging either edge of a column with the mouse resizes that
+  column and reflows the strip around it.
+- The scroll position is a pixel offset carried forward from the previous
+  layout rather than an index derived from a uniform column width, which
+  is meaningless once columns differ in size. The strip scrolls forward
+  far enough to bring the focused column's right edge on screen, then back
+  far enough to bring its left edge on screen; in that order a column
+  wider than the viewport ends up left-aligned, so the start of it is what
+  you see.
+
+Covered by 11 tests, including a regression test pinning the default
+behaviour for a single container.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ komorebi-layouts/src/arrangement.rs          | 175 +++++++++--
+ komorebi-layouts/src/arrangement_tests.rs    | 309 +++++++++++++++++++
+ komorebi-layouts/src/default_layout.rs       | 106 ++++++-
+ komorebi-layouts/src/default_layout_tests.rs |  73 +++++
+ komorebi/src/core/mod.rs                     |   1 +
+ komorebi/src/process_command.rs              |  75 +++++
+ komorebi/src/workspace.rs                    |  42 ++-
+ komorebic/src/main.rs                        |  15 +
+ schema.json                                  |  24 ++
+ 9 files changed, 773 insertions(+), 47 deletions(-)
+
+diff --git a/komorebi-layouts/src/arrangement.rs b/komorebi-layouts/src/arrangement.rs
+index ea895d2..10dad82 100644
+--- a/komorebi-layouts/src/arrangement.rs
++++ b/komorebi-layouts/src/arrangement.rs
+@@ -71,7 +71,26 @@ impl Arrangement for DefaultLayout {
+                     .and_then(|o| o.scrolling.map(|s| s.columns))
+                     .unwrap_or(3);
+ 
+-                let column_width = area.right / column_count.min(len) as i32;
++                let fixed_column_width = layout_options
++                    .as_ref()
++                    .and_then(|o| {
++                        o.scrolling
++                            .map(|s| s.fixed_column_width.unwrap_or_default())
++                    })
++                    .unwrap_or(false);
++
++                // By default a strip holding fewer containers than `columns`
++                // widens them to fill the work area. When `fixed_column_width`
++                // is set, a column is always `work_area / columns` wide and any
++                // unused part of the strip is simply left empty, which is how
++                // PaperWM and niri behave.
++                let divisor = if fixed_column_width {
++                    column_count
++                } else {
++                    column_count.min(len)
++                };
++
++                let column_width = area.right / divisor as i32;
+                 let mut layouts = Vec::with_capacity(len);
+ 
+                 let visible_columns = area.right / column_width;
+@@ -129,39 +148,133 @@ impl Arrangement for DefaultLayout {
+                     }
+                 };
+ 
+-                for i in 0..len {
+-                    let position = (i as isize) - first_visible;
+-                    let left = area.left + (position as i32 * column_width);
++                if fixed_column_width {
++                    // Each column carries its own width, and the strip is laid
++                    // out by walking those widths outwards from the first
++                    // visible column. Widening a column therefore pushes the
++                    // columns to its right further along the strip rather than
++                    // taking space from its neighbour, which is what makes a
++                    // scrolling strip behave like PaperWM instead of like a
++                    // split layout.
++                    let widths: Vec<i32> = (0..len)
++                        .map(|i| {
++                            // Deltas are halved when applied, matching
++                            // `resize_left` and `resize_right`. Dragging either
++                            // edge of a column changes that column's own width;
++                            // the strip then reflows around it.
++                            let delta =
++                                resize_dimensions
++                                    .get(i)
++                                    .copied()
++                                    .flatten()
++                                    .map_or(0, |rect| {
++                                        let right = rect.right / 2;
++                                        let left = rect.left / 2;
++                                        right - left
++                                    });
++
++                            (column_width + delta).max(1)
++                        })
++                        .collect();
++
++                    // Offsets along the strip, measured from its start. The strip
++                    // is a continuous run of columns; how much of it is on screen
++                    // is decided below by a single scroll offset.
++                    let mut offsets = Vec::with_capacity(len);
++                    let mut total = 0i32;
++                    for width in &widths {
++                        offsets.push(total);
++                        total = total.saturating_add(*width);
++                    }
+ 
+-                    layouts.push(Rect {
+-                        left,
+-                        top: area.top,
+-                        right: column_width,
+-                        bottom: area.bottom,
+-                    });
+-                }
++                    let viewport = area.right;
++                    let focused_left = offsets[focused_idx.min(len - 1)];
++                    let focused_width = widths[focused_idx.min(len - 1)];
++                    let focused_right = focused_left.saturating_add(focused_width);
+ 
+-                // Last visible column absorbs any remainder from integer division
+-                // so that visible columns tile the full area width without gaps
+-                let width_remainder = area.right - column_width * visible_columns;
+-                if width_remainder > 0 {
+-                    let last_visible_idx =
+-                        (first_visible as usize + visible_columns as usize - 1).min(len - 1);
+-                    layouts[last_visible_idx].right += width_remainder;
+-                }
++                    // Carry the previous scroll position so the strip only moves
++                    // when it has to. Column 0 sits at the start of the strip, so
++                    // its last position tells us where the strip was.
++                    let previous_scroll = if latest_layout.len() == len {
++                        area.left - latest_layout[0].left
++                    } else {
++                        0
++                    };
+ 
+-                let adjustment = calculate_scrolling_adjustment(resize_dimensions);
+-                layouts
+-                    .iter_mut()
+-                    .zip(adjustment.iter())
+-                    .for_each(|(layout, adjustment)| {
+-                        layout.top += adjustment.top;
+-                        layout.bottom += adjustment.bottom;
+-                        layout.left += adjustment.left;
+-                        layout.right += adjustment.right;
+-                    });
++                    let max_scroll = total.saturating_sub(viewport).max(0);
+ 
+-                layouts
++                    let mut scroll = if keep_centered {
++                        focused_left + focused_width / 2 - viewport / 2
++                    } else {
++                        previous_scroll
++                    };
++
++                    // Scroll forward far enough to bring the focused column's
++                    // right edge on screen, then back far enough to bring its
++                    // left edge on screen. Applying them in that order means a
++                    // column wider than the viewport ends up left-aligned, so
++                    // the start of it is what you see.
++                    let lower = focused_right.saturating_sub(viewport);
++                    let upper = focused_left;
++
++                    if scroll < lower {
++                        scroll = lower;
++                    }
++
++                    if scroll > upper {
++                        scroll = upper;
++                    }
++
++                    scroll = scroll.clamp(0, max_scroll);
++
++                    for i in 0..len {
++                        layouts.push(Rect {
++                            left: area.left - scroll + offsets[i],
++                            top: area.top,
++                            right: widths[i],
++                            bottom: area.bottom,
++                        });
++                    }
++
++                    // No resize adjustment pass here: the horizontal component is
++                    // already folded into the widths above, and the Scrolling
++                    // layout does not permit vertical resizing.
++                    layouts
++                } else {
++                    for i in 0..len {
++                        let position = (i as isize) - first_visible;
++                        let left = area.left + (position as i32 * column_width);
++
++                        layouts.push(Rect {
++                            left,
++                            top: area.top,
++                            right: column_width,
++                            bottom: area.bottom,
++                        });
++                    }
++
++                    // Last visible column absorbs any remainder from integer division
++                    // so that visible columns tile the full area width without gaps
++                    let width_remainder = area.right - column_width * visible_columns;
++                    if width_remainder > 0 {
++                        let last_visible_idx =
++                            (first_visible as usize + visible_columns as usize - 1).min(len - 1);
++                        layouts[last_visible_idx].right += width_remainder;
++                    }
++
++                    let adjustment = calculate_scrolling_adjustment(resize_dimensions);
++                    layouts
++                        .iter_mut()
++                        .zip(adjustment.iter())
++                        .for_each(|(layout, adjustment)| {
++                            layout.top += adjustment.top;
++                            layout.bottom += adjustment.bottom;
++                            layout.left += adjustment.left;
++                            layout.right += adjustment.right;
++                        });
++
++                    layouts
++                }
+             }
+             Self::BSP => {
+                 let column_split_ratio = layout_options
+@@ -1551,7 +1664,7 @@ fn calculate_scrolling_adjustment(resize_dimensions: &[Option<Rect>]) -> Vec<Rec
+     let len = resize_dimensions.len();
+     let mut result = vec![Rect::default(); len];
+ 
+-    if len <= 1 {
++    if len == 0 {
+         return result;
+     }
+ 
+diff --git a/komorebi-layouts/src/arrangement_tests.rs b/komorebi-layouts/src/arrangement_tests.rs
+index 78a0dbb..ccfd46c 100644
+--- a/komorebi-layouts/src/arrangement_tests.rs
++++ b/komorebi-layouts/src/arrangement_tests.rs
+@@ -500,6 +500,8 @@ mod scrolling_layout_tests {
+             scrolling: Some(crate::ScrollingLayoutOptions {
+                 columns: 3,
+                 center_focused_column: None,
++                fixed_column_width: None,
++                width_steps: None,
+             }),
+             grid: None,
+             column_ratios: None,
+@@ -519,6 +521,313 @@ mod scrolling_layout_tests {
+             area.left + area.right,
+         );
+     }
++
++    fn scrolling_opts(columns: usize, fixed_column_width: Option<bool>) -> LayoutOptions {
++        LayoutOptions {
++            scrolling: Some(crate::ScrollingLayoutOptions {
++                columns,
++                center_focused_column: None,
++                fixed_column_width,
++                width_steps: None,
++            }),
++            grid: None,
++            column_ratios: None,
++            row_ratios: None,
++        }
++    }
++
++    /// A 32:9 super ultrawide is the case that motivated `fixed_column_width`:
++    /// a single container on a 7632px work area was being stretched across the
++    /// whole panel instead of occupying one column.
++    fn ultrawide_area() -> Rect {
++        Rect {
++            left: 0,
++            top: 0,
++            right: 7632,
++            bottom: 2062,
++        }
++    }
++
++    #[test]
++    fn test_scrolling_single_container_fills_area_by_default() {
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(1).unwrap();
++        let opts = scrolling_opts(3, None);
++
++        let layouts =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &[], 0, Some(opts), &[]);
++
++        assert_eq!(
++            layouts[0].right, 7632,
++            "default behaviour must be unchanged: a lone container fills the work area"
++        );
++    }
++
++    #[test]
++    fn test_scrolling_single_container_keeps_column_width_when_fixed() {
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(1).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++
++        let layouts =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &[], 0, Some(opts), &[]);
++
++        assert_eq!(
++            layouts[0].right,
++            7632 / 3,
++            "a lone container should keep a single column's width"
++        );
++        assert_eq!(layouts[0].left, area.left, "and stay at the left edge");
++    }
++
++    #[test]
++    fn test_scrolling_partial_strip_keeps_column_width_when_fixed() {
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(2).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++
++        let layouts =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &[], 0, Some(opts), &[]);
++
++        let column_width = 7632 / 3;
++        assert_eq!(layouts[0].right, column_width);
++        assert_eq!(layouts[1].right, column_width);
++        assert_eq!(
++            layouts[1].left,
++            area.left + column_width,
++            "the second column should sit immediately right of the first"
++        );
++
++        let covered = layouts[1].left + layouts[1].right;
++        assert!(
++            covered < area.left + area.right,
++            "two of three columns should leave the rest of the strip empty, covered {covered}"
++        );
++    }
++
++    #[test]
++    fn test_scrolling_full_strip_is_contiguous_when_fixed() {
++        // A width that does not divide evenly, to show the columns still abut
++        // one another exactly even when the division leaves a remainder
++        let area = Rect {
++            left: 0,
++            top: 0,
++            right: 1921,
++            bottom: 800,
++        };
++        let len = NonZeroUsize::new(5).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++
++        let layouts =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &[], 0, Some(opts), &[]);
++
++        for pair in layouts.windows(2) {
++            assert_eq!(
++                pair[1].left,
++                pair[0].left + pair[0].right,
++                "columns on the strip must abut exactly, with no gap or overlap"
++            );
++        }
++    }
++
++    fn width_delta(px: i32) -> Option<Rect> {
++        Some(Rect {
++            left: 0,
++            top: 0,
++            right: px,
++            bottom: 0,
++        })
++    }
++
++    /// A column whose right edge falls beyond the viewport should pull the strip
++    /// along when it is focused, rather than being left hanging off the edge.
++    #[test]
++    fn test_scrolling_focused_column_past_right_edge_scrolls_into_view() {
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(3).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++
++        // widen the first two columns so the third is pushed off the right edge
++        let resize = vec![width_delta(3000), width_delta(3000), None];
++
++        let layouts =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &resize, 2, Some(opts), &[]);
++
++        let focused = layouts[2];
++        assert_eq!(
++            focused.left + focused.right,
++            area.left + area.right,
++            "the focused column's right edge should sit at the viewport's right edge"
++        );
++        assert!(
++            layouts[0].left < area.left,
++            "and the columns before it should be pushed off the left edge"
++        );
++    }
++
++    /// Focusing a column that is off to the left should bring its left edge back
++    /// on screen.
++    #[test]
++    fn test_scrolling_focused_column_past_left_edge_scrolls_into_view() {
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(3).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++        let resize = vec![width_delta(3000), width_delta(3000), None];
++
++        // the strip is currently scrolled to show the last column
++        let scrolled =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &resize, 2, Some(opts), &[]);
++
++        // now focus the first column
++        let layouts = DefaultLayout::Scrolling.calculate(
++            &area,
++            len,
++            None,
++            None,
++            &resize,
++            0,
++            Some(opts),
++            &scrolled,
++        );
++
++        assert_eq!(
++            layouts[0].left, area.left,
++            "the focused column should be brought back to the viewport's left edge"
++        );
++    }
++
++    /// A column wider than the whole viewport cannot be shown in full, so it is
++    /// left-aligned and the rest of it runs off the right edge.
++    #[test]
++    fn test_scrolling_column_wider_than_viewport_is_left_aligned() {
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(2).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++
++        // 2544 + 6000 = 8544, wider than the 7632 viewport
++        let resize = vec![width_delta(12000), None];
++
++        let layouts =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &resize, 0, Some(opts), &[]);
++
++        assert!(
++            layouts[0].right > area.right,
++            "this column should be wider than the viewport for the test to mean anything"
++        );
++        assert_eq!(
++            layouts[0].left, area.left,
++            "a column too wide to fit should show its left edge"
++        );
++    }
++
++    /// The strip should not scroll while the focused column is already fully on
++    /// screen.
++    #[test]
++    fn test_scrolling_does_not_move_when_focused_column_is_visible() {
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(3).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++        let resize = vec![width_delta(3000), width_delta(3000), None];
++
++        let first =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &resize, 2, Some(opts), &[]);
++
++        // focus the second column, which is already visible in that arrangement
++        let second = DefaultLayout::Scrolling.calculate(
++            &area,
++            len,
++            None,
++            None,
++            &resize,
++            1,
++            Some(opts),
++            &first,
++        );
++
++        assert_eq!(
++            first[1].left, second[1].left,
++            "the strip should stay put when the focused column is already visible"
++        );
++    }
++
++    #[test]
++    fn test_scrolling_widening_a_column_pushes_neighbours_right() {
++        // Widening a column on a scrolling strip should move the columns to its
++        // right further along, not shrink them. Taking space from the neighbour
++        // is split-layout behaviour and is wrong for a strip.
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(3).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++
++        let before =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &[], 0, Some(opts), &[]);
++
++        // widen the leftmost column (deltas are halved when applied)
++        let resize = vec![
++            Some(Rect {
++                left: 0,
++                top: 0,
++                right: 600,
++                bottom: 0,
++            }),
++            None,
++            None,
++        ];
++
++        let after =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &resize, 0, Some(opts), &[]);
++
++        assert_eq!(
++            after[0].right,
++            before[0].right + 300,
++            "the resized column should get wider"
++        );
++
++        assert_eq!(
++            after[1].right, before[1].right,
++            "its neighbour must keep its width"
++        );
++        assert_eq!(
++            after[2].right, before[2].right,
++            "and so must every other column"
++        );
++
++        assert_eq!(
++            after[1].left,
++            before[1].left + 300,
++            "the neighbour should be pushed right by the full amount"
++        );
++        assert_eq!(
++            after[2].left,
++            before[2].left + 300,
++            "and columns beyond it should move with it"
++        );
++    }
++
++    #[test]
++    fn test_scrolling_single_container_honours_resize_dimensions() {
++        let area = ultrawide_area();
++        let len = NonZeroUsize::new(1).unwrap();
++        let opts = scrolling_opts(3, Some(true));
++
++        let resize = vec![Some(Rect {
++            left: 0,
++            top: 0,
++            right: 400,
++            bottom: 0,
++        })];
++
++        let layouts =
++            DefaultLayout::Scrolling.calculate(&area, len, None, None, &resize, 0, Some(opts), &[]);
++
++        // resize deltas are halved by convention (see `resize_right`), since a
++        // delta is normally shared between two adjacent columns
++        assert_eq!(
++            layouts[0].right,
++            (7632 / 3) + (400 / 2),
++            "resizing a lone column must not be silently ignored"
++        );
++    }
+ }
+ 
+ mod ultrawide_layout_tests {
+diff --git a/komorebi-layouts/src/default_layout.rs b/komorebi-layouts/src/default_layout.rs
+index b53a32d..ba89426 100644
+--- a/komorebi-layouts/src/default_layout.rs
++++ b/komorebi-layouts/src/default_layout.rs
+@@ -6,6 +6,7 @@ use serde::Serialize;
+ use strum::Display;
+ use strum::EnumString;
+ 
++use super::CycleDirection;
+ use super::OperationDirection;
+ use super::Rect;
+ use super::Sizing;
+@@ -25,6 +26,35 @@ pub const DEFAULT_RATIO: f32 = 0.5;
+ /// Default secondary ratio value for UltrawideVerticalStack layout
+ pub const DEFAULT_SECONDARY_RATIO: f32 = 0.25;
+ 
++/// Default width steps for the Scrolling layout's column width cycling.
++/// These are the golden ratio steps used by PaperWM: 1/phi^2, 1/2, 1/phi
++pub const DEFAULT_WIDTH_STEPS: [f32; 3] = [0.381_966, 0.5, 0.618_034];
++
++/// Validates and converts a Vec of width steps into a fixed-size array.
++///
++/// Unlike [`validate_ratios`], width steps are *alternatives* rather than a
++/// partition of the available space, so there is no cumulative sum rule: a set
++/// of steps such as `[0.382, 0.5, 0.618]` sums to well over 1.0 and is valid.
++/// Values are clamped, sorted ascending and deduplicated so that cycling
++/// through them is predictable.
++#[must_use]
++pub fn validate_width_steps(steps: &[f32]) -> [Option<f32>; MAX_RATIOS] {
++    let mut collected: Vec<f32> = steps
++        .iter()
++        .map(|&val| val.clamp(MIN_RATIO, MAX_RATIO))
++        .collect();
++
++    collected.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
++    collected.dedup_by(|a, b| (*a - *b).abs() < f32::EPSILON);
++
++    let mut arr = [None; MAX_RATIOS];
++    for (i, &val) in collected.iter().take(MAX_RATIOS).enumerate() {
++        arr[i] = Some(val);
++    }
++
++    arr
++}
++
+ /// Validates and converts a Vec of ratios into a fixed-size array.
+ /// - Clamps values to MIN_RATIO..MAX_RATIO range
+ /// - Truncates when cumulative sum reaches or exceeds 1.0
+@@ -55,6 +85,45 @@ pub fn validate_ratios(ratios: &[f32]) -> [Option<f32>; MAX_RATIOS] {
+     arr
+ }
+ 
++/// Tolerance used when deciding whether the current width already matches a
++/// step, expressed as a ratio of the work area. Without it, integer rounding of
++/// pixel widths would make a column appear to sit just below its own step and
++/// cycling would stall.
++const WIDTH_STEP_SLACK: f32 = 0.01;
++
++/// Returns the next width step for a column currently occupying `current_ratio`
++/// of the work area.
++///
++/// Mirrors PaperWM's `cycleWindowWidth`: `Next` picks the smallest step wider
++/// than the current width and wraps around to the narrowest, `Previous` picks
++/// the largest step narrower than the current width and wraps to the widest.
++/// `steps` is expected to be sorted ascending, as produced by
++/// [`validate_width_steps`].
++#[must_use]
++pub fn cycle_width_step(
++    current_ratio: f32,
++    steps: &[f32],
++    direction: CycleDirection,
++) -> Option<f32> {
++    if steps.is_empty() {
++        return None;
++    }
++
++    match direction {
++        CycleDirection::Next => steps
++            .iter()
++            .find(|&&step| step > current_ratio + WIDTH_STEP_SLACK)
++            .or_else(|| steps.first())
++            .copied(),
++        CycleDirection::Previous => steps
++            .iter()
++            .rev()
++            .find(|&&step| step < current_ratio - WIDTH_STEP_SLACK)
++            .or_else(|| steps.last())
++            .copied(),
++    }
++}
++
+ #[derive(
+     Clone, Copy, Debug, Serialize, Deserialize, Eq, PartialEq, Hash, Display, EnumString, ValueEnum,
+ )]
+@@ -172,6 +241,19 @@ where
+     Ok(opt.map(|vec| validate_ratios(&vec)))
+ }
+ 
++/// Helper to deserialize a variable-length array of Scrolling width steps into a
++/// fixed [Option<f32>; MAX_RATIOS]. Unlike ratios, steps are not subject to a
++/// cumulative sum rule; see [`validate_width_steps`].
++fn deserialize_width_steps<'de, D>(
++    deserializer: D,
++) -> Result<Option<[Option<f32>; MAX_RATIOS]>, D::Error>
++where
++    D: serde::Deserializer<'de>,
++{
++    let opt: Option<Vec<f32>> = Option::deserialize(deserializer)?;
++    Ok(opt.map(|vec| validate_width_steps(&vec)))
++}
++
+ /// Helper to serialize [Option<f32>; MAX_RATIOS] as a compact array (without trailing nulls)
+ fn serialize_ratios<S>(
+     value: &Option<[Option<f32>; MAX_RATIOS]>,
+@@ -234,7 +316,7 @@ pub struct LayoutOptions {
+     pub row_ratios: Option<[Option<f32>; MAX_RATIOS]>,
+ }
+ 
+-#[derive(Clone, Copy, Debug, Serialize, Deserialize, Eq, PartialEq)]
++#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+ #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+ /// Options for the Scrolling layout
+ pub struct ScrollingLayoutOptions {
+@@ -242,6 +324,28 @@ pub struct ScrollingLayoutOptions {
+     pub columns: usize,
+     /// With an odd number of visible columns, keep the focused window column centered
+     pub center_focused_column: Option<bool>,
++    /// Keep columns at their full width when there are fewer containers than
++    /// visible columns, instead of expanding them to fill the work area.
++    ///
++    /// With `columns: 3` and a single container, the default behaviour gives that
++    /// container the entire work area. When this is enabled the container keeps
++    /// one third of the work area and the rest of the strip is left empty, which
++    /// is how scrollable tiling window managers such as PaperWM and niri behave.
++    pub fixed_column_width: Option<bool>,
++    /// Width steps (ratios of the work area between 0.1 and 0.9) that
++    /// `komorebic scrolling-cycle-column-width` snaps the focused column to.
++    ///
++    /// Unlike `column_ratios` these are alternatives rather than a partition of
++    /// the work area, so they are not required to sum to less than 1.0. Values
++    /// are clamped, sorted ascending and deduplicated.
++    ///
++    /// Defaults to the golden ratio steps `[0.382, 0.5, 0.618]`.
++    #[serde(
++        default,
++        deserialize_with = "deserialize_width_steps",
++        serialize_with = "serialize_ratios"
++    )]
++    pub width_steps: Option<[Option<f32>; MAX_RATIOS]>,
+ }
+ 
+ #[derive(Clone, Copy, Debug, Serialize, Deserialize, Eq, PartialEq)]
+diff --git a/komorebi-layouts/src/default_layout_tests.rs b/komorebi-layouts/src/default_layout_tests.rs
+index a94619a..b4e439a 100644
+--- a/komorebi-layouts/src/default_layout_tests.rs
++++ b/komorebi-layouts/src/default_layout_tests.rs
+@@ -952,3 +952,76 @@ mod cascade_resolution_tests {
+         assert_eq!(result.unwrap().column_ratios, ws_base.column_ratios);
+     }
+ }
++
++mod width_step_tests {
++    use super::*;
++
++    #[test]
++    fn test_validate_width_steps_allows_sum_above_one() {
++        // Unlike column ratios, steps are alternatives and may sum past 1.0
++        let steps = validate_width_steps(&DEFAULT_WIDTH_STEPS);
++        assert_eq!(steps[0], Some(0.381_966));
++        assert_eq!(steps[1], Some(0.5));
++        assert_eq!(steps[2], Some(0.618_034));
++        assert_eq!(steps[3], None);
++    }
++
++    #[test]
++    fn test_validate_width_steps_sorts_clamps_and_dedupes() {
++        let steps = validate_width_steps(&[0.8, 0.2, 0.8, 0.05, 0.99]);
++        // 0.05 clamps up to MIN_RATIO, 0.99 clamps down to MAX_RATIO,
++        // duplicate 0.8 is removed, result is ascending
++        assert_eq!(steps[0], Some(MIN_RATIO));
++        assert_eq!(steps[1], Some(0.2));
++        assert_eq!(steps[2], Some(0.8));
++        assert_eq!(steps[3], Some(MAX_RATIO));
++        assert_eq!(steps[4], None);
++    }
++
++    #[test]
++    fn test_cycle_width_step_next_walks_up_then_wraps() {
++        let steps = DEFAULT_WIDTH_STEPS;
++
++        let from_narrow = cycle_width_step(0.381_966, &steps, CycleDirection::Next);
++        assert_eq!(from_narrow, Some(0.5));
++
++        let from_middle = cycle_width_step(0.5, &steps, CycleDirection::Next);
++        assert_eq!(from_middle, Some(0.618_034));
++
++        // at the widest step, wrap back around to the narrowest
++        let from_widest = cycle_width_step(0.618_034, &steps, CycleDirection::Next);
++        assert_eq!(from_widest, Some(0.381_966));
++    }
++
++    #[test]
++    fn test_cycle_width_step_previous_walks_down_then_wraps() {
++        let steps = DEFAULT_WIDTH_STEPS;
++
++        let from_widest = cycle_width_step(0.618_034, &steps, CycleDirection::Previous);
++        assert_eq!(from_widest, Some(0.5));
++
++        // at the narrowest step, wrap around to the widest
++        let from_narrow = cycle_width_step(0.381_966, &steps, CycleDirection::Previous);
++        assert_eq!(from_narrow, Some(0.618_034));
++    }
++
++    #[test]
++    fn test_cycle_width_step_from_full_width_column() {
++        // A column occupying the whole work area (the default single-container
++        // case) has no wider step, so Next wraps to the narrowest
++        let steps = DEFAULT_WIDTH_STEPS;
++        assert_eq!(
++            cycle_width_step(1.0, &steps, CycleDirection::Next),
++            Some(0.381_966)
++        );
++        assert_eq!(
++            cycle_width_step(1.0, &steps, CycleDirection::Previous),
++            Some(0.618_034)
++        );
++    }
++
++    #[test]
++    fn test_cycle_width_step_empty_steps() {
++        assert_eq!(cycle_width_step(0.5, &[], CycleDirection::Next), None);
++    }
++}
+diff --git a/komorebi/src/core/mod.rs b/komorebi/src/core/mod.rs
+index e66e023..1507c13 100644
+--- a/komorebi/src/core/mod.rs
++++ b/komorebi/src/core/mod.rs
+@@ -123,6 +123,7 @@ pub enum SocketMessage {
+     CycleLayout(CycleDirection),
+     LayoutRatios(Option<Vec<f32>>, Option<Vec<f32>>),
+     ScrollingLayoutColumns(NonZeroUsize),
++    ScrollingCycleColumnWidth(CycleDirection),
+     ChangeLayoutCustom(#[serde_as(as = "ResolvedPathBuf")] PathBuf),
+     FlipLayout(Axis),
+     ToggleWorkspaceWindowContainerBehaviour,
+diff --git a/komorebi/src/process_command.rs b/komorebi/src/process_command.rs
+index 4ac4f0f..0d25443 100644
+--- a/komorebi/src/process_command.rs
++++ b/komorebi/src/process_command.rs
+@@ -58,6 +58,7 @@ use crate::config_generation::WorkspaceMatchingRule;
+ use crate::core::ApplicationIdentifier;
+ use crate::core::Axis;
+ use crate::core::BorderImplementation;
++use crate::core::DefaultLayout;
+ use crate::core::FocusFollowsMouseImplementation;
+ use crate::core::Layout;
+ use crate::core::LayoutOptions;
+@@ -945,6 +946,8 @@ impl WindowManager {
+                         scrolling: Some(ScrollingLayoutOptions {
+                             columns: count.into(),
+                             center_focused_column: Default::default(),
++                            fixed_column_width: Default::default(),
++                            width_steps: Default::default(),
+                         }),
+                         grid: None,
+                         column_ratios: None,
+@@ -955,6 +958,78 @@ impl WindowManager {
+                 focused_workspace.layout_options = Some(options);
+                 self.update_focused_workspace(false, false)?;
+             }
++            SocketMessage::ScrollingCycleColumnWidth(direction) => {
++                use komorebi_layouts::DEFAULT_WIDTH_STEPS;
++                use komorebi_layouts::cycle_width_step;
++
++                let work_area = self.focused_monitor_work_area()?;
++                let workspace = self.focused_workspace_mut()?;
++
++                if !matches!(workspace.layout, Layout::Default(DefaultLayout::Scrolling)) {
++                    tracing::warn!(
++                        "scrolling column width cycling is only available on the Scrolling layout"
++                    );
++                } else if work_area.right > 0 {
++                    let scrolling = workspace.layout_options.and_then(|o| o.scrolling);
++
++                    let columns = scrolling.map_or(3, |s| s.columns).max(1);
++
++                    let steps: Vec<f32> = scrolling
++                        .and_then(|s| s.width_steps)
++                        .map(|arr| arr.iter().flatten().copied().collect::<Vec<f32>>())
++                        .filter(|steps| !steps.is_empty())
++                        .unwrap_or_else(|| DEFAULT_WIDTH_STEPS.to_vec());
++
++                    // A column's natural width, before any resize delta. This
++                    // mirrors the divisor used by the Scrolling arrangement.
++                    let container_count = workspace.containers().len();
++                    let fixed = scrolling
++                        .and_then(|s| s.fixed_column_width)
++                        .unwrap_or_default();
++                    let divisor = if fixed {
++                        columns
++                    } else {
++                        columns.min(container_count.max(1))
++                    };
++
++                    #[allow(clippy::cast_possible_truncation)]
++                    let base = work_area.right / divisor as i32;
++
++                    let idx = workspace.focused_container_idx();
++
++                    // resize deltas are halved when applied (see `resize_right`)
++                    let current_delta = workspace
++                        .resize_dimensions
++                        .get(idx)
++                        .copied()
++                        .flatten()
++                        .map_or(0, |rect| rect.right / 2);
++
++                    #[allow(clippy::cast_precision_loss)]
++                    let current_ratio = (base + current_delta) as f32 / work_area.right as f32;
++
++                    if let Some(target_ratio) = cycle_width_step(current_ratio, &steps, direction) {
++                        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
++                        let target = (target_ratio * work_area.right as f32) as i32;
++                        let delta = (target - base) * 2;
++
++                        if idx < workspace.resize_dimensions.len() {
++                            workspace.resize_dimensions[idx] = if delta == 0 {
++                                None
++                            } else {
++                                Some(Rect {
++                                    left: 0,
++                                    top: 0,
++                                    right: delta,
++                                    bottom: 0,
++                                })
++                            };
++                        }
++
++                        self.update_focused_workspace(false, false)?;
++                    }
++                }
++            }
+             SocketMessage::ChangeLayout(layout) => self.change_workspace_layout_default(layout)?,
+             SocketMessage::CycleLayout(direction) => self.cycle_layout(direction)?,
+             SocketMessage::LayoutRatios(ref columns, ref rows) => {
+diff --git a/komorebi/src/workspace.rs b/komorebi/src/workspace.rs
+index 53e06aa..8a7a6f5 100644
+--- a/komorebi/src/workspace.rs
++++ b/komorebi/src/workspace.rs
+@@ -1571,23 +1571,35 @@ impl Workspace {
+     }
+ 
+     fn enforce_resize_for_scrolling(&mut self) {
+-        let resize_dimensions = &mut self.resize_dimensions;
+-        match resize_dimensions.len() {
+-            0 | 1 => self.enforce_no_resize(),
+-            _ => {
+-                let len = resize_dimensions.len();
++        // With `fixed_column_width` a column's width is meaningful on its own
++        // rather than being whatever is left over, so the usual constraints are
++        // relaxed: a lone column can be resized, and the last column can be
++        // widened because the strip simply grows longer instead of stealing
++        // space from a neighbour.
++        let fixed_column_width = self
++            .layout_options
++            .and_then(|options| options.scrolling)
++            .and_then(|scrolling| scrolling.fixed_column_width)
++            .unwrap_or_default();
+ 
+-                for (i, rect) in resize_dimensions.iter_mut().enumerate() {
+-                    if let Some(rect) = rect {
+-                        rect.top = 0;
+-                        rect.bottom = 0;
++        let len = self.resize_dimensions.len();
+ 
+-                        if i == 0 {
+-                            rect.left = 0;
+-                        } else if i == len - 1 {
+-                            rect.right = 0;
+-                        }
+-                    }
++        if len == 0 || (len == 1 && !fixed_column_width) {
++            self.enforce_no_resize();
++            return;
++        }
++
++        for (i, rect) in self.resize_dimensions.iter_mut().enumerate() {
++            if let Some(rect) = rect {
++                rect.top = 0;
++                rect.bottom = 0;
++
++                if i == 0 {
++                    rect.left = 0;
++                }
++
++                if i == len - 1 && !fixed_column_width {
++                    rect.right = 0;
+                 }
+             }
+         }
+diff --git a/komorebic/src/main.rs b/komorebic/src/main.rs
+index 00fa231..30b6c96 100644
+--- a/komorebic/src/main.rs
++++ b/komorebic/src/main.rs
+@@ -1001,6 +1001,13 @@ struct ScrollingLayoutColumns {
+     count: NonZeroUsize,
+ }
+ 
++#[derive(Parser)]
++struct ScrollingCycleColumnWidth {
++    /// Direction to cycle through the configured width steps
++    #[clap(value_enum)]
++    cycle_direction: CycleDirection,
++}
++
+ #[derive(Parser)]
+ struct LayoutRatios {
+     /// Column width ratios (space-separated values between 0.1 and 0.9)
+@@ -1277,6 +1284,9 @@ enum SubCommand {
+     /// Set the number of visible columns for the Scrolling layout on the focused workspace
+     #[clap(arg_required_else_help = true)]
+     ScrollingLayoutColumns(ScrollingLayoutColumns),
++    /// Cycle the focused Scrolling layout column through the configured width steps
++    #[clap(arg_required_else_help = true)]
++    ScrollingCycleColumnWidth(ScrollingCycleColumnWidth),
+     /// Set the layout column and row ratios for the focused workspace
+     LayoutRatios(LayoutRatios),
+     /// Load a custom layout from file for the focused workspace
+@@ -2941,6 +2951,11 @@ if (Get-Command Get-CimInstance -ErrorAction SilentlyContinue) {
+         SubCommand::CycleLayout(args) => {
+             send_message(&SocketMessage::CycleLayout(args.cycle_direction))?;
+         }
++        SubCommand::ScrollingCycleColumnWidth(args) => {
++            send_message(&SocketMessage::ScrollingCycleColumnWidth(
++                args.cycle_direction,
++            ))?;
++        }
+         SubCommand::ScrollingLayoutColumns(args) => {
+             send_message(&SocketMessage::ScrollingLayoutColumns(args.count))?;
+         }
+diff --git a/schema.json b/schema.json
+index 5e582ab..9989030 100644
+--- a/schema.json
++++ b/schema.json
+@@ -3777,6 +3777,30 @@
+           "type": "integer",
+           "format": "uint",
+           "minimum": 0
++        },
++        "fixed_column_width": {
++          "description": "Keep columns at their full width when there are fewer containers than\nvisible columns, instead of expanding them to fill the work area.\n\nWith `columns: 3` and a single container, the default behaviour gives that\ncontainer the entire work area. When this is enabled the container keeps\none third of the work area and the rest of the strip is left empty, which\nis how scrollable tiling window managers such as PaperWM and niri behave.",
++          "type": [
++            "boolean",
++            "null"
++          ]
++        },
++        "width_steps": {
++          "description": "Width steps (ratios of the work area between 0.1 and 0.9) that\n`komorebic scrolling-cycle-column-width` snaps the focused column to.\n\nUnlike `column_ratios` these are alternatives rather than a partition of\nthe work area, so they are not required to sum to less than 1.0. Values\nare clamped, sorted ascending and deduplicated.\n\nDefaults to the golden ratio steps `[0.382, 0.5, 0.618]`.",
++          "type": [
++            "array",
++            "null"
++          ],
++          "default": null,
++          "items": {
++            "type": [
++              "number",
++              "null"
++            ],
++            "format": "float"
++          },
++          "maxItems": 5,
++          "minItems": 5
+         }
+       },
+       "required": [
+-- 
+2.54.0.windows.1
+

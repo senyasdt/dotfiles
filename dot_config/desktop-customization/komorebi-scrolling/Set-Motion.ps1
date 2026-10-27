@@ -13,8 +13,8 @@ if($Mode -eq 'Instant'){
     Invoke-Client @('animation','disable','-a','movement')
 }else{
     try {
-        Invoke-Client @('animation-duration','160','-a','movement')
-        Invoke-Client @('animation-style','--style','ease-out-cubic','-a','movement')
+        Invoke-Client @('animation-duration','90','-a','movement')
+        Invoke-Client @('animation-style','--style','ease-out-sine','-a','movement')
         Invoke-Client @('animation-fps','60')
         Invoke-Client @('animation','enable','-a','movement')
     }catch{
