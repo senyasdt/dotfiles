@@ -53,7 +53,7 @@ internal static class DesktopBridge {
         new[]{"ChatGPT","Запустить без GPU (тест)","ChatGPTSoftwareStart"},new[]{"ChatGPT","Запустить обычно","ChatGPTNormalStart"},
         new[]{"Komorebi и горячие клавиши","Запустить","KomorebiStart"},new[]{"Komorebi и горячие клавиши","Остановить","KomorebiStop"},new[]{"Komorebi и горячие клавиши","Перезапустить","KomorebiRestart"},
         new[]{"Лента окон","Одно широкое окно","ScrollOne"},new[]{"Лента окон","Два окна рядом","ScrollTwo"},new[]{"Лента окон","Вернуть BSP","ScrollBsp"},
-        new[]{"Лента окон","Пробная плавность (160 мс)","ScrollTrial"},new[]{"Лента окон","Вернуть прежнюю плавность (90 мс)","ScrollPrevious"},
+        new[]{"Лента окон","Проба: единая лента (180 мс)","ScrollStrip"},new[]{"Лента окон","Вернуть прежнюю плавность (90 мс)","ScrollPrevious"},
         new[]{"Лента окон","Плавное движение (все пространства)","ScrollSmooth"},new[]{"Лента окон","Без анимации","ScrollInstant"},
         new[]{"AHK","Включить все скрипты","AhkEnable"},new[]{"AHK","Выключить все скрипты","AhkDisable"},new[]{"AHK","Перезапустить разрешённые","AhkRestart"},new[]{"AHK","Возобновить после общей паузы","AhkResume"},
         new[]{"Vial helper","Запустить","VialStart"},new[]{"Vial helper","Остановить","VialStop"},new[]{"Vial helper","Перезапустить","VialRestart"},

@@ -1,6 +1,7 @@
 [CmdletBinding()]
-param([string]$BuildDirectory,[string]$Toolchain='1.99.1-x86_64-pc-windows-msvc',[switch]$SmoothMotion)
+param([string]$BuildDirectory,[string]$Toolchain='1.99.1-x86_64-pc-windows-msvc',[switch]$SmoothMotion,[switch]$StripMotion)
 $ErrorActionPreference='Stop'
+if($SmoothMotion -and $StripMotion){throw 'Choose one movement experiment; their engines must not be combined.'}
 $root=Split-Path -Parent $PSScriptRoot
 $base='24c0ce0b1df1b5d7d62c682a7e28b32980293883'
 $patches=[ordered]@{
@@ -8,6 +9,7 @@ $patches=[ordered]@{
     'outer-edge-resize.patch'='9C79EE550E343DC74EFD52C41E3C0C41D8E3EAAEB5C634D25472727E9AE14A73'
 }
 if($SmoothMotion){$patches['latest-target-movement.patch']='75E165BB2744FEC35DB2C54F7D899272504A65284D820C842594824FE8A9FAF4'}
+if($StripMotion){$patches['strip-shared-motion.patch']='CD9EB091343D2C1F348DF840EBD98305CD9C4B08998A725A6A7F4E272C1425F8'}
 foreach($name in $patches.Keys){if((Get-FileHash -LiteralPath (Join-Path $PSScriptRoot $name)).Hash -ine $patches[$name]){throw "Patch hash mismatch: $name"}}
 if(-not(Get-Command cargo.exe -ErrorAction SilentlyContinue)){throw 'Install Rust with the Windows MSVC toolchain and Visual Studio C++ Build Tools first.'}
 if(-not $BuildDirectory){$BuildDirectory=Join-Path $root ('runtime\build-'+(Get-Date -Format 'yyyyMMdd-HHmmss'))}
@@ -30,6 +32,10 @@ try{
     if($SmoothMotion){
         & cargo.exe test --locked -p komorebi --lib animation::retarget -- --test-threads=1
         if($LASTEXITCODE -ne 0){throw 'Movement retarget tests failed'}
+    }
+    if($StripMotion){
+        & cargo.exe test --locked -p komorebi --lib animation::strip -- --test-threads=1
+        if($LASTEXITCODE -ne 0){throw 'Shared strip motion tests failed'}
     }
     & cargo.exe build --locked --release -p komorebi -p komorebic
     if($LASTEXITCODE -ne 0){throw 'Native build failed'}

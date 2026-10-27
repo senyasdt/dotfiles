@@ -1,6 +1,6 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
-    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart','ScrollOne','ScrollTwo','ScrollBsp','ScrollSmooth','ScrollInstant','ScrollTrial','ScrollPrevious')]
+    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart','ScrollOne','ScrollTwo','ScrollBsp','ScrollSmooth','ScrollInstant','ScrollTrial','ScrollStrip','ScrollPrevious')]
     [string]$Action='Status', [switch]$Notify
 )
 $ErrorActionPreference='Stop'
@@ -42,7 +42,7 @@ function Wm($operation) {
 }
 function Scrolling($mode) {
     $scrollRoot=Join-Path (Split-Path -Parent $PSScriptRoot) 'komorebi-scrolling'
-    if($mode -in @('Trial','Previous')){
+    if($mode -in @('Trial','Strip','Previous')){
         & (Join-Path $scrollRoot 'Use-SmoothMotion.ps1') -Mode $mode -Confirm:$false
     }elseif($mode -in @('Smooth','Instant')){
         & (Join-Path $scrollRoot 'Set-Motion.ps1') -Mode $mode -Confirm:$false
@@ -123,7 +123,7 @@ try {
         '^AhkDisable$' {Ahk 'disable-all';break}
         '^AhkRestart$' {Ahk 'restart-all';break}
         '^AhkResume$' {Ahk 'resume';break}
-        '^Scroll(One|Two|Bsp|Smooth|Instant|Trial|Previous)$' {Scrolling $Matches[1];break}
+        '^Scroll(One|Two|Bsp|Smooth|Instant|Trial|Strip|Previous)$' {Scrolling $Matches[1];break}
         '^Komorebi(Start|Stop|Restart)$' {Wm $Matches[1];break}
         '^(Vial|Zmk)(Start|Stop|Restart)$' {Hid $Matches[1] $Matches[2];break}
         '^ChatGPTRender$' {& (Join-Path $PSScriptRoot 'Repair-ChatGPTRendering.ps1') -Confirm:$false;break}

@@ -1,5 +1,5 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
-param([ValidateSet('Trial','Previous')][string]$Mode='Trial')
+param([ValidateSet('Trial','Strip','Previous')][string]$Mode='Strip')
 $ErrorActionPreference='Stop'
 $runtime=Join-Path $PSScriptRoot 'runtime'
 $desktop=Split-Path $PSScriptRoot
@@ -119,15 +119,21 @@ function Stop-Bridge {
         if(@(Bridge-Daemons).Count){throw 'DesktopBridge daemon did not stop.'}
     }
 }
-function Copy-Bundle($from){
-    foreach($file in @('komorebi.exe','komorebic.exe','build-info.json')){Copy-Item -LiteralPath (Join-Path $from $file) -Destination (Join-Path $native $file) -Force}
-    # YASB may still run brief --read clients after the daemon has stopped.
-    # Wait for the executable file to unlock; never treat these clients as a daemon.
-    $copyLimit=[DateTime]::UtcNow.AddSeconds(5)
+function Copy-WithRetry([string]$from,[string]$to){
+    $limit=[DateTime]::UtcNow.AddSeconds(5)
     while($true){
-        try{Copy-Item -LiteralPath (Join-Path $from 'DesktopBridge.exe') -Destination $bridge -Force;break}
-        catch [IO.IOException]{if([DateTime]::UtcNow -ge $copyLimit){throw};Start-Sleep -Milliseconds 40}
+        try{Copy-Item -LiteralPath $from -Destination $to -Force;return}
+        catch [IO.IOException]{if([DateTime]::UtcNow -ge $limit){throw};Start-Sleep -Milliseconds 80}
     }
+}
+function Copy-Bundle($from){
+    # Release this controller's finalized Process handles after stop. Windows
+    # and brief YASB --read clients may retain executable sections momentarily.
+    [GC]::Collect();[GC]::WaitForPendingFinalizers()
+    foreach($file in @('komorebi.exe','komorebic.exe','build-info.json')){
+        Copy-WithRetry (Join-Path $from $file) (Join-Path $native $file)
+    }
+    Copy-WithRetry (Join-Path $from 'DesktopBridge.exe') $bridge
 }
 function Start-Bridge {
     if($bridgeOwners.Count -and -not @(Bridge-Daemons).Count){
@@ -160,7 +166,7 @@ try{
         $config=$priorConfig|ConvertFrom-Json
         $config|Add-Member -NotePropertyName animation -NotePropertyValue $selected.animation -Force
         Write-Json $configPath $config
-        Write-Json $profilePath ([ordered]@{mode=$Mode;duration=[int]$selected.animation.duration.movement})
+        Write-Json $profilePath ([ordered]@{mode=$Mode;duration=[int]$selected.animation.duration.movement;stripDurationMs=$(if($Mode -eq 'Strip'){180}else{0})})
         & $support -PreserveState | Out-Null
         Restore-Widths $savedState
         Start-Bridge
