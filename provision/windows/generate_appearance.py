@@ -86,42 +86,6 @@ def generate():
     terminal['schemes'] = [s for s in terminal.get('schemes', []) if s.get('name') != name] + [wt]
     put(path.relative_to(ROOT), json_text(terminal))
 
-    rgb = lambda value: [int(value[i:i+2],16) for i in (1,3,5)]
-    theme_colors = {
-        'frame':c['mantle'], 'frame_inactive':c['crust'],
-        'frame_incognito':c['surface'], 'frame_incognito_inactive':c['mantle'],
-        'toolbar':c['background'], 'toolbar_button_icon':c['accentSoft'],
-        'tab_text':c['text'], 'tab_background_text':c['subtext'],
-        'tab_background_text_inactive':c['muted'],
-        'tab_background_text_incognito':c['text'],
-        'tab_background_text_incognito_inactive':c['muted'],
-        'bookmark_text':c['text'], 'omnibox_background':c['surface'],
-        'omnibox_text':c['text'], 'ntp_background':c['background'],
-        'ntp_text':c['text'], 'ntp_link':c['accent'], 'button_background':c['surface'],
-    }
-    chrome = {'manifest_version':3,'name':name,'version':palette['version'],
-              'description':'Neutral graphite and muted blue, matching YASB. Browser UI only.',
-              'theme':{'colors':{k:rgb(v) for k,v in theme_colors.items()}}}
-    # Package the approved wallpaper with the colours: a separate custom NTP
-    # background can replace the user's selected theme in Chrome's UI.
-    chrome['theme']['images'] = {'theme_ntp_background': 'images/maomao-cold-grey-dark.png'}
-    chrome['theme']['properties'] = {
-        'ntp_background_alignment': 'center',
-        'ntp_background_repeat': 'no-repeat',
-    }
-    if not (APPEARANCE / 'chrome/images/maomao-cold-grey-dark.png').is_file():
-        raise FileNotFoundError('Chrome Cold Grey wallpaper is missing')
-    put('dot_config/desktop-customization/appearance/chrome/manifest.json',json_text(chrome))
-
-    # A separate New Tab override can use CSS contain at every window size.
-    # Keep both adapters tied to the same approved image and colour source.
-    newtab_palette = '/* Generated from appearance/palette.json. */\n:root {\n'
-    newtab_palette += ''.join(f'  --{key}: {value};\n' for key, value in c.items()) + '}\n'
-    put('dot_config/desktop-customization/appearance/chrome-newtab/palette.css', newtab_palette)
-    put('dot_config/desktop-customization/appearance/chrome-newtab/images/maomao-cold-grey-dark.png',
-        (APPEARANCE / 'chrome/images/maomao-cold-grey-dark.png').read_bytes())
-
-
     toml = '[metadata]\nname = '+json.dumps(name)+'\n\n[colors]\n'
     for key, value in {'foreground':c['text'],'background':c['background'],'cursor_bg':c['accentSoft'],
                        'cursor_fg':c['crust'],'cursor_border':c['accentSoft'],
@@ -161,14 +125,11 @@ def main():
     outputs=generate()
     different=[]
     for path,text in outputs.items():
-        if not path.exists() or (path.read_bytes()!=text if isinstance(text, bytes) else path.read_text(encoding='utf-8')!=text):
+        if not path.exists() or path.read_text(encoding='utf-8')!=text:
             different.append(str(path.relative_to(ROOT)))
             if not args.check:
                 path.parent.mkdir(parents=True,exist_ok=True)
-                if isinstance(text, bytes):
-                    path.write_bytes(text)
-                else:
-                    path.write_text(text,encoding='utf-8')
+                path.write_text(text,encoding='utf-8')
     if args.check and different:
         raise SystemExit('Appearance adapters differ: '+', '.join(different))
     print(f'{len(outputs)} appearance adapters '+('verified.' if args.check else 'generated.'))

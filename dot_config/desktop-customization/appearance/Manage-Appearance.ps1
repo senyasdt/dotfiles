@@ -31,7 +31,7 @@ function Merge-Object($target,$patch){
     }
 }
 if($Action -eq 'Status'){
-    [pscustomobject]@{Palette=$palette.name;CodeConfig=(Test-Path -LiteralPath $code);TerminalConfig=(Test-Path -LiteralPath $terminal);WezTermConfig=(Test-Path -LiteralPath $wezterm);Chrome='Prepared theme/manual native settings; browser profile is not edited.'}
+    [pscustomobject]@{Palette=$palette.name;CodeConfig=(Test-Path -LiteralPath $code);TerminalConfig=(Test-Path -LiteralPath $terminal);WezTermConfig=(Test-Path -LiteralPath $wezterm);Chrome='Owner-managed standard appearance; excluded from custom adapters.'}
     return
 }
 if($Action -eq 'Restore'){
@@ -98,4 +98,4 @@ for($i=0;$i -lt $writes.Count;$i++){
     $manifest[$i].AppliedSHA256=Hash $writes[$i].Path
     $manifest|ConvertTo-Json -Depth 5|Set-Content -LiteralPath (Join-Path $saved 'manifest.json') -Encoding UTF8
 }
-[pscustomobject]@{Applied=$palette.name;ChangedFiles=$writes.Count;Backup=$saved;ProcessesRestarted=0;Chrome='Prepared only; no browser preferences changed.'}
+[pscustomobject]@{Applied=$palette.name;ChangedFiles=$writes.Count;Backup=$saved;ProcessesRestarted=0;Chrome='Owner-managed standard appearance; no browser preferences changed.'}
