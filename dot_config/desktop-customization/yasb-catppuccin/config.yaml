@@ -303,10 +303,21 @@ widgets:
     options:
       label: '{icon}'
       hide_if_offline: false
+      # YASB 2.0.7 rotates forever on connect if the active layout is absent.
+      # Keep every built-in layout here, even though clicks only toggle monocle.
       layouts:
       - bsp
+      - columns
+      - rows
+      - grid
+      - scrolling
+      - vertical_stack
+      - horizontal_stack
+      - ultrawide_vertical_stack
+      - right_main_vertical_stack
       layout_icons:
         bsp: BSP
+        scrolling: SCRL
         monocle: MONO
         maximized: MAX
         floating: FLOAT
