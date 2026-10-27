@@ -143,6 +143,9 @@ try {
     Write-Output ('Completed: '+$Action)
 } catch {
     Write-ServiceEvent 'failed' '' $_.Exception
+    # The operation has finished (including its rollback). A notification may
+    # stay open behind another window; it must not keep every menu action locked.
+    if($locked){$mutex.ReleaseMutex();$locked=$false}
     if($Notify){Add-Type -AssemblyName System.Windows.Forms;[void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'Desktop helpers','OK','Warning')}
     throw
 } finally {if($locked){$mutex.ReleaseMutex()};$mutex.Dispose()}

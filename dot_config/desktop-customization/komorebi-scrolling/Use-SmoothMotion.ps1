@@ -27,6 +27,15 @@ foreach($file in $files){
     $path=Join-Path $bundle $file
     if(-not(Test-Path -LiteralPath $path) -or (Digest $path) -ine $selected.hashes.$file){throw "Motion bundle hash mismatch: $file"}
 }
+# Keep the current two-way menu when returning to Previous. Both modes use
+# the original wheel policy; only archived Trial needs its old input controller.
+# The immutable Previous bundle still retains the exact original bridge.
+$controller=$selected
+if($Mode -ne 'Trial' -and $bundles.Strip){$controller=$bundles.Strip}
+$controllerDirectory=[IO.Path]::GetFullPath((Join-Path $runtime $controller.directory))
+if(-not $controllerDirectory.StartsWith(([IO.Path]::GetFullPath($runtime).TrimEnd('\')+'\'),[StringComparison]::OrdinalIgnoreCase)){throw 'Motion controller must be inside the local runtime directory.'}
+$controllerPath=Join-Path $controllerDirectory 'DesktopBridge.exe'
+if(-not(Test-Path -LiteralPath $controllerPath) -or (Digest $controllerPath) -ine $controller.hashes.'DesktopBridge.exe'){throw 'Motion controller hash mismatch; nothing changed.'}
 $flag=Get-Content -LiteralPath (Join-Path $runtime 'native-profile.json') -Raw | ConvertFrom-Json
 if(-not $flag.enabled){throw 'Enable independent columns first; this switch never changes the stock komorebi installation.'}
 function Canonical-Path([string]$path){
@@ -126,14 +135,14 @@ function Copy-WithRetry([string]$from,[string]$to){
         catch [IO.IOException]{if([DateTime]::UtcNow -ge $limit){throw};Start-Sleep -Milliseconds 80}
     }
 }
-function Copy-Bundle($from){
+function Copy-Bundle($from,[string]$controllerFile){
     # Release this controller's finalized Process handles after stop. Windows
     # and brief YASB --read clients may retain executable sections momentarily.
     [GC]::Collect();[GC]::WaitForPendingFinalizers()
     foreach($file in @('komorebi.exe','komorebic.exe','build-info.json')){
         Copy-WithRetry (Join-Path $from $file) (Join-Path $native $file)
     }
-    Copy-WithRetry (Join-Path $from 'DesktopBridge.exe') $bridge
+    Copy-WithRetry $controllerFile $bridge
 }
 function Start-Bridge {
     if($bridgeOwners.Count -and -not @(Bridge-Daemons).Count){
@@ -162,7 +171,7 @@ try{
         Stop-Bridge
         & $support -Stop | Out-Null
         $stopped=$true
-        Copy-Bundle $bundle
+        Copy-Bundle $bundle $controllerPath
         $config=$priorConfig|ConvertFrom-Json
         $config|Add-Member -NotePropertyName animation -NotePropertyValue $selected.animation -Force
         Write-Json $configPath $config
@@ -173,11 +182,17 @@ try{
         Write-Output "Movement profile: $Mode. Restore-Motion.cmd returns the previous build and 90 ms wheel behaviour."
     }catch{
         $failure=$_
+        # Recovery starts the prior daemon and rewrites these logs. Keep the
+        # failed start's evidence in this private snapshot before doing that.
+        foreach($log in @('daemon-stderr.log','daemon-stdout.log')){
+            $logPath=Join-Path (Split-Path $support) $log
+            if(Test-Path -LiteralPath $logPath){Copy-Item -LiteralPath $logPath -Destination (Join-Path $recovery ('failed-'+$log)) -ErrorAction SilentlyContinue}
+        }
         if($stopped){
             try{
                 Stop-Bridge
                 & $support -Stop | Out-Null
-                Copy-Bundle $recovery
+                Copy-Bundle $recovery (Join-Path $recovery 'DesktopBridge.exe')
                 [IO.File]::WriteAllText($configPath,$priorConfig,$utf8)
                 if($null -eq $priorProfile){if(Test-Path -LiteralPath $profilePath){Remove-Item -LiteralPath $profilePath}}
                 else{[IO.File]::WriteAllText($profilePath,$priorProfile,$utf8)}
