@@ -34,6 +34,18 @@ Assert ($t.profiles.defaults.cursorShape -eq 'bar' -and $t.profiles.defaults.col
 Assert (@($t.schemes|Where-Object name -EQ 'Catppuccin Macchiato').Count -eq 1) 'previous scheme retained'
 $second=& $manager -Action Apply -TargetHome $fixture
 Assert ($second -like 'Appearance is already current*') 'second Apply is a no-op'
+$manifestPath=Join-Path $applied.Backup 'manifest.json'
+$manifestBytes=[IO.File]::ReadAllBytes($manifestPath)
+try {
+    foreach($badIndex in @('0',[double]0.5,-1,[long]4294967296)){
+        $entries=Get-Content -LiteralPath $manifestPath -Raw|ConvertFrom-Json
+        $entries[0].Index=$badIndex
+        [IO.File]::WriteAllText($manifestPath,($entries|ConvertTo-Json -Depth 5))
+        $blocked=$false
+        try{& $manager -Action Restore -TargetHome $fixture -Backup $applied.Backup -WhatIf}catch{$blocked=$_.Exception.Message -eq 'Invalid backup file index.'}
+        Assert $blocked 'restore rejects string/fractional/negative/out-of-range index'
+    }
+} finally {[IO.File]::WriteAllBytes($manifestPath,$manifestBytes)}
 & $manager -Action Restore -TargetHome $fixture -Backup $applied.Backup -WhatIf
 Assert ((Get-Content -LiteralPath $theme -Raw).Trim() -eq 'Cold Grey') 'WhatIf Restore is read-only'
 & $manager -Action Restore -TargetHome $fixture -Backup $applied.Backup

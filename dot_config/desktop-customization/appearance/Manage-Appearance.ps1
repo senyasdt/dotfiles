@@ -43,7 +43,9 @@ if($Action -eq 'Restore'){
     $seen=@{}
     foreach($f in $manifest){
         if($f.Path -notin $allowed -or $seen.ContainsKey($f.Path)){throw 'Unexpected or duplicate restore target.'}
-        if($f.Index -isnot [int] -or $f.Index -lt 0 -or $f.Index -ge $allowed.Count){throw 'Invalid backup file index.'}
+        # ConvertFrom-Json returns Int32 on Windows PowerShell 5.1 and Int64 on
+        # modern PowerShell. Both are safe after the same strict range check.
+        if(($f.Index -isnot [int] -and $f.Index -isnot [long]) -or $f.Index -lt 0 -or $f.Index -ge $allowed.Count){throw 'Invalid backup file index.'}
         $seen[$f.Path]=$true
         if((Hash $f.Path) -ne $f.AppliedSHA256){throw ('File changed after applying the theme; compare manually: '+$f.Path)}
         if($f.Existed -and (Hash (Join-Path $resolved ($f.Index.ToString()+'.old'))) -ne $f.BeforeSHA256){throw 'Backup checksum mismatch.'}

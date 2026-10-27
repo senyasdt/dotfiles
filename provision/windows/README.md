@@ -124,7 +124,7 @@ Keep them private and outside Git. There is no forced graphics reset or GPU disa
 ## Validation and automation limits
 
 `Test-Desktop.ps1` checks package plans, explicit-profile precedence, PowerShell
-syntax, 40 launcher assertions, 19 appearance rollback checks and isolated native
+syntax, 40 launcher assertions, 23 appearance rollback checks and isolated native
 helper builds/policies. The Python profile checks cover Linux/macOS/Windows and
 both bars/themes; optional schema validation uses YASB 2.0.7. These checks do not
 install packages, run real AHK, talk to keyboard HID or change the current desktop.

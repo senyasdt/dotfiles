@@ -84,4 +84,7 @@ jobs:
       - name: Build and test native desktop helpers
         if: runner.os == 'Windows' && matrix.profile == 'full,desktop'
         shell: pwsh
-        run: ./provision/windows/Test-Desktop.ps1
+        run: |
+          ./provision/windows/Test-Desktop.ps1
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./provision/windows/Test-Desktop.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell 5.1 desktop checks failed' }

@@ -77,6 +77,12 @@ ScriptLauncher остаётся единым владельцем AHK. Vial/ZMK 
 - YASB хранит отдельный private snapshot и команды возврата к предыдущему виду
   или классической панели. Исторические MyDock имена сохранены только для отката.
 
+После первого CI исправлена совместимость Restore с PowerShell 7: JSON-индекс
+может быть Int64, тогда как Windows PowerShell 5.1 возвращает Int32. Оба типа
+принимаются после проверки диапазона; строки, дроби, отрицательные и слишком
+большие индексы отвергаются. Четыре regression cases добавлены в тесты, полный
+Windows-набор запускается в обеих версиях PowerShell, без изменения live-профиля.
+
 ## Установка, обновление и совместимость
 
 - Native PowerShell restore планирует действия по умолчанию; Apply задан явно.
@@ -98,8 +104,8 @@ ScriptLauncher остаётся единым владельцем AHK. Vial/ZMK 
 
 - Девять комбинаций OS/profile для Linux/macOS/Windows, два выбора панели и темы.
 - Три YAML-варианта по схеме YASB 2.0.7 и обязательный полный список раскладок.
-- Windows PowerShell 5.1: синтаксис, планы, конфликт env/Profiles, restore preview,
-  40 assertions ScriptLauncher, 19 проверок оформления/отката, сборки bridge/guard
+- Windows PowerShell 5.1 и PowerShell 7: синтаксис, планы, конфликт env/Profiles, restore preview,
+  40 assertions ScriptLauncher, 23 проверки оформления/отката, сборки bridge/guard
   и policy test DesktopBridge. Реальные AHK/HID не запускались.
 - Ранее живьём проверены restart/reconnect YASB, исправление нагрузки с одного
   занятого ядра до ~0.1 CPU s за 5 wall s и память около 160 MB.
