@@ -1,6 +1,6 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
-    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart')]
+    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart','ScrollOne','ScrollTwo','ScrollBsp','ScrollSmooth','ScrollInstant')]
     [string]$Action='Status', [switch]$Notify
 )
 $ErrorActionPreference='Stop'
@@ -39,6 +39,17 @@ function Ahk($operation) {
 function Wm($operation) {
     if(!(Test-Path -LiteralPath $wm)){throw 'The current komorebi support launcher is missing.'}
     if($operation -eq 'Stop'){& $wm -Stop|Out-Null}elseif($operation -eq 'Restart'){& $wm -Restart|Out-Null}else{& $wm|Out-Null}
+}
+function Scrolling($mode) {
+    $scrollRoot=Join-Path (Split-Path -Parent $PSScriptRoot) 'komorebi-scrolling'
+    if($mode -in @('Smooth','Instant')){
+        & (Join-Path $scrollRoot 'Set-Motion.ps1') -Mode $mode -Confirm:$false
+    }elseif($mode -eq 'Bsp'){
+        & (Join-Path $scrollRoot 'Switch-Layout.ps1') -Mode Bsp -Confirm:$false
+    }else{
+        $columns=if($mode -eq 'One'){1}else{2}
+        & (Join-Path $scrollRoot 'Switch-Layout.ps1') -Mode Scrolling -Columns $columns -Peek 180 -Confirm:$false
+    }
 }
 function Vial-IsOpen {
     $gate=$null
@@ -110,6 +121,7 @@ try {
         '^AhkDisable$' {Ahk 'disable-all';break}
         '^AhkRestart$' {Ahk 'restart-all';break}
         '^AhkResume$' {Ahk 'resume';break}
+        '^Scroll(One|Two|Bsp|Smooth|Instant)$' {Scrolling $Matches[1];break}
         '^Komorebi(Start|Stop|Restart)$' {Wm $Matches[1];break}
         '^(Vial|Zmk)(Start|Stop|Restart)$' {Hid $Matches[1] $Matches[2];break}
         '^ChatGPTRender$' {& (Join-Path $PSScriptRoot 'Repair-ChatGPTRendering.ps1') -Confirm:$false;break}
