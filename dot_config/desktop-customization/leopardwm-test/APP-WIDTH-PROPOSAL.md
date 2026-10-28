@@ -57,7 +57,7 @@ CLIP STUDIO PAINT должно относиться к `CLIPStudioPaint.exe`, а
 | Thonny | 80% | Редактор, shell и variables |
 | Python IDLE / PowerShell ISE | 80% | Отдельное окно редактирования; не назначать размер всем pythonw.exe |
 | Neovim / Yazi в терминале | По размеру терминала, обычно 50–62% | Не переопределять все терминалы только из-за CLI-приложения |
-| ChatGPT / текущее окно Codex | 80% | Чат и рабочие панели; AppsFolder связывает имя ChatGPT с пакетом Codex |
+| ChatGPT / текущее окно Codex | 50% | Начальная ширина по выбору владельца; AppsFolder связывает имя ChatGPT с пакетом Codex |
 | Obsidian | 80% | Файлы, редактор/preview, backlinks |
 | Блокнот | 50% | Небольшие заметки и сравнение двух файлов |
 | TeXworks / MiKTeX TeXworks | 80% | Редактор и preview; GUI найдены в переносимом дереве LaTeX |
