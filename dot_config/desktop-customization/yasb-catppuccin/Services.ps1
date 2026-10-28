@@ -1,6 +1,6 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
-    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart','ScrollOne','ScrollTwo','ScrollBsp','ScrollSmooth','ScrollInstant','ScrollTrial','ScrollStrip','ScrollPrevious','WmLeopard','WmKomorebi','LeopardOverview')]
+    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','WmStart','WmStop','WmRestart','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart','ScrollOne','ScrollTwo','ScrollBsp','ScrollSmooth','ScrollInstant','ScrollTrial','ScrollStrip','ScrollPrevious','WmLeopard','WmKomorebi','LeopardOverview')]
     [string]$Action='Status', [switch]$Notify
 )
 $ErrorActionPreference='Stop'
@@ -91,7 +91,7 @@ function Write-ServiceEvent([string]$phase,[string]$component='', $failure=$null
             [IO.File]::WriteAllText($log,'')
         }
         $processes=@{}
-        foreach($name in @('yasb','komorebi','whkd','DesktopBridge','ScriptLauncher','ChatGPT')){
+        foreach($name in @('yasb','leopardwm','komorebi','whkd','DesktopBridge','ScriptLauncher','ChatGPT')){
             $processes[$name]=@(Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object SessionId -EQ $session | ForEach-Object Id)
         }
         $entry=[ordered]@{at=[DateTimeOffset]::Now.ToString('o');action=$Action;phase=$phase;component=$component;processes=$processes}
@@ -123,15 +123,15 @@ try {
             $release=[IO.File]::ReadAllText((Join-Path $trial 'runtime\release.json'))|ConvertFrom-Json
             Wait-Client (Join-Path $trial ('runtime\'+$release.directory+'\lwm.exe')) 'toggle-overview';break
         }
-        '^StartAll$' {Attempt 'AHK' {Ahk 'resume'};Attempt 'Komorebi' {Wm 'Start'};Attempt 'Vial' {Hid 'Vial' 'Start'};Attempt 'ZMK' {Hid 'Zmk' 'Start'};break}
-        '^StopAll$' {Attempt 'AHK' {Ahk 'pause'};Attempt 'Komorebi' {Wm 'Stop'};Attempt 'Vial' {Hid 'Vial' 'Stop'};Attempt 'ZMK' {Hid 'Zmk' 'Stop'};break}
-        '^RestartAll$' {Attempt 'AHK' {Ahk 'restart-all'};Attempt 'Komorebi' {Wm 'Restart'};Attempt 'Vial' {Hid 'Vial' 'Restart'};Attempt 'ZMK' {Hid 'Zmk' 'Restart'};break}
+        '^StartAll$' {Attempt 'AHK' {Ahk 'resume'};Attempt 'Window manager' {Wm 'Start'};Attempt 'Vial' {Hid 'Vial' 'Start'};Attempt 'ZMK' {Hid 'Zmk' 'Start'};break}
+        '^StopAll$' {Attempt 'AHK' {Ahk 'pause'};Attempt 'Window manager' {Wm 'Stop'};Attempt 'Vial' {Hid 'Vial' 'Stop'};Attempt 'ZMK' {Hid 'Zmk' 'Stop'};break}
+        '^RestartAll$' {Attempt 'AHK' {Ahk 'restart-all'};Attempt 'Window manager' {Wm 'Restart'};Attempt 'Vial' {Hid 'Vial' 'Restart'};Attempt 'ZMK' {Hid 'Zmk' 'Restart'};break}
         '^AhkEnable$' {Ahk 'resume';Ahk 'enable-all';break}
         '^AhkDisable$' {Ahk 'disable-all';break}
         '^AhkRestart$' {Ahk 'restart-all';break}
         '^AhkResume$' {Ahk 'resume';break}
         '^Scroll(One|Two|Bsp|Smooth|Instant|Trial|Strip|Previous)$' {Scrolling $Matches[1];break}
-        '^Komorebi(Start|Stop|Restart)$' {Wm $Matches[1];break}
+        '^(?:Wm|Komorebi)(Start|Stop|Restart)$' {Wm $Matches[1];break}
         '^(Vial|Zmk)(Start|Stop|Restart)$' {Hid $Matches[1] $Matches[2];break}
         '^ChatGPTRender$' {& (Join-Path $PSScriptRoot 'Repair-ChatGPTRendering.ps1') -Confirm:$false;break}
         '^ChatGPT(Software|Normal)Start$' {

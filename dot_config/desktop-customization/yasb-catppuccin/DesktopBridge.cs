@@ -57,17 +57,20 @@ internal static class DesktopBridge {
     static readonly string[][] Services={
         new[]{"","Запустить помощники","StartAll"},new[]{"","Остановить помощники","StopAll"},new[]{"","Перезапустить помощники","RestartAll"},
         new[]{"","Восстановить отрисовку ChatGPT","ChatGPTRender"},
-        new[]{"ChatGPT","Запустить без GPU (тест)","ChatGPTSoftwareStart"},new[]{"ChatGPT","Запустить обычно","ChatGPTNormalStart"},
-        new[]{"Текущий менеджер","Запустить","KomorebiStart"},new[]{"Текущий менеджер","Остановить","KomorebiStop"},new[]{"Текущий менеджер","Перезапустить","KomorebiRestart"},
+        new[]{"Менеджер окон","Запустить","WmStart"},new[]{"Менеджер окон","Остановить","WmStop"},new[]{"Менеджер окон","Перезапустить","WmRestart"},
         new[]{"Менеджер окон","Включить LeopardWM","WmLeopard"},new[]{"Менеджер окон","Переключиться на komorebi","WmKomorebi"},new[]{"Менеджер окон","Обзор пространств LeopardWM","LeopardOverview"},
-        new[]{"Лента окон","Одно широкое окно","ScrollOne"},new[]{"Лента окон","Два окна рядом","ScrollTwo"},new[]{"Лента окон","Вернуть BSP","ScrollBsp"},
-        new[]{"Лента окон","Проба: единая лента (180 мс)","ScrollStrip"},new[]{"Лента окон","Вернуть прежнюю плавность (90 мс)","ScrollPrevious"},
-        new[]{"Лента окон","Плавное движение (все пространства)","ScrollSmooth"},new[]{"Лента окон","Без анимации","ScrollInstant"},
         new[]{"AHK","Включить все скрипты","AhkEnable"},new[]{"AHK","Выключить все скрипты","AhkDisable"},new[]{"AHK","Перезапустить разрешённые","AhkRestart"},new[]{"AHK","Возобновить после общей паузы","AhkResume"},
         new[]{"Vial helper","Запустить","VialStart"},new[]{"Vial helper","Остановить","VialStop"},new[]{"Vial helper","Перезапустить","VialRestart"},
         new[]{"ZMK helper","Запустить","ZmkStart"},new[]{"ZMK helper","Остановить","ZmkStop"},new[]{"ZMK helper","Перезапустить","ZmkRestart"},
         new[]{"","Открыть Vial безопасно…","OpenVial"}
     };
+    static IEnumerable<string[]> MenuServices(){
+        bool leopard=LeopardSelected;
+        foreach(var row in Services){
+            if((leopard&&row[2]=="WmLeopard")||(!leopard&&(row[2]=="WmKomorebi"||row[2]=="LeopardOverview")))continue;
+            yield return new[]{row[0]=="Менеджер окон"?(leopard?"LeopardWM":"Komorebi"):row[0],row[1],row[2]};
+        }
+    }
     static void Service(string action){if(!Services.Any(s=>s[2]==action))throw new ArgumentException("Unknown helper action");Run("powershell.exe","-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Services.ps1"))+" -Action "+action+" -Notify");}
     static void Open(string target){Process.Start(new ProcessStartInfo(target){UseShellExecute=true});}
     static Dictionary<string,object> State(string kind){
@@ -91,7 +94,7 @@ internal static class DesktopBridge {
                 if(p.ExitCode!=0)throw new IOException("LeopardWM недоступен");
                 return LeopardSnapshot(output.Result);
             }
-        }catch{return new Dictionary<string,object>{{"label","LWM · OFF"},{"tooltip","LeopardWM недоступен. ПКМ → Менеджер окон → Переключиться на komorebi."}};}
+        }catch{return new Dictionary<string,object>{{"label","LWM · OFF"},{"tooltip","LeopardWM недоступен. ПКМ → LeopardWM → Перезапустить или переключиться на komorebi."}};}
     }
     internal static Dictionary<string,object> LeopardSnapshot(string text){
         var frames=text.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(s=>Json.DeserializeObject(s) as Dictionary<string,object>).ToArray();
@@ -131,13 +134,11 @@ internal static class DesktopBridge {
             menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Включить все",()=>Service("AhkEnable")));menu.Items.Add(Item("Выключить все",()=>Service("AhkDisable")));menu.Items.Add(Item("Перезапустить разрешённые",()=>Service("AhkRestart")));menu.Items.Add(Item("Возобновить после общей паузы",()=>Service("AhkResume")));menu.Items.Add(Item("Настроить правила…",()=>Open(Path.Combine(LauncherRoot,"config.json"))));
         }else if(kind=="services"){
             var groups=new Dictionary<string,ToolStripMenuItem>();
-            foreach(var row in Services){if(LeopardSelected&&row[0]=="Лента окон")continue;string action=row[2];var item=Item(row[1],()=>Service(action));if(action=="ChatGPTRender")item.ToolTipText="Пересоздаёт графический слой; окно и чат остаются открыты.";if(row[0].Length==0){menu.Items.Add(item);continue;}string name=row[0]=="Текущий менеджер"?(LeopardSelected?"LeopardWM":"Komorebi и горячие клавиши"):row[0];ToolStripMenuItem group;if(!groups.TryGetValue(name,out group)){group=new ToolStripMenuItem(name);groups.Add(name,group);menu.Items.Add(group);}group.DropDownItems.Add(item);}
-            menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Скрипты AHK и правила…",()=>Run(Path.Combine(Root,"DesktopBridge.exe"),"--menu ahk")));
+            foreach(var row in MenuServices()){string action=row[2];var item=Item(row[1],()=>Service(action));if(action=="ChatGPTRender")item.ToolTipText="Пересоздаёт графический слой; окно и чат остаются открыты.";if(row[0].Length==0){menu.Items.Add(item);continue;}ToolStripMenuItem group;if(!groups.TryGetValue(row[0],out group)){group=new ToolStripMenuItem(row[0]);groups.Add(row[0],group);menu.Items.Add(group);}group.DropDownItems.Add(item);}
+            groups["AHK"].DropDownItems.Add(new ToolStripSeparator());groups["AHK"].DropDownItems.Add(Item("Отдельные скрипты и правила…",()=>Run(Path.Combine(Root,"DesktopBridge.exe"),"--menu ahk")));
         }else{
             menu.Items.Add(Item("Библиотека Windows",()=>Run("explorer.exe","shell:AppsFolder")));
             menu.Items.Add(Item("Настройки Windows",()=>Open("ms-settings:")));
-            menu.Items.Add(Item("Вернуть состояние перед экспериментом",()=>Run("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Manage.ps1"))+" -Action RestoreCurrent")));
-            menu.Items.Add(Item("Вернуться к YASB до MyDockFinder",()=>Run("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Manage.ps1"))+" -Action RestorePreDock")));
         }
         // YASB's bar does not activate itself. Its child popup can therefore lack
         // WinForms' usual owner activation; AutoClose alone misses outside clicks.
@@ -274,7 +275,7 @@ internal static class DesktopBridge {
             if(args.Length>0&&args[0]=="--read"){Output(State(args.Length>1?args[1]:"ahk"));return 0;}
             if(args.Length>0&&args[0]=="--menu"){Menu(args.Length>1?args[1]:"main");return 0;}
             if(args.Length>0&&args[0]=="--service"){Service(args.Length>1?args[1]:"RestartAll");return 0;}
-            if(args.Length>0&&args[0]=="--list-services"){Output(Services.Select(s=>new{group=s[0],label=s[1],action=s[2]}).ToArray());return 0;}
+            if(args.Length>0&&args[0]=="--list-services"){Output(MenuServices().Select(s=>new{group=s[0],label=s[1],action=s[2]}).ToArray());return 0;}
             if(args.Length>0&&args[0]=="--stop"){try{using(var e=EventWaitHandle.OpenExisting(EventName))e.Set();}catch(WaitHandleCannotBeOpenedException){}return 0;}
             if(args.Length>0&&args[0]=="--show-taskbar"){NativeTaskbar(true);return 0;}
             if(args.Length>0&&args[0]=="--test-scroll-hook")return ScrollingMouseNavigation.TestHook()?0:7;

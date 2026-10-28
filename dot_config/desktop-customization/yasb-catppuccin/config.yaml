@@ -433,7 +433,7 @@ widgets:
         on_left: exec "__BRIDGE__\DesktopBridge.exe" --menu main
         on_right: exec "__BRIDGE__\DesktopBridge.exe" --menu main
       tooltip: true
-      tooltip_label: Профиль Catppuccin · настройки и быстрый откат
+      tooltip_label: Библиотека Windows · настройки Windows
       exec_options:
         use_shell: false
   taskbar:
