@@ -90,3 +90,25 @@ action = "ignore"
 [[window_rules]]
 match_class = "^#32770$"
 action = "float"
+
+# Main application windows; keep the generic dialog rule above these.
+[[window_rules]]
+match_executable = "orca-slicer.exe"
+action = "tile"
+open_on_workspace = 9
+[[window_rules]]
+match_executable = "prusa-slicer.exe"
+action = "tile"
+open_on_workspace = 9
+[[window_rules]]
+match_executable = "Fusion360.exe"
+action = "tile"
+open_on_workspace = 9
+[[window_rules]]
+match_executable = "Unity.exe"
+action = "tile"
+open_on_workspace = 8
+[[window_rules]]
+match_executable = "Unity Hub.exe"
+action = "tile"
+open_on_workspace = 8
