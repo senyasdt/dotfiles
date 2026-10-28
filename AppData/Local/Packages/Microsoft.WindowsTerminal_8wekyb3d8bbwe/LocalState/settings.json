@@ -5,8 +5,7 @@
     "copyFormatting": "none",
     "copyOnSelect": false,
     "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
-    "keybindings": 
-    [
+    "keybindings": [
         {
             "id": "Terminal.CopyToClipboard",
             "keys": "ctrl+c"
@@ -20,28 +19,32 @@
             "keys": "alt+shift+d"
         }
     ],
-    "newTabMenu": 
-    [
+    "newTabMenu": [
         {
             "type": "remainingProfiles"
         }
     ],
-    "profiles": 
-    {
-        "defaults": {},
-        "list": 
-        [
+    "profiles": {
+        "defaults": {
+            "colorScheme": "Cold Grey",
+            "opacity": 88,
+            "useAcrylic": true,
+            "font": {
+                "face": "JetBrainsMono Nerd Font Mono",
+                "size": 10
+            }
+        },
+        "list": [
             {
                 "antialiasingMode": "cleartype",
                 "backgroundImage": "%LOCALAPPDATA%\\Packages\\Microsoft.WindowsTerminal_8wekyb3d8bbwe\\LocalState\\backgrounds\\friren_custom.png",
                 "backgroundImageAlignment": "center",
                 "backgroundImageOpacity": 0.07,
                 "backgroundImageStretchMode": "uniformToFill",
-                "colorScheme": "Catppuccin Macchiato",
+                "colorScheme": "Cold Grey",
                 "commandline": "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
                 "cursorShape": "bar",
-                "font": 
-                {
+                "font": {
                     "face": "JetBrainsMono Nerd Font Mono",
                     "size": 10
                 },
@@ -57,7 +60,7 @@
                 "commandline": "%SystemRoot%\\System32\\cmd.exe",
                 "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
                 "hidden": false,
-                "name": "\u041a\u043e\u043c\u0430\u043d\u0434\u043d\u0430\u044f \u0441\u0442\u0440\u043e\u043a\u0430"
+                "name": "Командная строка"
             },
             {
                 "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
@@ -85,8 +88,7 @@
             }
         ]
     },
-    "schemes": 
-    [
+    "schemes": [
         {
             "background": "#24273A",
             "black": "#494D64",
@@ -109,7 +111,31 @@
             "selectionBackground": "#5B6078",
             "white": "#B8C0E0",
             "yellow": "#EED49F"
+        },
+        {
+            "name": "Cold Grey",
+            "background": "#202227",
+            "foreground": "#d6d9df",
+            "cursorColor": "#acb9ca",
+            "selectionBackground": "#414d61",
+            "black": "#343840",
+            "red": "#d98f9d",
+            "green": "#a5bdac",
+            "yellow": "#cbb78a",
+            "blue": "#8eaee8",
+            "purple": "#b6a6cd",
+            "cyan": "#9bbabc",
+            "white": "#b8bec9",
+            "brightBlack": "#626b79",
+            "brightRed": "#d98f9d",
+            "brightGreen": "#a5bdac",
+            "brightYellow": "#cbb78a",
+            "brightBlue": "#8eaee8",
+            "brightPurple": "#b6a6cd",
+            "brightCyan": "#9bbabc",
+            "brightWhite": "#d6d9df"
         }
     ],
-    "themes": []
+    "themes": [],
+    "theme": "dark"
 }

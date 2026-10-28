@@ -91,31 +91,25 @@ CHEZMOI_PROFILES=full,desktop "$(chezmoi source-path)/provision/update.sh"
 
 ## Windows
 
-Install `chezmoi` natively on Windows, run the explicit provisioner, then apply
-from PowerShell:
+**master: LeopardWM + YASB Cold Grey.** The `komorebi` branch keeps the same
+panel and helpers with stock komorebi/whkd. MyDockFinder is retired.
 
 ```powershell
-chezmoi init senyasdt
-cd "$(chezmoi source-path)"
-powershell.exe -ExecutionPolicy Bypass -File .\provision\windows\install.ps1
-$env:CHEZMOI_PROFILES="full,desktop"
-chezmoi apply
+chezmoi init https://github.com/senyasdt/dotfiles.git
+$src = chezmoi source-path
+& "$src\provision\windows\restore.ps1" -Profiles full,desktop
+# Review the plan and source diff, then:
+& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Apply
 ```
 
-Or for an existing checkout:
-
-```powershell
-chezmoi apply
-```
-
-Update an existing Windows machine:
-
-```powershell
-$env:CHEZMOI_PROFILES="full,desktop"
-powershell.exe -ExecutionPolicy Bypass -File "$(chezmoi source-path)\provision\windows\update.ps1"
-```
-
-WSL is not required for Windows apply.
+[Windows restore](provision/windows/README.md) covers installation prerequisites,
+pinned LeopardWM, login ownership, the alternate branch, rollback and private
+recovery material. Native PowerShell handles Windows; Ansible handles Linux/macOS.
+The current release includes the application library, cold translucent dock,
+per-app widths and atomic AHK ON/OFF with game rules. See the
+[release changes and validation limits](provision/windows/RELEASE-2026-10-28.md).
+Existing HOMEPC uses legacy WorkingFolder helper paths: inspect the complete diff
+and follow its migration instructions before applying a new root.
 
 ## Workflow
 

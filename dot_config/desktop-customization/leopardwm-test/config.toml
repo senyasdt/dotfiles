@@ -1,0 +1,914 @@
+# Primary LeopardWM 0.3.4 configuration; komorebi remains a separate fallback.
+[layout]
+gap = 8
+outer_gap_left = 8
+outer_gap_right = 8
+outer_gap_top = 8
+outer_gap_bottom = 8
+width_presets = [0.382, 0.5, 0.618, 0.8, 1.0]
+default_width_preset = 3
+height_presets = [0.333, 0.5, 0.667, 1.0]
+centering_mode = "just_in_view"
+center_single_column = false
+center_past_edges = false
+
+[appearance]
+active_border = true
+active_border_color = "8B96A6"
+active_border_width = 2
+tab_strip_bg = "202227"
+tab_strip_active_bg = "343840"
+tab_strip_active_text = "D8DEE9"
+tab_strip_inactive_text = "A6ADB8"
+tab_strip_opacity = 210
+
+[behavior]
+check_for_updates = false
+focus_follows_mouse = false
+new_window_monitor = "focused"
+new_window_placement = "new_column"
+swap_chain_ghost_animation = true
+skip_empty_workspaces = false
+mouse_follows_focus = false
+fullscreen_follows_focus = false
+
+[hotkeys]
+scroll_modifier = "Alt"
+"Alt+H" = "focus_left"
+"Alt+L" = "focus_right"
+"Alt+J" = "focus_down"
+"Alt+K" = "focus_up"
+"Alt+Shift+H" = "move_column_left"
+"Alt+Shift+L" = "move_column_right"
+"Alt+-" = "cycle_width_down"
+"Alt+=" = "cycle_width_up"
+"Alt+T" = "toggle_floating"
+"Alt+Shift+F" = "toggle_fullscreen"
+"Alt+1" = "switch_workspace_1"
+"Alt+2" = "switch_workspace_2"
+"Alt+3" = "switch_workspace_3"
+"Alt+4" = "switch_workspace_4"
+"Alt+5" = "switch_workspace_5"
+"Alt+6" = "switch_workspace_6"
+"Alt+7" = "switch_workspace_7"
+"Alt+8" = "switch_workspace_8"
+"Alt+9" = "switch_workspace_9"
+"Alt+Shift+1" = "move_to_workspace_1"
+"Alt+Shift+2" = "move_to_workspace_2"
+"Alt+Shift+3" = "move_to_workspace_3"
+"Alt+Shift+4" = "move_to_workspace_4"
+"Alt+Shift+5" = "move_to_workspace_5"
+"Alt+Shift+6" = "move_to_workspace_6"
+"Alt+Shift+7" = "move_to_workspace_7"
+"Alt+Shift+8" = "move_to_workspace_8"
+"Alt+Shift+9" = "move_to_workspace_9"
+
+[gestures]
+enabled = true
+scroll_up = "focus_prev"
+scroll_down = "focus_next"
+
+[animation]
+layout_duration_ms = 150
+scroll_duration_ms = 200
+workspace_switch_duration_ms = 200
+overview_duration_ms = 150
+easing = "ease_out"
+
+# Approved application policy, 2026-10-28. Telegram: 50%.
+
+# Games and screen-bound UI; never force a column width.
+[[window_rules]]
+match_executable = "yasb.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "r5apex.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "r5apex_dx12.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "bf6.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "NVIDIA Overlay.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "Flow.Launcher.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "Microsoft.CmdPal.UI.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "PowerToys.PowerLauncher.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "PowerToys.ColorPickerUI.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "PowerToys.Peek.UI.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "PowerToys.CropAndLock.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "Rainmeter.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "GameBar.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "SnippingTool.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "YandexDiskScreenshotEditor.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "LiveCaptions.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "voiceaccess.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "magnify.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "osk.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "CivilizationVI.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "CivilizationVI_DX12.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "Expedition33_Steam.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "Cyberpunk2077.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "factorio.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "Ixion.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "MilesMorales.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "PRAGMATA.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "SWZeroCompany.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "PapersPlease.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "VALORANT-Win64-Shipping.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "bg3.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "bg3_dx11.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "CorsairCove.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "PagodaSteam-Win64-Shipping.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "stellaris.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "AOW4.exe"
+action = "ignore"
+
+[[window_rules]]
+match_executable = "Stronghold Crusader Definitive Edition.exe"
+action = "ignore"
+
+# Native file/property/dialog windows keep their own geometry before app rules.
+[[window_rules]]
+match_class = "^#32770$"
+action = "float"
+
+# Explorer folders only: never match desktop, taskbar or shell flyouts.
+[[window_rules]]
+match_executable = "explorer.exe"
+match_class = "^(CabinetWClass|ExploreWClass)$"
+action = "tile"
+column_width = 0.5
+
+# Large MMC consoles; remaining MMC main windows use 62%.
+[[window_rules]]
+match_executable = "mmc.exe"
+match_class = "^MMCMainFrame$"
+match_title = "(?i)(Event Viewer|Computer Management|Task Scheduler|Просмотр событий|Управление компьютером|Планировщик задач|Планировщик заданий)"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "mmc.exe"
+match_class = "^MMCMainFrame$"
+action = "tile"
+column_width = 0.618
+
+# GearUP uses a generic launcher.exe: constrain it to its own window title.
+[[window_rules]]
+match_executable = "launcher.exe"
+match_title = "(?i)GearUP"
+action = "float"
+
+# AIDA64 main window only; do not resize sensor panels.
+[[window_rules]]
+match_executable = "aida64.exe"
+match_title = "(?i)^AIDA64 (Extreme|Engineer|Business|Network Audit)(\\s|$)"
+action = "tile"
+column_width = 0.5
+
+# Classic console host only; not every child cmd/python process.
+[[window_rules]]
+match_class = "^ConsoleWindowClass$"
+action = "tile"
+column_width = 0.5
+
+# IDLE Shell only: other pythonw/Tk tools retain their own policies.
+[[window_rules]]
+match_executable = "pythonw.exe"
+match_class = "^TkTopLevel$"
+match_title = "(?i)^(IDLE Shell|Python [0-9].*Shell)"
+action = "tile"
+column_width = 0.8
+
+# Visual Studio Installer only; setup.exe is not globally assigned.
+[[window_rules]]
+match_executable = "setup.exe"
+match_title = "(?i)^Visual Studio Installer"
+action = "float"
+
+# Small tools: floating with native dimensions; no fixed pixel size.
+[[window_rules]]
+match_executable = "PureRef.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "AmneziaVPN.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "XPPenTablet.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "BloodyWorkShop8.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "FL Esports.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "F. L Driver.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "UGREEN Data Link App.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "RtkUWP.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "DriverHub.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "OneDrive.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "PowerToys.Settings.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "PowerToys.KeyboardManagerEditor.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "PowerToys.KeyboardManagerEditorUI.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "windhawk.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "rpi-imager.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "balenaEtcher.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "rufus.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "printhelp.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "CanonPrintAssistant.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "CrystalMarkRetro64A.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "pcb_calculator.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "SD Card Formatter.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "AutoHotkeyUX.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "Ahk2Exe.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "puttygen.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "pageant.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "CalculatorApp.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "Time.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "WindowsCamera.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "psr.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "PAD.Troubleshooter.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "msconfig.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "charmap.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "cleanmgr.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "dfrgui.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "iscsicpl.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "odbcad32.exe"
+action = "float"
+
+[[window_rules]]
+match_executable = "appverif.exe"
+action = "float"
+
+# Main application windows: 100% starting width.
+[[window_rules]]
+match_executable = "Unity.exe"
+action = "tile"
+column_width = 1.0
+open_on_workspace = 8
+
+[[window_rules]]
+match_executable = "blender.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "ZBrush.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "CLIPStudioPaint.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "Photoshop.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "Fusion360.exe"
+action = "tile"
+column_width = 1.0
+open_on_workspace = 9
+
+[[window_rules]]
+match_executable = "orca-slicer.exe"
+action = "tile"
+column_width = 1.0
+open_on_workspace = 9
+
+[[window_rules]]
+match_executable = "prusa-slicer.exe"
+action = "tile"
+column_width = 1.0
+open_on_workspace = 9
+
+[[window_rules]]
+match_executable = "prusa-gcodeviewer.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "LycheeSlicer.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "eeschema.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "pcbnew.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "pl_editor.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "Code.exe"
+action = "tile"
+column_width = 1.0
+
+[[window_rules]]
+match_executable = "texstudio.exe"
+action = "tile"
+column_width = 1.0
+
+# Main application windows: 80% starting width.
+[[window_rules]]
+match_executable = "ChatGPT.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "Obsidian.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "Arduino IDE.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "thonny.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "PowerShell_ISE.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "texworks.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "miktex-texworks.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "gerbview.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "mspaint.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "WizTree64.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "BCUninstaller.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "AnyDesk.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "mstsc.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "msrdc.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "PAD.Console.Host.exe"
+action = "tile"
+column_width = 0.8
+
+[[window_rules]]
+match_executable = "PAD.Designer.exe"
+action = "tile"
+column_width = 0.8
+
+# Main application windows: 61.8% starting width.
+[[window_rules]]
+match_executable = "Unity Hub.exe"
+action = "tile"
+column_width = 0.618
+open_on_workspace = 8
+
+[[window_rules]]
+match_executable = "CLIPStudio.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "kicad.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "chrome.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "msedge.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "browser.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "glide.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "firefox.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "Vial.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "zmk-studio.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "NVIDIA App.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "nvcplui.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "steam.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "Battle.net.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "Battle.net Launcher.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "EADesktop.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "EALauncher.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "UbisoftConnect.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "RiotClientServices.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "SeleZen Games Launcher.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "XboxPcAppCE.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "XboxPcAppFT.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "olk.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "Photos.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "Microsoft.Media.Player.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "Video.UI.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "wmplayer.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "SystemSettings.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "SecHealthUI.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "WinStore.App.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "taskmgr.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "perfmon.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "regedit.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "M365Copilot.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "miktex-console.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "yap.exe"
+action = "tile"
+column_width = 0.618
+
+[[window_rules]]
+match_executable = "MSKLC.exe"
+action = "tile"
+column_width = 0.618
+
+# Main application windows: 50% starting width.
+[[window_rules]]
+match_executable = "Telegram.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "Discord.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "ms-teams.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "msteams.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "wezterm-gui.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "WindowsTerminal.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "ConEmu64.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "putty.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "git-gui.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "7zFM.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "WinRAR.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "uTorrent.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "uTorrentClients.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "Notepad.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "YandexDisk4.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "YandexDisk2.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "HxOutlook.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "HxCalendarAppImm.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "PhoneExperienceHost.exe"
+action = "tile"
+column_width = 0.5
+
+[[window_rules]]
+match_executable = "bitmap2component.exe"
+action = "tile"
+column_width = 0.5
+
+# Main application windows: 38.2% starting width.
+[[window_rules]]
+match_executable = "Яндекс Музыка.exe"
+action = "tile"
+column_width = 0.382
+
+[[window_rules]]
+match_executable = "Y.Music.exe"
+action = "tile"
+column_width = 0.382
+
+[[window_rules]]
+match_executable = "Todo.exe"
+action = "tile"
+column_width = 0.382
+
+[[window_rules]]
+match_executable = "VoiceRecorder.exe"
+action = "tile"
+column_width = 0.382
+
+[[window_rules]]
+match_executable = "YandexNotes.exe"
+action = "tile"
+column_width = 0.382

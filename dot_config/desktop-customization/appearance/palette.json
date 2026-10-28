@@ -1,0 +1,28 @@
+{
+  "name": "Cold Grey",
+  "version": "1.1.0",
+  "description": "Neutral graphite and muted blue, matching the owner's translucent YASB.",
+  "colors": {
+    "background": "#202227",
+    "mantle": "#1c1e22",
+    "crust": "#17191d",
+    "surface": "#343840",
+    "surface1": "#3e444e",
+    "border": "#4b515c",
+    "muted": "#9aa3b1",
+    "text": "#d6d9df",
+    "subtext": "#b8bec9",
+    "accent": "#8eaee8",
+    "accentSoft": "#acb9ca",
+    "selection": "#414d61",
+    "red": "#d98f9d",
+    "green": "#a5bdac",
+    "yellow": "#cbb78a",
+    "purple": "#b6a6cd",
+    "cyan": "#9bbabc"
+  },
+  "fonts": {
+    "interface": "Segoe UI",
+    "code": "JetBrainsMono Nerd Font Mono"
+  }
+}

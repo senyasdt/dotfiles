@@ -1,0 +1,17 @@
+/* Optional Obsidian snippet; only enabled after choosing a vault. */
+.theme-dark {
+  --background-primary: #202227;
+  --background-primary-alt: #1c1e22;
+  --background-secondary: #1c1e22;
+  --background-secondary-alt: #17191d;
+  --background-modifier-border: #4b515c;
+  --text-normal: #d6d9df;
+  --text-muted: #9aa3b1;
+  --text-accent: #8eaee8;
+  --interactive-accent: #8eaee8;
+  --text-on-accent: #17191d;
+  --text-selection: #414d61;
+  --code-background: #1c1e22;
+  --titlebar-background: #1c1e22;
+  --titlebar-background-focused: #1c1e22;
+}

@@ -187,9 +187,19 @@ function M.palette_entries(state)
 		},
 	}
 
+	-- Keep the approved desktop palette easy to return to after theme experiments.
+	local favorite_theme = "nord-cold-grey"
+	if state.custom_schemes[favorite_theme] then
+		table.insert(entries, 1, {
+			brief = "Theme | Nord Cold Grey" .. (state.name == favorite_theme and " (current)" or ""),
+			icon = "md_star",
+			action = M.set_theme_action(favorite_theme),
+		})
+	end
+
 	local theme_names = {}
 	for name, _ in pairs(state.custom_schemes) do
-		if name ~= "generated" then
+		if name ~= "generated" and name ~= favorite_theme then
 			table.insert(theme_names, name)
 		end
 	end

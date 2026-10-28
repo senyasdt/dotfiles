@@ -1,0 +1,11 @@
+# Keep Windows entry points usable and diffs stable across native/WSL checkouts.
+*.cmd text eol=crlf
+*.ahk text eol=crlf
+komorebi.json text eol=lf
+dot_config/desktop-customization/** text eol=lf
+dot_config/yasb/config.yaml.tmpl text eol=lf
+dot_config/yasb/scripts/*.ps1 text eol=lf
+dot_config/yasb/scripts/*.vbs text eol=lf
+
+# Preserve replayable patch bytes; space-only context lines are intentional.
+dot_config/desktop-customization/komorebi-scrolling/native/*.patch -text -whitespace

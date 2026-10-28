@@ -1,0 +1,7 @@
+{
+  "theme": {{ env "WINDOWS_DESKTOP_THEME" | default .windowsDesktop.theme | quote }},
+  "bar": {{ env "WINDOWS_DESKTOP_BAR" | default .windowsDesktop.bar | quote }},
+  "windowManager": {{ env "WINDOWS_DESKTOP_WM" | default .windowsDesktop.windowManager | quote }},
+  "startWindowManager": true,
+  "startAhk": true
+}

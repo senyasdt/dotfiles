@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - main
+      - komorebi
   pull_request:
 
 jobs:
@@ -19,6 +20,7 @@ jobs:
           - macos-latest
           - windows-latest
         profile:
+          - lite
           - full
           - full,desktop
 
@@ -72,3 +74,19 @@ jobs:
         run: |
           Get-Content "$env:GITHUB_WORKSPACE/.chezmoiignore.tmpl" | chezmoi --source "$env:GITHUB_WORKSPACE" execute-template > $null
           chezmoi --source "$env:GITHUB_WORKSPACE" apply --dry-run --verbose
+
+      - name: Check desktop profile boundaries
+        if: runner.os == 'Linux' && matrix.profile == 'full,desktop'
+        run: |
+          python3 -m pip install 'PyYAML>=6.0.1,<7'
+          python3 provision/tests/check_desktop_profiles.py
+          python3 provision/tests/check_catppuccin_profile.py
+          python3 provision/tests/check_window_manager_profile.py
+
+      - name: Build and test native desktop helpers
+        if: runner.os == 'Windows' && matrix.profile == 'full,desktop'
+        shell: pwsh
+        run: |
+          ./provision/windows/Test-Desktop.ps1 -DownloadRelease
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./provision/windows/Test-Desktop.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell 5.1 desktop checks failed' }
