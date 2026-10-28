@@ -18,7 +18,11 @@ internal static class DesktopBridge {
     static readonly string EventName=@"Local\Druzh.CatppuccinDesktop.Stop";
     static readonly string Runtime=Path.Combine(Root,"runtime");
     static string LeopardRoot {get{return Path.Combine(Path.GetDirectoryName(Root.TrimEnd(Path.DirectorySeparatorChar)),"leopardwm-test");}}
-    static bool LeopardSelected {get{return Get(Read(Path.Combine(LeopardRoot,@"runtime\selection.json")),"enabled","")=="True";}}
+    static bool LeopardSelected {get{
+        string selection=Path.Combine(LeopardRoot,@"runtime\selection.json");
+        if(File.Exists(selection))return Get(Read(selection),"enabled","")=="True";
+        return File.Exists(Path.Combine(LeopardRoot,@"runtime\release.json"))&&Get(Read(Path.Combine(LeopardRoot,"settings.json")),"defaultManager","")=="Leopard";
+    }}
     static string LeopardCli {get{var release=Read(Path.Combine(LeopardRoot,@"runtime\release.json"));return Path.Combine(LeopardRoot,"runtime",Get(release,"directory","missing"),"lwm.exe");}}
     static KomorebiFeed komorebi;
     static DateTime nextTaskbarCheck=DateTime.MinValue,nextProcessCheck=DateTime.MinValue;
@@ -54,8 +58,8 @@ internal static class DesktopBridge {
         new[]{"","Запустить помощники","StartAll"},new[]{"","Остановить помощники","StopAll"},new[]{"","Перезапустить помощники","RestartAll"},
         new[]{"","Восстановить отрисовку ChatGPT","ChatGPTRender"},
         new[]{"ChatGPT","Запустить без GPU (тест)","ChatGPTSoftwareStart"},new[]{"ChatGPT","Запустить обычно","ChatGPTNormalStart"},
-        new[]{"Komorebi и горячие клавиши","Запустить","KomorebiStart"},new[]{"Komorebi и горячие клавиши","Остановить","KomorebiStop"},new[]{"Komorebi и горячие клавиши","Перезапустить","KomorebiRestart"},
-        new[]{"Менеджер окон (тест)","Включить LeopardWM","WmLeopard"},new[]{"Менеджер окон (тест)","Вернуться к komorebi","WmKomorebi"},new[]{"Менеджер окон (тест)","Обзор пространств LeopardWM","LeopardOverview"},
+        new[]{"Текущий менеджер","Запустить","KomorebiStart"},new[]{"Текущий менеджер","Остановить","KomorebiStop"},new[]{"Текущий менеджер","Перезапустить","KomorebiRestart"},
+        new[]{"Менеджер окон","Включить LeopardWM","WmLeopard"},new[]{"Менеджер окон","Переключиться на komorebi","WmKomorebi"},new[]{"Менеджер окон","Обзор пространств LeopardWM","LeopardOverview"},
         new[]{"Лента окон","Одно широкое окно","ScrollOne"},new[]{"Лента окон","Два окна рядом","ScrollTwo"},new[]{"Лента окон","Вернуть BSP","ScrollBsp"},
         new[]{"Лента окон","Проба: единая лента (180 мс)","ScrollStrip"},new[]{"Лента окон","Вернуть прежнюю плавность (90 мс)","ScrollPrevious"},
         new[]{"Лента окон","Плавное движение (все пространства)","ScrollSmooth"},new[]{"Лента окон","Без анимации","ScrollInstant"},
@@ -87,7 +91,7 @@ internal static class DesktopBridge {
                 if(p.ExitCode!=0)throw new IOException("LeopardWM недоступен");
                 return LeopardSnapshot(output.Result);
             }
-        }catch{return new Dictionary<string,object>{{"label","LWM · OFF"},{"tooltip","LeopardWM недоступен. ПКМ → Менеджер окон (тест) → Вернуться к komorebi."}};}
+        }catch{return new Dictionary<string,object>{{"label","LWM · OFF"},{"tooltip","LeopardWM недоступен. ПКМ → Менеджер окон → Переключиться на komorebi."}};}
     }
     internal static Dictionary<string,object> LeopardSnapshot(string text){
         var frames=text.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(s=>Json.DeserializeObject(s) as Dictionary<string,object>).ToArray();
@@ -127,7 +131,7 @@ internal static class DesktopBridge {
             menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Включить все",()=>Service("AhkEnable")));menu.Items.Add(Item("Выключить все",()=>Service("AhkDisable")));menu.Items.Add(Item("Перезапустить разрешённые",()=>Service("AhkRestart")));menu.Items.Add(Item("Возобновить после общей паузы",()=>Service("AhkResume")));menu.Items.Add(Item("Настроить правила…",()=>Open(Path.Combine(LauncherRoot,"config.json"))));
         }else if(kind=="services"){
             var groups=new Dictionary<string,ToolStripMenuItem>();
-            foreach(var row in Services){string action=row[2];var item=Item(row[1],()=>Service(action));if(action=="ChatGPTRender")item.ToolTipText="Пересоздаёт графический слой; окно и чат остаются открыты.";if(row[0].Length==0){menu.Items.Add(item);continue;}ToolStripMenuItem group;if(!groups.TryGetValue(row[0],out group)){group=new ToolStripMenuItem(row[0]);groups.Add(row[0],group);menu.Items.Add(group);}group.DropDownItems.Add(item);}
+            foreach(var row in Services){if(LeopardSelected&&row[0]=="Лента окон")continue;string action=row[2];var item=Item(row[1],()=>Service(action));if(action=="ChatGPTRender")item.ToolTipText="Пересоздаёт графический слой; окно и чат остаются открыты.";if(row[0].Length==0){menu.Items.Add(item);continue;}string name=row[0]=="Текущий менеджер"?(LeopardSelected?"LeopardWM":"Komorebi и горячие клавиши"):row[0];ToolStripMenuItem group;if(!groups.TryGetValue(name,out group)){group=new ToolStripMenuItem(name);groups.Add(name,group);menu.Items.Add(group);}group.DropDownItems.Add(item);}
             menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Скрипты AHK и правила…",()=>Run(Path.Combine(Root,"DesktopBridge.exe"),"--menu ahk")));
         }else{
             menu.Items.Add(Item("Библиотека Windows",()=>Run("explorer.exe","shell:AppsFolder")));

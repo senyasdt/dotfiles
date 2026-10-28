@@ -1,4 +1,4 @@
-# Optional LeopardWM 0.3.4 trial; komorebi configuration stays separate.
+# Primary LeopardWM 0.3.4 configuration; komorebi remains a separate fallback.
 [layout]
 gap = 8
 outer_gap_left = 8

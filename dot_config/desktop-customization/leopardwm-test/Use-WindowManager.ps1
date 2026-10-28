@@ -9,6 +9,10 @@ $bridgeRoot=Join-Path $desktop 'yasb-catppuccin'
 $bridge=Join-Path $bridgeRoot 'DesktopBridge.exe'
 $support=Join-Path $desktop 'komorebi-support\Start-DesktopWM.ps1'
 $native=Join-Path $desktop 'komorebi-scrolling\runtime\native'
+$nativeFlag=Join-Path $desktop 'komorebi-scrolling\runtime\native-profile.json'
+if(-not (Test-Path -LiteralPath $nativeFlag) -or -not ([IO.File]::ReadAllText($nativeFlag)|ConvertFrom-Json).enabled){
+    $native=Join-Path ([Environment]::GetFolderPath('UserProfile')) 'scoop\apps\komorebi\current'
+}
 $yasb=Join-Path $env:ProgramFiles 'YASB\yasb.exe'
 $yasbCli=Join-Path $env:ProgramFiles 'YASB\yasbc.exe'
 $barConfig=Join-Path ([Environment]::GetFolderPath('UserProfile')) '.config\yasb\config.yaml'
@@ -125,45 +129,48 @@ try{
     $null=Owned $daemon;$null=Owned $yasb;$null=Owned $bridge
     $resumeYasb=@(Owned $yasb).Count -gt 0;$resumeBridge=@(Owned $bridge).Count -gt 0
     if($Operation -ne 'Switch'){
-        if($Mode -ne 'Leopard' -or -not $choice.enabled){throw 'Direct operations require the selected LeopardWM trial.'}
+        if($Mode -ne 'Leopard' -or -not $choice.enabled){throw 'Direct operations require an initialized LeopardWM selection; use LeopardWM.cmd first.'}
         if($Operation -in @('Stop','Restart')){Stop-Leopard}
         if($Operation -in @('Start','Restart')){Start-Leopard}
         Write-Output "LeopardWM: $Operation";return
     }
     if($Mode -eq 'Leopard' -and $choice.enabled){Start-Leopard;Write-Output 'LeopardWM is already selected.';return}
     if($Mode -eq 'Komorebi' -and -not $choice.enabled -and -not @(Owned $daemon).Count){
+        if(-not $choice){Write-Json $flag @{enabled=$false}}
         & $support -PreserveState|Out-Null
         Write-Output 'Komorebi is already selected; current panel and window widths were left in place.';return
     }
     if($Mode -eq 'Leopard'){
         $wm=@(Get-Process komorebi -ErrorAction SilentlyContinue)
-        if($wm.Count -ne 1){throw 'Start the current komorebi before taking a trial snapshot.'}
-        $client=Join-Path $native 'komorebic.exe';$null=Owned (Join-Path $native 'komorebi.exe')
-        $state=(Command $client 'state')|ConvertFrom-Json
-        if(@($state.monitors.elements).Count -ne 1){throw 'This trial switch currently supports one monitor.'}
+        if($wm.Count -gt 1){throw 'Multiple komorebi processes exist; nothing was changed.'}
+        $state=$null
+        if($wm.Count){
+            $client=Join-Path $native 'komorebic.exe';$null=Owned (Join-Path $native 'komorebi.exe')
+            $state=(Command $client 'state')|ConvertFrom-Json
+            if(@($state.monitors.elements).Count -ne 1){throw 'The switch currently supports one monitor.'}
+        }else{
+            if(Get-Process whkd -ErrorAction SilentlyContinue){throw 'Stop the existing whkd before first LeopardWM activation.'}
+            Add-Type -AssemblyName System.Windows.Forms
+            if([Windows.Forms.Screen]::AllScreens.Count -ne 1){throw 'The switch currently supports one monitor.'}
+        }
+        # Validate the panel before stopping either manager, also on a clean PC.
+        $bar=& (Join-Path $PSScriptRoot 'Convert-YasbConfig.ps1') -Text ([IO.File]::ReadAllText($barConfig)) -BridgeRoot $bridgeRoot
         $snapshot=Join-Path $runtime ('before-leopard-'+(Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
         [void][IO.Directory]::CreateDirectory($snapshot)
-        Write-Json (Join-Path $snapshot 'komorebi-state.json') $state
+        if($state){Write-Json (Join-Path $snapshot 'komorebi-state.json') $state}
         Copy-Item -LiteralPath $barConfig -Destination (Join-Path $snapshot 'yasb-config.yaml')
         Copy-Item -LiteralPath $bridge -Destination (Join-Path $snapshot 'DesktopBridge.exe')
         if(Test-Path -LiteralPath $appConfig){Copy-Item -LiteralPath $appConfig -Destination (Join-Path $snapshot 'leopard-config.toml')}
         Write-Json $flag @{enabled=$false;restoreDirectory=(Split-Path $snapshot -Leaf)}
         try{
             Stop-Ui
-            & $support -Stop|Out-Null
+            if($wm.Count){& $support -Stop|Out-Null}
             if(Get-Process komorebi -ErrorAction SilentlyContinue){throw 'Komorebi has not stopped.'}
             Wait-Stopped (Join-Path ([Environment]::GetFolderPath('UserProfile')) 'scoop\apps\whkd\current\whkd.exe')
             [void][IO.Directory]::CreateDirectory((Split-Path $appConfig))
             Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'config.toml') -Destination $appConfig -Force
             Copy-Retry $controller $bridge
             Write-Json $flag @{enabled=$true;restoreDirectory=(Split-Path $snapshot -Leaf)}
-            $bar=[IO.File]::ReadAllText($barConfig)
-            $pattern='(?m)^      - workspaces\r?\n      - layout\r?$'
-            if([regex]::Matches($bar,$pattern).Count -ne 1){throw 'Unrecognized YASB workspace block; config left recoverable.'}
-            $bar=[regex]::Replace($bar,$pattern,'      - leopard_status')
-            $snippet=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'yasb-widget.yaml'))
-            $short=(New-Object -ComObject Scripting.FileSystemObject).GetFolder($bridgeRoot).ShortPath
-            $bar+="`n"+$snippet.Replace('__BRIDGE__',$bridgeRoot).Replace('__BRIDGE_CMD__',$short)
             [IO.File]::WriteAllText($barConfig,$bar,$utf8)
             Start-Leopard
             Start-Ui
@@ -174,7 +181,7 @@ try{
             Write-Json $flag @{enabled=$false;restoreDirectory=(Split-Path $snapshot -Leaf)}
             Restore-Bar $snapshot
             if(Test-Path -LiteralPath (Join-Path $snapshot 'leopard-config.toml')){Copy-Item -LiteralPath (Join-Path $snapshot 'leopard-config.toml') -Destination $appConfig -Force}
-            & $support -PreserveState|Out-Null;Restore-Widths $snapshot
+            if($state){& $support -PreserveState|Out-Null;Restore-Widths $snapshot}
             Start-Ui
             throw $failure
         }

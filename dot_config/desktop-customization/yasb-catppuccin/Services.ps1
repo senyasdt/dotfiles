@@ -37,18 +37,11 @@ function Ahk($operation) {
     Wait-Client $launcher ('--'+$operation)
 }
 function Wm($operation) {
-    $trial=Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test'
-    $flag=Join-Path $trial 'runtime\selection.json'
-    if((Test-Path -LiteralPath $flag) -and ([IO.File]::ReadAllText($flag)|ConvertFrom-Json).enabled){
-        & (Join-Path $trial 'Use-WindowManager.ps1') -Mode Leopard -Operation $operation -Confirm:$false
-        return
-    }
-    if(!(Test-Path -LiteralPath $wm)){throw 'The current komorebi support launcher is missing.'}
+    if(!(Test-Path -LiteralPath $wm)){throw 'The desktop window-manager launcher is missing.'}
     if($operation -eq 'Stop'){& $wm -Stop|Out-Null}elseif($operation -eq 'Restart'){& $wm -Restart|Out-Null}else{& $wm|Out-Null}
 }
 function Scrolling($mode) {
-    $flag=Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test\runtime\selection.json'
-    if((Test-Path -LiteralPath $flag) -and ([IO.File]::ReadAllText($flag)|ConvertFrom-Json).enabled){throw 'LeopardWM is selected. Use Window manager (test) > Return to komorebi before changing komorebi layouts.'}
+    if((& (Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test\Get-WindowManager.ps1')) -eq 'Leopard'){throw 'LeopardWM is selected. Use Window manager > Switch to komorebi before changing komorebi layouts.'}
     $scrollRoot=Join-Path (Split-Path -Parent $PSScriptRoot) 'komorebi-scrolling'
     if($mode -in @('Trial','Strip','Previous')){
         & (Join-Path $scrollRoot 'Use-SmoothMotion.ps1') -Mode $mode -Confirm:$false

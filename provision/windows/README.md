@@ -5,6 +5,16 @@ Source owner: `senyasdt/dotfiles`; detailed current-state inventory and decision
 
 ## New computer
 
+HOMEPC's chosen desktop is now **LeopardWM + YASB Catppuccin**. The pinned
+LeopardWM package is a separate post-restore step in this branch; the generic
+restore below remains the classic recovery baseline. For the current desktop,
+restore with `-Bar yasb -Theme catppuccin`, then follow
+[LeopardWM installation and selection](../../dot_config/desktop-customization/leopardwm-test/README.md#воспроизвести-на-другой-windows-x64).
+The first activation no longer requires starting komorebi. Existing komorebi
+packages remain available for fallback; no second WM login entry is needed.
+On HOMEPC keep using the existing launcher; do not run the new-machine global
+restore over the live `WorkingFolder` helpers.
+
 Use native Windows PowerShell as the intended desktop user. Do not run the
 whole restore as another administrator account: Scoop, HKCU and Startup belong
 to the logged-in user. Package installers may request elevation separately.
@@ -38,8 +48,8 @@ finishes; installed helper paths are under `~/.config/desktop-customization`.
 - `desktop.ps1 -Action Build`: compile the .NET Framework helpers after apply.
   `-Action Install`: build and register one **Desktop Session** Startup shortcut,
   plus **All Applications** in Start Menu. It does not start the desktop session.
-- `Start-Session.ps1`: start the AHK manager, komorebi/whkd and six tray widgets.
-  The AHK manager starts first, even if komorebi later fails. The tray icons also
+- `Start-Session.ps1`: start the AHK manager, selected WM and six tray widgets.
+  The AHK manager starts first, even if the WM later fails. The tray icons also
   work without MyFinder, through the Windows tray.
 - `WINDOWS_DESKTOP_BAR=none|yasb|mydockfinder` controls the rendered bar choice.
   `none` is the recovery baseline; YASB starts only for `yasb` and its configured

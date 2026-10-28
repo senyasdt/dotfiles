@@ -4,8 +4,8 @@ $profileRoot=[Environment]::GetFolderPath('UserProfile')
 $desktopRoot=Split-Path $PSScriptRoot -Parent
 $leopard=Join-Path $desktopRoot 'leopardwm-test'
 $selection=Join-Path $leopard 'runtime\selection.json'
-if(-not $Stop -and (Test-Path -LiteralPath $selection) -and ([IO.File]::ReadAllText($selection)|ConvertFrom-Json).enabled){
-    $operation=if($Restart){'Restart'}else{'Start'}
+if((& (Join-Path $leopard 'Get-WindowManager.ps1')) -eq 'Leopard'){
+    $operation=if($Stop){'Stop'}elseif(-not (Test-Path -LiteralPath $selection)){'Switch'}elseif($Restart){'Restart'}else{'Start'}
     & (Join-Path $leopard 'Use-WindowManager.ps1') -Mode Leopard -Operation $operation -Confirm:$false
     return
 }

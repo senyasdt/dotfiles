@@ -19,7 +19,13 @@ function Write-Utf8($path,$content){[IO.File]::WriteAllText($path,$content,(New-
 function Expand-Template($file){
     $shortRoot=(New-Object -ComObject Scripting.FileSystemObject).GetFolder($root).ShortPath
     if($shortRoot.Contains(' ')){throw 'YASB requires a helper path without spaces. Choose a different profile directory.'}
-    [Environment]::ExpandEnvironmentVariables([IO.File]::ReadAllText($file).Replace('__BRIDGE_CMD__',$shortRoot).Replace('__BRIDGE__',$root).Replace('__LAUNCHER__',$launcher).Replace('__USERPROFILE__',$profileRoot))
+    $text=[Environment]::ExpandEnvironmentVariables([IO.File]::ReadAllText($file).Replace('__BRIDGE_CMD__',$shortRoot).Replace('__BRIDGE__',$root).Replace('__LAUNCHER__',$launcher).Replace('__USERPROFILE__',$profileRoot))
+    $leopard=Join-Path (Split-Path $root) 'leopardwm-test'
+    $choice=Join-Path $leopard 'runtime\selection.json'
+    if([IO.Path]::GetExtension($file) -eq '.yaml' -and (Test-Path -LiteralPath $choice) -and ([IO.File]::ReadAllText($choice)|ConvertFrom-Json).enabled){
+        $text=& (Join-Path $leopard 'Convert-YasbConfig.ps1') -Text $text -BridgeRoot $root
+    }
+    return $text
 }
 function Run-Wait($exe,$arguments,[int]$seconds=12){
     $p=Start-Process -FilePath $exe -ArgumentList $arguments -WindowStyle Hidden -PassThru
@@ -124,7 +130,17 @@ if($Action -eq 'Build'){
     Stop-Yasb;Stop-Bridge
     try{
         & (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll ('/out:'+$bridge) (Join-Path $root 'DesktopBridge.cs') (Join-Path $root 'KomorebiFeed.cs') (Join-Path $root 'ScrollingMouseNavigation.cs')
-        if($LASTEXITCODE -ne 0){throw 'Build failed'};Run-Wait $bridge '--test';Write-Output 'Build and dock policy checks passed.'
+        if($LASTEXITCODE -ne 0){throw 'Build failed'};Run-Wait $bridge '--test'
+        # A later WM switch must retain the freshly built controller as well.
+        $leopardRuntime=Join-Path (Split-Path $root) 'leopardwm-test\runtime'
+        $release=Join-Path $leopardRuntime 'release.json'
+        if(Test-Path -LiteralPath $release){
+            $manifest=[IO.File]::ReadAllText($release)|ConvertFrom-Json
+            Copy-Item -LiteralPath $bridge -Destination (Join-Path $leopardRuntime 'DesktopBridge.exe') -Force
+            $manifest.controllerSha256=(Get-FileHash -LiteralPath $bridge).Hash
+            Write-Utf8 $release ($manifest|ConvertTo-Json -Depth 8)
+        }
+        Write-Output 'Build and dock policy checks passed.'
     }finally{if($resumeYasb){Start-Yasb};if($resumeBridge){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}}
     return
 }
