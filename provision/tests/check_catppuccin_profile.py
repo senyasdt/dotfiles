@@ -1,5 +1,5 @@
 """Offline profile contracts. Optional --schema points at YASB v2.0.7 schema.json."""
-import argparse,json,os,re,shutil,subprocess
+import argparse,json,os,re,shutil,subprocess,sys
 from pathlib import Path
 import yaml
 parser=argparse.ArgumentParser()
@@ -44,4 +44,6 @@ for theme in ['classic','catppuccin']:
     ignored=render('.chezmoiignore.tmpl').splitlines()
     for name in ['.config/yasb/config.yaml','.config/yasb/styles.css','.config/autohotkey/mydockfinder-hotkeys.ahk']:
         assert (name in ignored)==(theme=='catppuccin')
-print(json.dumps({'ok':True,'profile_contracts':True,'theme_templates':['classic','catppuccin'],'yaml_schema_validated':bool(args.schema)}))
+order_checks=subprocess.run([sys.executable,str(profile/'launchpad-order/test_launchpad_order.py')],text=True,capture_output=True)
+if order_checks.returncode:raise RuntimeError(order_checks.stdout+order_checks.stderr)
+print(json.dumps({'ok':True,'profile_contracts':True,'theme_templates':['classic','catppuccin'],'yaml_schema_validated':bool(args.schema),'launchpad_order_checks':True}))
