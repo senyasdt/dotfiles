@@ -115,7 +115,7 @@ $wingetPackages = @(
 )
 if($activeProfiles -contains 'lite'){$scoopPackages=@('git','ripgrep','fd','fzf','bat','jq','chezmoi')}
 if($desktop){$scoopPackages+=@('komorebi','whkd')}else{$wingetPackages=@()}
-if($desktop -and $Bar -eq 'yasb'){$wingetPackages+='AmN.yasb'}
+if($desktop -and $Bar -eq 'yasb'){$wingetPackages+='AmN.yasb';$scoopPackages+='JetBrainsMono-NF'}
 if($Theme -eq 'catppuccin'){$wingetPackages=@($wingetPackages|Where-Object {$_ -ne 'Flow-Launcher.Flow-Launcher'})}
 
 if ($isFull) {
@@ -133,6 +133,7 @@ if($wingetPackages.Count -and -not(Test-Command winget)){throw 'winget is requir
 Install-Scoop
 if($desktop){
     if(-not(Test-Path -LiteralPath (Join-Path $env:USERPROFILE 'scoop\buckets\extras'))){scoop bucket add extras;if($LASTEXITCODE -ne 0){throw 'Scoop extras bucket failed'}}
+    if($Bar -eq 'yasb' -and -not(Test-Path -LiteralPath (Join-Path $env:USERPROFILE 'scoop\buckets\nerd-fonts'))){scoop bucket add nerd-fonts https://github.com/matthewjberger/scoop-nerd-fonts;if($LASTEXITCODE -ne 0){throw 'Scoop Nerd Fonts bucket failed'}}
 }
 
 foreach ($package in $scoopPackages) {

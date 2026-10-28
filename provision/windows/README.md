@@ -1,137 +1,119 @@
-# Windows workstation restore
+# Windows: LeopardWM + YASB
 
-Source owner: `senyasdt/dotfiles`. The target stack is **YASB + stock komorebi/whkd
-+ ScriptLauncher**. MyDockFinder and FinderWidgets are retired from provisioning
-and startup. The experimental native Scrolling build stays on `komorebi-scrolling`.
-See [all integration changes](CHANGES.md) and
-[workstation documentation](https://github.com/senyasdt/project-documentation/tree/main/dotfiles/windows-workstation).
+28 октября 2026. В `master` основной менеджер — **LeopardWM 0.3.4**, панель и
+библиотека — **YASB**, палитра — холодная полупрозрачная серая. Ветка `komorebi`
+содержит те же помощники и оформление с komorebi/whkd по умолчанию.
 
-## New computer
+## Новый компьютер
 
-Use native Windows PowerShell as the intended desktop user. Package installers
-may request elevation separately; do not provision Scoop/HKCU/Startup as another
-administrator account. Git authentication and age recovery material must already
-be available; private identities do not belong in this repository.
+Запускать от обычного будущего владельца рабочего стола. Установщики пакетов
+могут отдельно попросить повышение прав. После установки Git/chezmoi обновить
+терминал, если команды ещё не появились в PATH.
 
 ```powershell
 winget install --id Git.Git --exact
 winget install --id twpayne.chezmoi --exact
-chezmoi init git@github.com:senyasdt/dotfiles.git
+chezmoi init https://github.com/senyasdt/dotfiles.git
 $src = chezmoi source-path
-# Review package/configuration plan:
-& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Bar yasb -Theme catppuccin
-# After reviewing source status and chezmoi diff:
-& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Bar yasb -Theme catppuccin -Apply
+& "$src\provision\windows\restore.ps1" -Profiles full,desktop
+# После просмотра плана и chezmoi diff:
+& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Apply
 ```
 
-The historical `catppuccin` profile name now denotes the cold translucent grey
-palette. A minimal recovery alternative is `-Bar none -Theme classic`.
-The script defaults remain plan-only, none/classic; YASB requires explicit choice.
-Until the integration PR is merged, select branch `windows-desktop-integration`
-explicitly when reviewing it; the published master still has its previous setup.
+Без `-Apply` ничего не устанавливается. Значения по умолчанию берутся из
+`.chezmoidata/windows-desktop.json`: Leopard / yasb / catppuccin. Историческое
+имя `catppuccin` обозначает нынешний Cold Grey. Восстановление устанавливает
+пакеты и шрифт значков, применяет source, собирает помощники, регистрирует один
+Desktop Session, проверяет официальный portable LeopardWM и активирует его.
+Предварительно запускать komorebi не нужно. WSL, Rust и собственная сборка
+LeopardWM не нужны. Scoop-пакеты komorebi/whkd сохраняются как запасной вариант;
+одновременно два менеджера не запускаются.
 
-`restore.ps1` installs the selected packages, applies chezmoi without externals,
-builds/registers the helpers and activates the chosen YASB profile. It does not
-install Steam, MyDockFinder, keyboard-layout DLLs, Vial/ZMK releases, or WinRM.
-Rerun after refreshing PATH if an installer added commands unavailable to the
-current shell. Helpers live under `~/.config/desktop-customization`.
+LeopardWM закреплён на 0.3.4: SHA256 архива
+`698e6e7346ff3ffd84aee3ebf502cf036a74d4804882758b439a820e0a5983b0`.
+Повторная установка проверяет манифест и файлы без замены работающих бинарников.
+Остальные пакеты берутся из Scoop/WinGet; это воспроизводимая конфигурация,
+не побайтовый образ всех версий Windows и приложений. Схема панели проверена
+для YASB 2.0.7; более новые версии требуют повторной проверки схемы.
+Значки используют [JetBrainsMono Nerd Font](https://github.com/matthewjberger/scoop-nerd-fonts/blob/master/bucket/JetBrainsMono-NF.json),
+который добавлен в план YASB. При необходимости обновить шрифтовый кэш входом в Windows.
 
-## Ownership and options
+## Komorebi и переключение
 
-- `install.ps1 -Plan` is read-only. `lite` has CLI basics; `full` retains upstream
-  mise and Docker Desktop; `full,desktop` adds desktop packages and komorebi/whkd.
-  An explicit `-Profiles` argument overrides the inherited process environment.
-- Supported bars are `none|yasb`. `-Bar yasb` installs YASB 2.0.7 or newer.
-  Cold Grey uses YASB's own application library; Flow Launcher is excluded from
-  that package plan. Classic remains available as a compatibility profile.
-- `desktop.ps1 -Action Install` builds ScriptLauncher and registers one
-  **Desktop Session** Startup shortcut and **All Applications** in Start Menu.
-  It refuses conflicting legacy Startup entries. FinderWidgets is not required,
-  built, deployed or started. Its old source remains only for historical rollback.
-- `Start-Session.ps1` starts the AHK manager first, then komorebi/whkd and the
-  selected YASB panel. Cold Grey starts DesktopBridge for dock policy/status menus;
-  classic uses the same checked Start-Yasb launch path. No second bar is launched.
-- The top panel includes workspaces/layout, AHK/Vial/ZMK, VPN, weather, media,
-  language, sound and tray. The bottom dock shows the library and running/pinned
-  applications; pins belong to the user. No fixed Explorer/Terminal pins are added.
-- `Start-Yasb.ps1` normalizes IPC paths/CLI lookup and checks access before Manage
-  stops a working bar. Native YASB reconnect handles WM restarts. All three YAML
-  variants include Scrolling in ActiveLayout's list to avoid its 2.0.7 rotate loop.
-- `script-launcher/config.json` maps script groups to blocker processes. It
-  deduplicates scripts, remembers manual disables and resumes only after the last
-  blocker plus the configured 15-second delay. The legacy filename
-  `mydockfinder-hotkeys.ahk` is retained to preserve saved rules/manual state; it
-  contains no MyDockFinder integration. The managed YASB override handles Win-tap;
-  Win+E and other chords retain their meaning. AHK is fully stopped during blockers.
-  Polling cannot guarantee completion before the first anti-cheat check.
-- YASB's library is available by mouse and Alt+F12 without AHK. **All Applications**
-  opens Windows `shell:AppsFolder` without any dock or background process.
-- komorebi uses the normal local data directory. HOMEPC's junction repair is a
-  local workaround, opt-in via settings; the helper refuses foreign directories.
+Для нового ПК с альтернативой: `chezmoi init --branch komorebi
+https://github.com/senyasdt/dotfiles.git`, затем те же команды restore.
+Либо явно передать `-WindowManager Komorebi -Bar yasb -Theme catppuccin`.
+Ветка использует штатный Scoop komorebi и девять BSP-пространств; независимые
+колонки и общая анимация сохранены отдельным рецептом `komorebi-scrolling`.
 
-## Existing HOMEPC migration
+На установленном ПК выбор доступен в ↻ → LeopardWM/Komorebi → переключиться.
+Без панели доступны `leopardwm-test/LeopardWM.cmd` и `Komorebi.cmd`.
+Выбор сохраняется для следующего входа. Git checkout сам не меняет работающий WM.
+После переключения менеджера restore/Refresh возвращает актуальное оформление
+из source; полный старый снимок панели остаётся доступен для отката.
+`-Bar none -Theme classic -WindowManager Komorebi` — минимальный путь восстановления.
 
-The current installation uses WorkingFolder helpers and an experimental native
-WM. This source/PR does not modify those processes or apply the new target profile.
-Do not run global chezmoi apply over it without inspecting the complete diff.
+## Поведение сборки
 
-1. Export Startup/task definitions and save ScriptLauncher manual state and
-   YASB private snapshots. Keep existing backups and the active IPC junction.
-2. Review old duplicate Vial/YASB tasks and remove only backed-up duplicate
-   login owners. The native Vial helper must retain exactly one startup owner.
-3. Stop old helpers explicitly from their current folders before changing their
-   installation root. Remove backed-up conflicting Startup links, including old
-   MyDockFinder/Finder entries. The provisioner refuses them instead of silently
-   deleting them. A source-file removal alone does not remove its old live target.
-4. Inspect chezmoi diff; apply only reviewed desktop targets, build/register one
-   Desktop Session and transfer intended manual toggles. Never copy stale PIDs,
-   test paths, active sockets or the entire AppData tree.
-5. Verify one helper per role, Alt+1/Alt+2, application library, dock hide/reveal
-   and AHK off/manual states. Returning from the experimental native WM is a
-   separate deliberate action; it is not performed by this integration branch.
+- Все пространства LeopardWM используют горизонтальную ленту. Alt+колесо —
+  переходы, Alt+1…9 — пространства. Менеджер сохраняет независимые ширины окон.
+- Редакторы, CAD и слайсеры получают 100% рабочей ширины, Telegram — 50%,
+  неизвестные обычные окна — 61.8%. [Полная схема](../../dot_config/desktop-customization/leopardwm-test/APP-WIDTH-PROPOSAL.md).
+  Правила задают старт новых окон; уже открытые сохраняют ручные размеры.
+  Unity/Unity Hub открываются на 8, Fusion/OrcaSlicer/PrusaSlicer — на 9.
+- Верхняя панель показывает LWM, язык, погоду, звук, трей, VPN и клавиатуры.
+  Нижний док скрывается над занятым столом, появляется у края и остаётся виден
+  на пустом. Пользовательские pins сохраняются; фиксированных ярлыков нет.
+- Библиотека приложений доступна мышью и Alt+F12, папки восстанавливаются по
+  переносимому описанию при первом импорте. Существующий каталог не затирается.
+- AHK ON/OFF: ЛКМ — всё/ничего, ПКМ — всё выключить. ↻ → AHK содержит отдельные
+  скрипты и отладку. ON означает разрешение; Apex/BF6 и другие blocker rules
+  останавливают AHK и сохраняют задержку возобновления. Restart не снимает ручные
+  запреты. На новом ПК ручной state не переносится: исходный конфиг разрешает
+  настроенные скрипты; при необходимости сразу выбрать OFF до установки игр.
+- ↻ сохраняет управление помощниками и восстановление отрисовки ChatGPT без
+  закрытия чата. Экспериментальные пункты и MyDockFinder убраны из обычных меню.
+- Appearance helper объединяет параметры Code/Terminal/WezTerm и сохраняет
+  откат. Chrome использует стандартное выбранное владельцем оформление;
+  расширения и темы экспериментального Chrome не устанавливаются.
 
-MyDockFinder is neither uninstalled nor deleted from an existing computer by
-this change. Historical profile snapshots and explicit rollback commands remain
-usable; their old labels do not describe a supported new-machine configuration.
+## Существующий HOMEPC
 
-## Manual recovery material
+Живые помощники остаются в `WorkingFolder/desktop-customization`. Эта публикация
+не переносит их в `~/.config` и не заменяет активные процессы. Не запускать
+глобальный restore поверх старого корня: сначала сохранить Startup/tasks,
+AHK manual state, каталог Launchpad и snapshots, проверить полный diff и
+убрать только подтверждённые дубли входа. Затем остановить старых владельцев,
+применить source и зарегистрировать один Desktop Session. Проверить Alt+1/2,
+библиотеку, док и клавиатуры. Активный IPC-каталог komorebi не перемещать.
 
-- Vial/ZMK helpers/readers require reviewed source releases and hashes. Existing
-  wrappers expect `%LOCALAPPDATA%/Programs/vial-helper/run-hidden.ps1` and
-  `%LOCALAPPDATA%/Programs/zmk-yasb/zmk-helperd.exe`. With the Vial Startup wrapper,
-  explicitly disable/export a duplicate vendor task or choose that task instead.
-  Firmware, device VIDs/PIDs and keyboard labels require hardware-specific review.
-- Technical AltGr layout installers are separate. The optional cleanup helper
-  can be built with `desktop.ps1 -IncludeLayoutGuard -Action Build`; installation
-  is explicit and requires both approved custom layouts already present.
-- VPN authorization is bound to the Windows user with DPAPI. Re-enroll a new user;
-  encrypted files copied from another profile are not a working recovery method.
-- Cold Grey weather uses free Open-Meteo. Coordinates/cache and any alternative
-  provider credentials remain private; home-router VPN rules are not restored by
-  the desktop installer. See the weather runbook for network requirements.
-- Chrome uses the standard owner-selected appearance. No custom extension,
-  new-tab replacement, browser profile edit or GPU mode is applied.
+## Приватные и ручные зависимости
 
-## Appearance and rollback
+- Age recovery material нужен для существующих зашифрованных dotfiles;
+  ключи не хранятся открыто в Git.
+- Vial/ZMK helpers, их release readers, VID/PID, выбранные устройства,
+  подписи и прошивки восстанавливаются отдельно из соответствующих проектов.
+  Не включать одновременно vendor task и второй Startup wrapper.
+- VPN widget использует привязанные к пользователю DPAPI-данные: на новой
+  машине требуется повторная регистрация. Погода и сетевой маршрут зависят
+  от доступности бесплатного сервиса и домашней VPN-настройки.
+- CAD, слайсеры, Unity, игры, portable-программы и личные лицензии не входят
+  в установку окружения. Правила окон сработают после их установки.
+- Custom keyboard layouts устанавливаются из доверенных исходных установщиков.
+  Firmware, AppData целиком, PIDs, сокеты и кэш не копируются в dotfiles.
 
-The Cold Grey restore also applies the
-[shared application palette](../../dot_config/desktop-customization/appearance/README.md)
-to VS Code, Windows Terminal and WezTerm. It merges appearance keys, saves exact
-bytes with SHA256 and refuses to overwrite later conflicting edits on Restore.
-The YASB profile has its own private snapshot and explicit rollback commands.
-Keep them private and outside Git. There is no forced graphics reset or GPU disable.
+## Проверка и сопровождение
 
-## Validation and automation limits
+`Test-Desktop.ps1` проверяет планы, PS5.1/PS7, 48 проверок AHK, 23 проверки
+оформления, выбор WM, адаптацию панели и изолированные сборки помощников.
+`-DownloadRelease` дополнительно разворачивает закреплённый релиз в temp,
+проверяет повторную установку и отказ при изменённом controller. Реальный WM
+в тестах не запускается. `provision/tests/check_desktop_profiles.py` проверяет
+9 сочетаний OS/профиля, `check_catppuccin_profile.py --schema <schema.json>` — YASB.
 
-`Test-Desktop.ps1` checks package plans, explicit-profile precedence, PowerShell
-syntax, 40 launcher assertions, 23 appearance rollback checks and isolated native
-helper builds/policies. The Python profile checks cover Linux/macOS/Windows and
-both bars/themes; optional schema validation uses YASB 2.0.7. These checks do not
-install packages, run real AHK, talk to keyboard HID or change the current desktop.
-No clean Windows VM install, reboot or fresh-account restore is claimed.
-
-Ansible remains the Linux/macOS provisioner. Windows reuses the native user-context
-scripts; adding a controller/WinRM for one personal PC is not required. A future
-controller can invoke the same entry after addressing interactive-session scope.
-`update.ps1` previews by default, requires clean source before `-Apply`, performs
-only a fast-forward pull, then invokes restore while preserving bar/theme choices.
+Чистая Windows VM, полная установка пакетов, новая учётная запись, reboot,
+игры и физические HID в релизной проверке не воспроизводились. Текущий
+переключатель протестирован на одном мониторе; другие схемы требуют адаптации.
+Ansible остаётся для Linux/macOS и homelab; Windows использует native restore.
+Для обновлений — review source/diff и `update.ps1`; профиль и выбранный WM
+сохраняются. Полный список: [релиз 28 октября](RELEASE-2026-10-28.md).

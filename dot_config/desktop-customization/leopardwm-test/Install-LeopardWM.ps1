@@ -7,6 +7,17 @@ $hash='698E6E7346FF3FFD84AEE3EBF502CF036A74D4804882758B439A820E0A5983B0'
 $name="LeopardWM-$version-x86_64-windows"
 $url="https://github.com/jcardama/LeopardWM/releases/download/v$version/$name.zip"
 if($env:PROCESSOR_ARCHITECTURE -ne 'AMD64'){throw 'This trial is pinned to Windows x64.'}
+$manifestPath=Join-Path $runtime 'release.json'
+if(Test-Path -LiteralPath $manifestPath){
+    $existing=Get-Content -LiteralPath $manifestPath -Raw|ConvertFrom-Json
+    if($existing.version -ne $version -or $existing.directory -ne $name -or $existing.archiveSha256 -ine $hash){throw 'Another portable release is installed; explicit migration is required.'}
+    foreach($file in @('leopardwm.exe','leopardwm-cli.exe','lwm.exe','leopardwm-watchdog.exe')){
+        if((Get-FileHash -LiteralPath (Join-Path $runtime ($name+'\'+$file))).Hash -ine $existing.hashes.$file){throw "Installed release checksum mismatch: $file"}
+    }
+    if((Get-FileHash -LiteralPath (Join-Path $runtime 'DesktopBridge.exe')).Hash -ine $existing.controllerSha256){throw 'Installed controller checksum mismatch.'}
+    Write-Output "LeopardWM $version already installed and verified; binaries left intact."
+    return
+}
 [void][IO.Directory]::CreateDirectory($runtime)
 $archive=Join-Path $runtime ($name+'.zip')
 if(-not(Test-Path -LiteralPath $archive)){Invoke-WebRequest -Uri $url -OutFile $archive -UseBasicParsing}

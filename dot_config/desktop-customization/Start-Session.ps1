@@ -12,7 +12,7 @@ if($theme -eq 'catppuccin' -and (Test-Path -LiteralPath $themeState)){
 }
 # Each component is idempotent; one failed dependency must not stop AHK protection.
 if($settings.startAhk){try {& (Join-Path $PSScriptRoot 'script-launcher\Manage.ps1') -Action Start}catch{$errors+=$_.Exception.Message}}
-if($settings.startKomorebi){try {& (Join-Path $PSScriptRoot 'komorebi-support\Start-DesktopWM.ps1')}catch{$errors+=$_.Exception.Message}}
+if($settings.startWindowManager -or $settings.startKomorebi){try {& (Join-Path $PSScriptRoot 'komorebi-support\Start-DesktopWM.ps1')}catch{$errors+=$_.Exception.Message}}
 if($catppuccin){
     try{& (Join-Path $themeRoot 'Manage.ps1') -Action Start}catch{$errors+=$_.Exception.Message}
 }elseif($settings.bar -eq 'yasb'){

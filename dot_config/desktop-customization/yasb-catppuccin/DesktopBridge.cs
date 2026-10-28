@@ -21,7 +21,9 @@ internal static class DesktopBridge {
     static bool LeopardSelected {get{
         string selection=Path.Combine(LeopardRoot,@"runtime\selection.json");
         if(File.Exists(selection))return Get(Read(selection),"enabled","")=="True";
-        return File.Exists(Path.Combine(LeopardRoot,@"runtime\release.json"))&&Get(Read(Path.Combine(LeopardRoot,"settings.json")),"defaultManager","")=="Leopard";
+        var desktop=Read(Path.Combine(Path.GetDirectoryName(LeopardRoot),"desktop.json"));
+        string preferred=Get(desktop,"windowManager",Get(Read(Path.Combine(LeopardRoot,"settings.json")),"defaultManager","Komorebi"));
+        return File.Exists(Path.Combine(LeopardRoot,@"runtime\release.json"))&&preferred=="Leopard";
     }}
     static string LeopardCli {get{var release=Read(Path.Combine(LeopardRoot,@"runtime\release.json"));return Path.Combine(LeopardRoot,"runtime",Get(release,"directory","missing"),"lwm.exe");}}
     static KomorebiFeed komorebi;

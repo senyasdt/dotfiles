@@ -91,31 +91,25 @@ CHEZMOI_PROFILES=full,desktop "$(chezmoi source-path)/provision/update.sh"
 
 ## Windows
 
-Current HOMEPC desktop: **LeopardWM + YASB**, with komorebi retained as a fallback.
-See [the primary window-manager guide](dot_config/desktop-customization/leopardwm-test/README.md)
-for pinned installation, login selection, application widths and quick return.
-This branch contains the primary-manager configuration; master is not changed
-by selecting it locally. The `leopardwm-test` directory name is retained for path compatibility.
-
-The current recovery entry point is [Windows workstation restore](provision/windows/README.md).
-Run it natively as the intended desktop user. The default is plan-only:
+**master: LeopardWM + YASB Cold Grey.** The `komorebi` branch keeps the same
+panel and helpers with stock komorebi/whkd. MyDockFinder is retired.
 
 ```powershell
-$env:CHEZMOI_PROFILES="full,desktop"
-chezmoi init git@github.com:senyasdt/dotfiles.git
+chezmoi init https://github.com/senyasdt/dotfiles.git
 $src = chezmoi source-path
-& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Bar none
-& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Bar none -Apply
+& "$src\provision\windows\restore.ps1" -Profiles full,desktop
+# Review the plan and source diff, then:
+& "$src\provision\windows\restore.ps1" -Profiles full,desktop -Apply
 ```
 
-Windows uses a native PowerShell provisioner; Ansible remains for Linux/macOS.
-The grouped AHK manager and YASB DesktopBridge are built from source after apply.
-The target desktop is stock komorebi/whkd with YASB; `-Bar none` keeps a native
-recovery baseline. MyDockFinder and FinderWidgets are retired from provisioning
-and startup. The independent **All Applications** shortcut remains available.
-See the [complete Windows integration change list](provision/windows/CHANGES.md). Existing HOMEPC migration requires
-reviewing old Startup/tasks and its repaired komorebi junction first; this source
-update alone does not migrate the running helpers. WSL is not required.
+[Windows restore](provision/windows/README.md) covers installation prerequisites,
+pinned LeopardWM, login ownership, the alternate branch, rollback and private
+recovery material. Native PowerShell handles Windows; Ansible handles Linux/macOS.
+The current release includes the application library, cold translucent dock,
+per-app widths and atomic AHK ON/OFF with game rules. See the
+[release changes and validation limits](provision/windows/RELEASE-2026-10-28.md).
+Existing HOMEPC uses legacy WorkingFolder helper paths: inspect the complete diff
+and follow its migration instructions before applying a new root.
 
 ## Workflow
 

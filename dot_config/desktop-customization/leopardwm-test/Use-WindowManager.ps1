@@ -1,6 +1,6 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param([ValidateSet('Leopard','Komorebi')][string]$Mode='Leopard',
-    [ValidateSet('Switch','Start','Stop','Restart')][string]$Operation='Switch')
+    [ValidateSet('Switch','Start','Stop','Restart','Reload')][string]$Operation='Switch')
 $ErrorActionPreference='Stop'
 $desktop=Split-Path $PSScriptRoot
 $runtime=Join-Path $PSScriptRoot 'runtime'
@@ -130,6 +130,15 @@ try{
     $resumeYasb=@(Owned $yasb).Count -gt 0;$resumeBridge=@(Owned $bridge).Count -gt 0
     if($Operation -ne 'Switch'){
         if($Mode -ne 'Leopard' -or -not $choice.enabled){throw 'Direct operations require an initialized LeopardWM selection; use LeopardWM.cmd first.'}
+        if($Operation -eq 'Reload'){
+            $desired=Join-Path $PSScriptRoot 'config.toml'
+            if((Digest $desired) -eq (Digest $appConfig)){Write-Output 'LeopardWM config already current.';return}
+            $previous=Join-Path $runtime ('config-before-'+[Guid]::NewGuid().ToString('N')+'.toml')
+            Copy-Item -LiteralPath $appConfig -Destination $previous
+            try{Copy-Item -LiteralPath $desired -Destination $appConfig -Force;Command $lwm 'reload'|Out-Null}
+            catch{$failure=$_;Copy-Item -LiteralPath $previous -Destination $appConfig -Force;Command $lwm 'reload'|Out-Null;throw $failure}
+            Write-Output 'LeopardWM config reloaded; previous version saved locally.';return
+        }
         if($Operation -in @('Stop','Restart')){Stop-Leopard}
         if($Operation -in @('Start','Restart')){Start-Leopard}
         Write-Output "LeopardWM: $Operation";return

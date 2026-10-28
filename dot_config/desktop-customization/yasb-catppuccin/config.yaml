@@ -252,7 +252,7 @@ widgets:
       label: 
       search_placeholder: Все приложения · начни вводить название
       app_icon_size: 56
-      group_apps: false
+      group_apps: true
       window:
         width: 1040
         height: 720
@@ -274,7 +274,7 @@ widgets:
       label: 
       search_placeholder: Все приложения · начни вводить название
       app_icon_size: 56
-      group_apps: false
+      group_apps: true
       window:
         width: 1040
         height: 720

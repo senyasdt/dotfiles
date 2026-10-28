@@ -1,0 +1,19 @@
+# Nord-derived trial matched to the desktop Cold Grey palette.
+# Keeps ANSI color roles; opacity is controlled by the existing opacity module.
+[metadata]
+name = "Nord Cold Grey"
+
+[colors]
+foreground = "#d8dee9"
+background = "#24272d"
+cursor_bg = "#acb9ca"
+cursor_fg = "#202227"
+cursor_border = "#acb9ca"
+selection_fg = "#e5e9f0"
+selection_bg = "#414d61"
+ansi = ["#363c46", "#bd8791", "#a3b5a5", "#cfbd97", "#8ca9cc", "#a9a0bd", "#93b7be", "#c8cfd9"]
+brights = ["#737f91", "#d49aa3", "#b5c7b7", "#dfcda7", "#a0bedf", "#beb3d0", "#a6cbd1", "#e5e9f0"]
+
+[colors.indexed]
+16 = "#acb9ca"
+17 = "#bfa58d"

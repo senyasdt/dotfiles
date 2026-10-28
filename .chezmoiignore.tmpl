@@ -89,7 +89,7 @@ komorebi.json
 
 
 # The optional profile owns these live outputs. Apply it through Manage.ps1.
-{{- if eq (env "WINDOWS_DESKTOP_THEME" | default "classic") "catppuccin" }}
+{{- if eq (env "WINDOWS_DESKTOP_THEME" | default .windowsDesktop.theme) "catppuccin" }}
 .config/yasb/config.yaml
 .config/yasb/styles.css
 .config/autohotkey/mydockfinder-hotkeys.ahk
