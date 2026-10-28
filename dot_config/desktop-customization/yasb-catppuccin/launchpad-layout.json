@@ -469,52 +469,52 @@
     },
     {
       "title": "Ahk2Exe",
-      "group": "Разработка",
+      "group": "Автоматизация",
       "order": 93
     },
     {
       "title": "Application Verifier (WOW)",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 94
     },
     {
       "title": "Application Verifier (X64)",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 95
     },
     {
       "title": "AutoHotkey Dash",
-      "group": "Разработка",
+      "group": "Автоматизация",
       "order": 96
     },
     {
       "title": "AutoHotkey Window Spy",
-      "group": "Разработка",
+      "group": "Автоматизация",
       "order": 97
     },
     {
       "title": "Debuggable Package Manager",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 98
     },
     {
       "title": "Developer Command Prompt for VS 2019",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 99
     },
     {
       "title": "Developer Command Prompt for VS 2022",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 100
     },
     {
       "title": "Developer PowerShell for VS 2019",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 101
     },
     {
       "title": "Developer PowerShell for VS 2022",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 102
     },
     {
@@ -534,7 +534,7 @@
     },
     {
       "title": "IDLE (Python 3.12 64-bit)",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 106
     },
     {
@@ -549,17 +549,17 @@
     },
     {
       "title": "Node.js command prompt",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 109
     },
     {
       "title": "Oh My Posh",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 110
     },
     {
       "title": "Power Automate",
-      "group": "Разработка",
+      "group": "Автоматизация",
       "order": 111
     },
     {
@@ -579,12 +579,12 @@
     },
     {
       "title": "Tools for Desktop Apps",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 115
     },
     {
       "title": "Tools for UWP Apps",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 116
     },
     {
@@ -594,7 +594,7 @@
     },
     {
       "title": "Windows App Cert Kit",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 118
     },
     {
@@ -604,12 +604,12 @@
     },
     {
       "title": "Windows PowerShell ISE",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 120
     },
     {
       "title": "Windows Software Development Kit",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 121
     },
     {
@@ -624,42 +624,42 @@
     },
     {
       "title": "x64 Native Tools Command Prompt for VS 2019",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 124
     },
     {
       "title": "x64 Native Tools Command Prompt for VS 2022",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 125
     },
     {
       "title": "x64_x86 Cross Tools Command Prompt for VS 2019",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 126
     },
     {
       "title": "x64_x86 Cross Tools Command Prompt for VS 2022",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 127
     },
     {
       "title": "x86 Native Tools Command Prompt for VS 2019",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 128
     },
     {
       "title": "x86 Native Tools Command Prompt for VS 2022",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 129
     },
     {
       "title": "x86_x64 Cross Tools Command Prompt for VS 2019",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 130
     },
     {
       "title": "x86_x64 Cross Tools Command Prompt for VS 2022",
-      "group": "Разработка",
+      "group": "Служебное",
       "order": 131
     },
     {
@@ -679,7 +679,7 @@
     },
     {
       "title": "AHK Script Launcher",
-      "group": "Система и сеть",
+      "group": "Автоматизация",
       "order": 135
     },
     {
