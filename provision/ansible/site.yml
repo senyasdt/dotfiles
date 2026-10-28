@@ -35,6 +35,16 @@
     docker_provision_user: "{{ lookup('env', 'SUDO_USER') | default(ansible_user_id, true) }}"
 
   tasks:
+    - name: Detect Docker Desktop integration in WSL
+      ansible.builtin.stat:
+        path: /mnt/wsl/docker-desktop/cli-tools/usr/bin/docker
+      register: docker_desktop_wsl
+
+    - name: Detect persistent Docker Desktop provider choice
+      ansible.builtin.stat:
+        path: /etc/chezmoi/docker-desktop-provider
+      register: docker_desktop_provider
+
     - name: Install Debian base packages
       become: true
       ansible.builtin.apt:
@@ -52,6 +62,7 @@
         state: present
         update_cache: true
       when:
+        - not docker_desktop_wsl.stat.exists and not docker_desktop_provider.stat.exists
         - is_full
         - ansible_facts.distribution in ["Debian", "Ubuntu"]
 
@@ -62,6 +73,7 @@
         state: directory
         mode: "0755"
       when:
+        - not docker_desktop_wsl.stat.exists and not docker_desktop_provider.stat.exists
         - is_full
         - ansible_facts.distribution in ["Debian", "Ubuntu"]
 
@@ -72,6 +84,7 @@
         dest: /etc/apt/keyrings/docker.asc
         mode: "0644"
       when:
+        - not docker_desktop_wsl.stat.exists and not docker_desktop_provider.stat.exists
         - is_full
         - ansible_facts.distribution in ["Debian", "Ubuntu"]
 
@@ -86,6 +99,7 @@
         state: present
         update_cache: true
       when:
+        - not docker_desktop_wsl.stat.exists and not docker_desktop_provider.stat.exists
         - is_full
         - ansible_facts.distribution in ["Debian", "Ubuntu"]
 
@@ -95,6 +109,7 @@
         name: "{{ packages.apt.docker }}"
         state: present
       when:
+        - not docker_desktop_wsl.stat.exists and not docker_desktop_provider.stat.exists
         - is_full
         - ansible_facts.distribution in ["Debian", "Ubuntu"]
 
@@ -105,6 +120,7 @@
         enabled: true
         state: started
       when:
+        - not docker_desktop_wsl.stat.exists and not docker_desktop_provider.stat.exists
         - is_full
         - ansible_facts.distribution in ["Debian", "Ubuntu"]
         - ansible_facts.service_mgr == "systemd"
@@ -117,6 +133,7 @@
           - docker
         append: true
       when:
+        - not docker_desktop_wsl.stat.exists and not docker_desktop_provider.stat.exists
         - is_full
         - ansible_facts.distribution in ["Debian", "Ubuntu"]
         - docker_provision_user != "root"

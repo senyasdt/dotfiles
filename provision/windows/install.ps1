@@ -2,7 +2,9 @@ param(
     [string[]]$Profiles=$(if($env:CHEZMOI_PROFILES){$env:CHEZMOI_PROFILES}else{'full'}),
     [ValidateSet('none','yasb')][string]$Bar='none',
     [ValidateSet('classic','catppuccin')][string]$Theme='classic',
-    [switch]$Plan
+    [switch]$Plan,
+    [string[]]$OnlyPackages=@(),
+    [string]$DockerInstallerPath
 )
 $ErrorActionPreference = "Stop"
 $activeProfiles=@(($Profiles -join ',').Split(',')|ForEach-Object {$_.Trim()})
@@ -49,6 +51,11 @@ function Install-ScoopPackage {
 
 function Install-WingetPackage {
     param([Parameter(Mandatory = $true)][string]$Id)
+
+    if($Id -eq 'Docker.DockerDesktop'){
+        & (Join-Path $PSScriptRoot 'Install-DockerDesktop.ps1') -InstallerPath $DockerInstallerPath
+        return
+    }
 
     $existing = winget list --id $Id --exact --accept-source-agreements 2>$null
     if ($LASTEXITCODE -eq 0 -and $existing -match [regex]::Escape($Id)) {
@@ -128,10 +135,17 @@ $powershellModules = @(
     "Terminal-Icons",
     "PSFzf"
 )
+if($OnlyPackages.Count){
+    $unknown=@($OnlyPackages|Where-Object {$_ -notin $wingetPackages})
+    if($unknown.Count){throw "Packages are not in the selected profile's WinGet plan: $($unknown -join ', ')"}
+    $wingetPackages=@($wingetPackages|Where-Object {$_ -in $OnlyPackages})
+    $scoopPackages=@()
+    $powershellModules=@()
+}
 if($Plan){[pscustomobject]@{Profiles=$activeProfiles;Bar=$Bar;Scoop=$scoopPackages;Winget=$wingetPackages;Modules=$powershellModules;Manual=@('Vial/ZMK helpers: install from their source releases','Custom keyboard layouts: restore approved installers')}|ConvertTo-Json -Depth 5;return}
 if($wingetPackages.Count -and -not(Test-Command winget)){throw 'winget is required for the selected profile packages'}
-Install-Scoop
-if($desktop){
+if($scoopPackages.Count){Install-Scoop}
+if($desktop -and -not $OnlyPackages.Count){
     if(-not(Test-Path -LiteralPath (Join-Path $env:USERPROFILE 'scoop\buckets\extras'))){scoop bucket add extras;if($LASTEXITCODE -ne 0){throw 'Scoop extras bucket failed'}}
     if($Bar -eq 'yasb' -and -not(Test-Path -LiteralPath (Join-Path $env:USERPROFILE 'scoop\buckets\nerd-fonts'))){scoop bucket add nerd-fonts https://github.com/matthewjberger/scoop-nerd-fonts;if($LASTEXITCODE -ne 0){throw 'Scoop Nerd Fonts bucket failed'}}
 }
@@ -144,11 +158,11 @@ foreach ($package in $wingetPackages) {
     Install-WingetPackage -Id $package
 }
 
-if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
+if ($powershellModules.Count -and -not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
     Register-PSRepository -Default
 }
 
-Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+if($powershellModules.Count){Set-PSRepository -Name PSGallery -InstallationPolicy Trusted}
 
 foreach ($module in $powershellModules) {
     Install-PowerShellModuleIfMissing -Name $module
