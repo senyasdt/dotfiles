@@ -37,7 +37,10 @@ if($theme -eq 'catppuccin' -and (Test-Path -LiteralPath $themeState)){
     try{$catppuccin=(Get-Content -LiteralPath $themeState -Raw|ConvertFrom-Json).mode -eq 'catppuccin'}catch{$errors+=$_.Exception.Message}
 }
 # Each component is idempotent; one failed dependency must not stop AHK protection.
-if($settings.startAhk){try {Start-Component 'AHK guard' {& (Join-Path $PSScriptRoot 'script-launcher\Manage.ps1') -Action Start}}catch{$errors+=$_.Exception.Message}}
+if($settings.startAhk){try {Start-Component 'AHK guard' {
+    $ahkAction=if($settings.enableAhkOnLogin){'Login'}else{'Start'}
+    & (Join-Path $PSScriptRoot 'script-launcher\Manage.ps1') -Action $ahkAction
+}}catch{$errors+=$_.Exception.Message}}
 if($settings.startWindowManager -or $settings.startKomorebi){try {Start-Component 'Window manager' {& (Join-Path $PSScriptRoot 'komorebi-support\Start-DesktopWM.ps1')}}catch{$errors+=$_.Exception.Message}}
 if($catppuccin){
     try{Start-Component 'YASB and dock' {& (Join-Path $themeRoot 'Manage.ps1') -Action Start}}catch{$errors+=$_.Exception.Message}

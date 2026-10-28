@@ -27,6 +27,24 @@ try{
     if(-not $rejected){throw 'Persistent startup failure was silently ignored'}
     if(@(Get-Content (Join-Path $root 'yasb-catppuccin\actions.txt')).Count -ne 2){throw 'WM failure must not prevent panel/dock startup'}
     if(-not (Test-Path -LiteralPath (Join-Path $root 'session-errors.log'))){throw 'Startup failure was not recorded'}
+    Write-Fixture 'desktop.json' '{"theme":"catppuccin","bar":"yasb","startAhk":true,"enableAhkOnLogin":true,"startWindowManager":false}'
+    & (Join-Path $root 'Start-Session.ps1')
+    if(@(Get-Content (Join-Path $root 'script-launcher\actions.txt'))[-1] -ne 'Login'){throw 'Login-enabled profile did not use the once-per-logon guard command'}
+    & {
+        param($source,$root)
+        $fixture=Join-Path $root 'manage-fixture';[void][IO.Directory]::CreateDirectory($fixture)
+        Copy-Item -LiteralPath (Join-Path $source 'dot_config\desktop-customization\script-launcher\Manage.ps1') -Destination $fixture
+        function Get-Process { [pscustomobject]@{Name='ScriptLauncher'} }
+        function Start-Process($FilePath,$ArgumentList,$WindowStyle,[switch]$PassThru){
+            Add-Content -LiteralPath (Join-Path (Split-Path $FilePath) 'arguments.txt') -Value $ArgumentList
+            $fake=[pscustomobject]@{ExitCode=0}
+            $fake|Add-Member -MemberType ScriptMethod -Name WaitForExit -Value {param($timeout) $true}
+            return $fake
+        }
+        & (Join-Path $fixture 'Manage.ps1') -Action Login
+        $calls=@(Get-Content -LiteralPath (Join-Path $fixture 'arguments.txt'))
+        if($calls.Count -ne 2 -or $calls[1] -cne '"--login" "all"'){throw 'Login CLI operation and selector were not quoted separately'}
+    } $source $root
     # Reproduce the old early-exit bug: YASB's IPC probe throws, but the
     # independent dock controller still needs to be started for an existing bar.
     $manage=Join-Path $source 'dot_config\desktop-customization\yasb-catppuccin\Manage.ps1'
@@ -46,4 +64,4 @@ try{
         if(-not $failed -or -not $script:bridgeStarted){throw 'YASB preflight failure must be reported after starting the independent dock helper'}
     } $definition $root
 }finally{$env:WINDOWS_DESKTOP_THEME=$savedTheme}
-Write-Host 'Session startup checks passed: retry, independent dock startup, diagnostics and AHK Start-only. No desktop process was started.'
+Write-Host 'Session startup checks passed: retry, independent dock startup, diagnostics and AHK Start/Login dispatch. No desktop process was started.'
