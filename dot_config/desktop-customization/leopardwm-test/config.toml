@@ -518,12 +518,13 @@ match_executable = "texstudio.exe"
 action = "tile"
 column_width = 1.0
 
-# Main application windows: 80% starting width.
+# ChatGPT: half-width starting column.
 [[window_rules]]
 match_executable = "ChatGPT.exe"
 action = "tile"
-column_width = 0.8
+column_width = 0.5
 
+# Main application windows: 80% starting width.
 [[window_rules]]
 match_executable = "Obsidian.exe"
 action = "tile"
