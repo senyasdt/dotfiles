@@ -1,6 +1,8 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param([ValidateSet('Trial','Strip','Previous')][string]$Mode='Strip')
 $ErrorActionPreference='Stop'
+$wmSelection=Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test\runtime\selection.json'
+if((Test-Path -LiteralPath $wmSelection) -and ([IO.File]::ReadAllText($wmSelection)|ConvertFrom-Json).enabled){throw 'LeopardWM is selected. Run leopardwm-test\Komorebi.cmd before switching komorebi movement builds.'}
 $runtime=Join-Path $PSScriptRoot 'runtime'
 $desktop=Split-Path $PSScriptRoot
 $bridgeRoot=Join-Path $desktop 'yasb-catppuccin'

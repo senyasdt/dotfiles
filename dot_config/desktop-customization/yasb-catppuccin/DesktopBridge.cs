@@ -17,6 +17,9 @@ internal static class DesktopBridge {
     static readonly JavaScriptSerializer Json=new JavaScriptSerializer();
     static readonly string EventName=@"Local\Druzh.CatppuccinDesktop.Stop";
     static readonly string Runtime=Path.Combine(Root,"runtime");
+    static string LeopardRoot {get{return Path.Combine(Path.GetDirectoryName(Root.TrimEnd(Path.DirectorySeparatorChar)),"leopardwm-test");}}
+    static bool LeopardSelected {get{return Get(Read(Path.Combine(LeopardRoot,@"runtime\selection.json")),"enabled","")=="True";}}
+    static string LeopardCli {get{var release=Read(Path.Combine(LeopardRoot,@"runtime\release.json"));return Path.Combine(LeopardRoot,"runtime",Get(release,"directory","missing"),"lwm.exe");}}
     static KomorebiFeed komorebi;
     static DateTime nextTaskbarCheck=DateTime.MinValue,nextProcessCheck=DateTime.MinValue;
     static HashSet<uint> yasbIds=new HashSet<uint>();
@@ -52,6 +55,7 @@ internal static class DesktopBridge {
         new[]{"","Восстановить отрисовку ChatGPT","ChatGPTRender"},
         new[]{"ChatGPT","Запустить без GPU (тест)","ChatGPTSoftwareStart"},new[]{"ChatGPT","Запустить обычно","ChatGPTNormalStart"},
         new[]{"Komorebi и горячие клавиши","Запустить","KomorebiStart"},new[]{"Komorebi и горячие клавиши","Остановить","KomorebiStop"},new[]{"Komorebi и горячие клавиши","Перезапустить","KomorebiRestart"},
+        new[]{"Менеджер окон (тест)","Включить LeopardWM","WmLeopard"},new[]{"Менеджер окон (тест)","Вернуться к komorebi","WmKomorebi"},new[]{"Менеджер окон (тест)","Обзор пространств LeopardWM","LeopardOverview"},
         new[]{"Лента окон","Одно широкое окно","ScrollOne"},new[]{"Лента окон","Два окна рядом","ScrollTwo"},new[]{"Лента окон","Вернуть BSP","ScrollBsp"},
         new[]{"Лента окон","Проба: единая лента (180 мс)","ScrollStrip"},new[]{"Лента окон","Вернуть прежнюю плавность (90 мс)","ScrollPrevious"},
         new[]{"Лента окон","Плавное движение (все пространства)","ScrollSmooth"},new[]{"Лента окон","Без анимации","ScrollInstant"},
@@ -63,6 +67,7 @@ internal static class DesktopBridge {
     static void Service(string action){if(!Services.Any(s=>s[2]==action))throw new ArgumentException("Unknown helper action");Run("powershell.exe","-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Services.ps1"))+" -Action "+action+" -Notify");}
     static void Open(string target){Process.Start(new ProcessStartInfo(target){UseShellExecute=true});}
     static Dictionary<string,object> State(string kind){
+        if(kind=="leopard")return LeopardState();
         if(kind=="ahk"){
             var s=Read(Path.Combine(LauncherRoot,@"runtime\status.json"));var mode=Get(s,"mode","offline");var scripts=Items(s,"scripts").Select(v=>v as Dictionary<string,object>).Where(v=>v!=null).ToArray();
             string detail=String.Join("\n",scripts.Select(v=>Get(v,"name","")+": "+Get(v,"mode","?")));
@@ -71,6 +76,27 @@ internal static class DesktopBridge {
         string folder=kind=="vial"?"vial-helper":"zmk-yasb";var state=Read(Path.Combine(Data,folder+@"\state.json"));
         string prefix=kind=="vial"?"VIAL":"ZMK";string label=Get(state,"label","OFF");
         return new Dictionary<string,object>{{"label",prefix+" · "+label},{"tooltip",Get(state,"tooltip",Get(state,"effective","Нет подключения"))+(kind=="zmk"?"\nБатареи: "+Get(state,"battery_halves","—"):"\nЛКМ: раскладка и подписи AHK")}};
+    }
+    static Dictionary<string,object> LeopardState(){
+        try{
+            if(!LeopardSelected)throw new IOException("LeopardWM не выбран");
+            using(var p=new Process()){
+                p.StartInfo=new ProcessStartInfo(LeopardCli,"query workspaces"){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=Encoding.UTF8};
+                p.Start();var output=p.StandardOutput.ReadToEndAsync();var error=p.StandardError.ReadToEndAsync();
+                if(!p.WaitForExit(1800)){try{p.Kill();}catch{}throw new IOException("LeopardWM не отвечает");}
+                if(p.ExitCode!=0)throw new IOException("LeopardWM недоступен");
+                return LeopardSnapshot(output.Result);
+            }
+        }catch{return new Dictionary<string,object>{{"label","LWM · OFF"},{"tooltip","LeopardWM недоступен. ПКМ → Менеджер окон (тест) → Вернуться к komorebi."}};}
+    }
+    internal static Dictionary<string,object> LeopardSnapshot(string text){
+        var frames=text.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(s=>Json.DeserializeObject(s) as Dictionary<string,object>).ToArray();
+        if(frames.Length<2||frames.Any(f=>f==null)||Get(frames[0],"type","")!="workspace_snapshot_begin"||Get(frames[frames.Length-1],"type","")!="workspace_snapshot_end"||Get(frames[0],"revision","")!=Get(frames[frames.Length-1],"revision",""))throw new IOException("Incomplete workspace snapshot");
+        var records=frames.Where(f=>Get(f,"type","")=="workspace_snapshot_chunk").SelectMany(f=>Items(f,"records")).Select(r=>r as Dictionary<string,object>).Where(r=>r!=null).ToArray();
+        var displays=records.Where(r=>Get(r,"kind","")=="monitor").ToArray();if(displays.Length!=1)throw new IOException("Trial requires one monitor");
+        int active=Convert.ToInt32(Get(displays[0],"active_workspace_index","-1"));if(active<0||active>8)throw new IOException("Invalid active workspace");
+        int count=records.Count(r=>Get(r,"kind","")=="window"&&Get(r,"workspace_index","")==active.ToString());
+        return new Dictionary<string,object>{{"label","LWM · "+(active+1)},{"tooltip","Пространство "+(active+1)+" · окон: "+count+"\nAlt+1…9: пространства · Alt+колесо: окна\nЛКМ: обзор пространств · ПКМ: переключить менеджер"}};
     }
     static ToolStripMenuItem Item(string text,Action action){var item=new ToolStripMenuItem(text);item.Click+=delegate{try{action();}catch(Exception e){MessageBox.Show(e.Message,"Catppuccin");}};return item;}
     static bool InsideMenu(ToolStripDropDown menu,System.Drawing.Point cursor){
@@ -232,9 +258,9 @@ internal static class DesktopBridge {
             if(args.Length>0&&args[0]=="--test-motion")return TestDockMotion()?0:5;
             if(args.Length>0&&args[0]=="--test"){if(!ScrollingMouseNavigation.SelfTest()||!KomorebiFeed.TestScrollContext())return 6;if(!TestDockEasing())return 5;var bounds=new Rectangle(0,0,2560,1440);if(!IsDockGeometry(new Rectangle(1245,1366,70,64),bounds)||IsDockGeometry(new Rectangle(0,0,2560,40),bounds)||IsDockGeometry(new Rectangle(0,1300,10,64),bounds)||IsDockGeometry(new Rectangle(0,1100,300,300),bounds))return 3;if(!AtDockEdge(0,1439,bounds)||!AtDockEdge(2559,1439,bounds)||AtDockEdge(1280,1400,bounds)||AtDockEdge(-1,1439,bounds)||AtDockEdge(2560,1439,bounds))return 4;var now=new DateTime(2026,10,24,0,0,10,DateTimeKind.Utc);if(ShouldRestoreTaskbar(true,now.AddSeconds(-20),now)||ShouldRestoreTaskbar(false,now.AddSeconds(-2),now)||!ShouldRestoreTaskbar(false,now.AddSeconds(-8),now)||!ShouldRestoreTaskbar(false,DateTime.MinValue,now))return 2;if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
             bool created;using(var mutex=new Mutex(true,@"Local\Druzh.CatppuccinDesktop",out created)){if(!created)return 0;Directory.CreateDirectory(Runtime);Application.EnableVisualStyles();using(var stop=new EventWaitHandle(false,EventResetMode.ManualReset,EventName)){
-                komorebi=new KomorebiFeed(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"));
-                try{using(var mouse=new ScrollingMouseNavigation(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"),komorebi.ScrollingContext,Path.Combine(LauncherRoot,@"runtime\status.json"),Runtime)){int n=0;while(!stop.WaitOne(400)){try{Tick();}catch(Exception e){if(n++%20==0){string log=Path.Combine(Runtime,"bridge.log");if(File.Exists(log)&&new FileInfo(log).Length>262144)File.WriteAllText(log,"");File.AppendAllText(log,DateTime.Now.ToString("o")+" "+e.Message+"\n");}}}}}
-                finally{komorebi.Dispose();NativeTaskbar(true);}
+                komorebi=LeopardSelected?null:new KomorebiFeed(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"));
+                try{using(var mouse=komorebi==null?null:new ScrollingMouseNavigation(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"),komorebi.ScrollingContext,Path.Combine(LauncherRoot,@"runtime\status.json"),Runtime)){int n=0;while(!stop.WaitOne(400)){try{Tick();}catch(Exception e){if(n++%20==0){string log=Path.Combine(Runtime,"bridge.log");if(File.Exists(log)&&new FileInfo(log).Length>262144)File.WriteAllText(log,"");File.AppendAllText(log,DateTime.Now.ToString("o")+" "+e.Message+"\n");}}}}}
+                finally{if(komorebi!=null)komorebi.Dispose();NativeTaskbar(true);}
             }mutex.ReleaseMutex();}return 0;
         }catch(Exception e){try{Directory.CreateDirectory(Runtime);File.AppendAllText(Path.Combine(Runtime,"bridge.log"),e.ToString()+"\n");}catch{}return 1;}
     }

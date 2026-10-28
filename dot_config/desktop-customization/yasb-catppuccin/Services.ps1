@@ -1,6 +1,6 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
-    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart','ScrollOne','ScrollTwo','ScrollBsp','ScrollSmooth','ScrollInstant','ScrollTrial','ScrollStrip','ScrollPrevious')]
+    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart','ScrollOne','ScrollTwo','ScrollBsp','ScrollSmooth','ScrollInstant','ScrollTrial','ScrollStrip','ScrollPrevious','WmLeopard','WmKomorebi','LeopardOverview')]
     [string]$Action='Status', [switch]$Notify
 )
 $ErrorActionPreference='Stop'
@@ -37,10 +37,18 @@ function Ahk($operation) {
     Wait-Client $launcher ('--'+$operation)
 }
 function Wm($operation) {
+    $trial=Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test'
+    $flag=Join-Path $trial 'runtime\selection.json'
+    if((Test-Path -LiteralPath $flag) -and ([IO.File]::ReadAllText($flag)|ConvertFrom-Json).enabled){
+        & (Join-Path $trial 'Use-WindowManager.ps1') -Mode Leopard -Operation $operation -Confirm:$false
+        return
+    }
     if(!(Test-Path -LiteralPath $wm)){throw 'The current komorebi support launcher is missing.'}
     if($operation -eq 'Stop'){& $wm -Stop|Out-Null}elseif($operation -eq 'Restart'){& $wm -Restart|Out-Null}else{& $wm|Out-Null}
 }
 function Scrolling($mode) {
+    $flag=Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test\runtime\selection.json'
+    if((Test-Path -LiteralPath $flag) -and ([IO.File]::ReadAllText($flag)|ConvertFrom-Json).enabled){throw 'LeopardWM is selected. Use Window manager (test) > Return to komorebi before changing komorebi layouts.'}
     $scrollRoot=Join-Path (Split-Path -Parent $PSScriptRoot) 'komorebi-scrolling'
     if($mode -in @('Trial','Strip','Previous')){
         & (Join-Path $scrollRoot 'Use-SmoothMotion.ps1') -Mode $mode -Confirm:$false
@@ -116,6 +124,12 @@ try {
         try{& $operation;Write-ServiceEvent 'component-complete' $label}catch{Write-ServiceEvent 'component-failed' $label $_.Exception;$failures.Add($label+': '+$_.Exception.Message)}
     }
     switch -Regex ($Action) {
+        '^Wm(Leopard|Komorebi)$' {& (Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test\Use-WindowManager.ps1') -Mode $Matches[1] -Confirm:$false;break}
+        '^LeopardOverview$' {
+            $trial=Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test'
+            $release=[IO.File]::ReadAllText((Join-Path $trial 'runtime\release.json'))|ConvertFrom-Json
+            Wait-Client (Join-Path $trial ('runtime\'+$release.directory+'\lwm.exe')) 'toggle-overview';break
+        }
         '^StartAll$' {Attempt 'AHK' {Ahk 'resume'};Attempt 'Komorebi' {Wm 'Start'};Attempt 'Vial' {Hid 'Vial' 'Start'};Attempt 'ZMK' {Hid 'Zmk' 'Start'};break}
         '^StopAll$' {Attempt 'AHK' {Ahk 'pause'};Attempt 'Komorebi' {Wm 'Stop'};Attempt 'Vial' {Hid 'Vial' 'Stop'};Attempt 'ZMK' {Hid 'Zmk' 'Stop'};break}
         '^RestartAll$' {Attempt 'AHK' {Ahk 'restart-all'};Attempt 'Komorebi' {Wm 'Restart'};Attempt 'Vial' {Hid 'Vial' 'Restart'};Attempt 'ZMK' {Hid 'Zmk' 'Restart'};break}

@@ -1,0 +1,92 @@
+# Optional LeopardWM 0.3.4 trial; komorebi configuration stays separate.
+[layout]
+gap = 8
+outer_gap_left = 8
+outer_gap_right = 8
+outer_gap_top = 8
+outer_gap_bottom = 8
+width_presets = [0.382, 0.5, 0.618, 1.0]
+default_width_preset = 2
+height_presets = [0.333, 0.5, 0.667, 1.0]
+centering_mode = "just_in_view"
+center_single_column = false
+center_past_edges = false
+
+[appearance]
+active_border = true
+active_border_color = "8B96A6"
+active_border_width = 2
+tab_strip_bg = "202227"
+tab_strip_active_bg = "343840"
+tab_strip_active_text = "D8DEE9"
+tab_strip_inactive_text = "A6ADB8"
+tab_strip_opacity = 210
+
+[behavior]
+check_for_updates = false
+focus_follows_mouse = false
+new_window_monitor = "focused"
+new_window_placement = "new_column"
+swap_chain_ghost_animation = true
+skip_empty_workspaces = false
+mouse_follows_focus = false
+fullscreen_follows_focus = false
+
+[hotkeys]
+scroll_modifier = "Alt"
+"Alt+H" = "focus_left"
+"Alt+L" = "focus_right"
+"Alt+J" = "focus_down"
+"Alt+K" = "focus_up"
+"Alt+Shift+H" = "move_column_left"
+"Alt+Shift+L" = "move_column_right"
+"Alt+-" = "cycle_width_down"
+"Alt+=" = "cycle_width_up"
+"Alt+T" = "toggle_floating"
+"Alt+Shift+F" = "toggle_fullscreen"
+"Alt+1" = "switch_workspace_1"
+"Alt+2" = "switch_workspace_2"
+"Alt+3" = "switch_workspace_3"
+"Alt+4" = "switch_workspace_4"
+"Alt+5" = "switch_workspace_5"
+"Alt+6" = "switch_workspace_6"
+"Alt+7" = "switch_workspace_7"
+"Alt+8" = "switch_workspace_8"
+"Alt+9" = "switch_workspace_9"
+"Alt+Shift+1" = "move_to_workspace_1"
+"Alt+Shift+2" = "move_to_workspace_2"
+"Alt+Shift+3" = "move_to_workspace_3"
+"Alt+Shift+4" = "move_to_workspace_4"
+"Alt+Shift+5" = "move_to_workspace_5"
+"Alt+Shift+6" = "move_to_workspace_6"
+"Alt+Shift+7" = "move_to_workspace_7"
+"Alt+Shift+8" = "move_to_workspace_8"
+"Alt+Shift+9" = "move_to_workspace_9"
+
+[gestures]
+enabled = true
+scroll_up = "focus_prev"
+scroll_down = "focus_next"
+
+[animation]
+layout_duration_ms = 150
+scroll_duration_ms = 200
+workspace_switch_duration_ms = 200
+overview_duration_ms = 150
+easing = "ease_out"
+
+[[window_rules]]
+match_executable = "yasb.exe"
+action = "ignore"
+[[window_rules]]
+match_executable = "r5apex.exe"
+action = "ignore"
+[[window_rules]]
+match_executable = "r5apex_dx12.exe"
+action = "ignore"
+[[window_rules]]
+match_executable = "bf6.exe"
+action = "ignore"
+[[window_rules]]
+match_class = "^#32770$"
+action = "float"
