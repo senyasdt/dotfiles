@@ -1,0 +1,26 @@
+{
+  "desktopDelaySeconds": 1,
+  "disableRunNames": ["Steam", "EADM", "electron.app.SeleZen Games Launcher", "YandexDisk2", "Microsoft.Lists", "MyDockFinder"],
+  "disableRunPrefixes": ["YandexBrowserAutoLaunch_"],
+  "deferred": [
+    {"id": "yandex-disk4", "runName": "Yandex.Disk.4", "exeName": "YandexDisk4.exe", "delaySeconds": 40},
+    {"id": "onedrive", "runName": "OneDrive", "exeName": "OneDrive.exe", "delaySeconds": 60},
+    {"id": "codex", "packageFamily": "OpenAI.Codex_2p2nqsd0c76g0", "taskId": "App", "appId": "App", "processName": "ChatGPT.exe", "delaySeconds": 90}
+  ],
+  "disablePackaged": [
+    {"family": "Microsoft.M365Companions_8wekyb3d8bbwe", "taskId": "FilesStartupId"},
+    {"family": "Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe", "taskId": "WebViewHostStartupId"},
+    {"family": "MicrosoftTeams_8wekyb3d8bbwe", "taskId": "TeamsStartupTask"},
+    {"family": "MSTeams_8wekyb3d8bbwe", "taskId": "TeamsTfwStartupTask"}
+  ],
+  "legacyTasks": [
+    {"name": "cute-borders", "path": "\\", "executeSuffix": "\\.cuteborders\\cute-borders.exe", "stopOnApply": true},
+    {"name": "Vial Helper Daemon", "path": "\\", "argumentsContains": "Programs\\vial-helper\\run-hidden.ps1", "stopOnApply": false},
+    {"name": "Vial Layer Daemon", "path": "\\", "argumentsContains": ".config\\yasb\\scripts\\vial_layer_daemon.py", "stopOnApply": true},
+    {"name": "YASB Reborn", "path": "\\", "executeSuffix": "\\YASB\\yasb.exe", "stopOnApply": false}
+  ],
+  "delayLegacyTasks": [
+    {"name": "UpdateTorrent", "path": "\\", "executeSuffix": "\\utorrent\\client\\uTorrentClients.exe", "delaySeconds": 120}
+  ],
+  "removeStartupFiles": ["Desktop Session.lnk", "vial-helperd.cmd", "zmk-helperd.cmd", "Rainmeter.lnk"]
+}

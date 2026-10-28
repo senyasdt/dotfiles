@@ -18,8 +18,9 @@ $settings=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'desktop.json') -Raw
 if($settings.bar -notin @('none','yasb')){throw 'Unknown bar in desktop.json'}
 $errors=@()
 function Start-Component($name,[scriptblock]$action){
+    $timer=[Diagnostics.Stopwatch]::StartNew()
     for($attempt=1;$attempt -le 3;$attempt++){
-        try{& $action|Out-Null;Log ($name+' ready.');return}
+        try{& $action|Out-Null;Log ($name+' ready in '+[Math]::Round($timer.Elapsed.TotalSeconds,2)+' s.');return}
         catch{
             Log ($name+' attempt '+$attempt+': '+$_.Exception.Message)
             if($attempt -eq 3){throw}
@@ -42,6 +43,13 @@ if($catppuccin){
     try{Start-Component 'YASB and dock' {& (Join-Path $themeRoot 'Manage.ps1') -Action Start}}catch{$errors+=$_.Exception.Message}
 }elseif($settings.bar -eq 'yasb'){
     try{Start-Component 'YASB' {& (Join-Path $themeRoot 'Start-Yasb.ps1')}}catch{$errors+=$_.Exception.Message}
+}
+if($settings.startHidHelpers){
+    foreach($helper in @(@{Name='Vial';Folder='vial-helper';Exe='vial-helperd.exe'},@{Name='Zmk';Folder='zmk-yasb';Exe='zmk-helperd.exe'})){
+        if(Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA ('Programs\'+$helper.Folder+'\'+$helper.Exe))){
+            try{Start-Component ($helper.Name+' HID helper') {& (Join-Path $themeRoot 'Services.ps1') -Action ($helper.Name+'Start') -Confirm:$false}}catch{$errors+=$_.Exception.Message}
+        }
+    }
 }
 if($errors.Count){$errors|Add-Content -LiteralPath (Join-Path $PSScriptRoot 'session-errors.log');throw ($errors -join [Environment]::NewLine)}
 Log 'Desktop session ready.'
