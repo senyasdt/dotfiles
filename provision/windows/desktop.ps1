@@ -29,7 +29,7 @@ if($IncludeLayoutGuard){
 if($Action -eq 'Build'){return}
 $startup=[Environment]::GetFolderPath('Startup')
 # Previous installations are reviewable, not silently duplicated or deleted.
-$conflicts=@('AHK Program Guard.lnk','AHK Script Launcher.lnk','MyDockFinder.lnk','MyDockFinder Hotkeys.lnk','Finder Widgets.lnk','autohotkey.cmd','komorebi.cmd','zmk-text-replacements.ahk','yasb.cmd')|Where-Object {Test-Path -LiteralPath (Join-Path $startup $_)}
+$conflicts=@('AHK Program Guard.lnk','AHK Script Launcher.lnk','YASB Catppuccin.lnk','MyDockFinder.lnk','MyDockFinder Hotkeys.lnk','Finder Widgets.lnk','autohotkey.cmd','komorebi.cmd','zmk-text-replacements.ahk','yasb.cmd')|Where-Object {Test-Path -LiteralPath (Join-Path $startup $_)}
 if($conflicts){throw ('Review/remove backed-up legacy Startup entries first: '+($conflicts -join ', '))}
 $linkPath=Join-Path $startup 'Desktop Session.lnk'
 $shell=New-Object -ComObject WScript.Shell

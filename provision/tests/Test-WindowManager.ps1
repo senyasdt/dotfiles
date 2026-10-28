@@ -35,6 +35,14 @@ Assert ($converted -match '(?m)^      - leopard_status\r?$') 'Leopard widget not
 Assert ((& $convert -Text $converted -BridgeRoot $bridge) -ceq $converted) 'Panel conversion must be idempotent'
 $rejected=$false;try{& $convert -Text ($text.Replace('      - workspaces','      - unknown')) -BridgeRoot $bridge|Out-Null}catch{$rejected=$true}
 Assert $rejected 'Unrecognized panel must be rejected before writes'
+$hotkeyCheck=Join-Path $desktop 'leopardwm-test\Test-EffectiveHotkeys.ps1'
+$managedConfig=[IO.File]::ReadAllText((Join-Path $desktop 'leopardwm-test\config.toml'))
+$bindings=@([regex]::Matches($managedConfig,'(?m)^"([^"]+)"\s*=')|ForEach-Object {$_.Groups[1].Value})
+$effective="Hotkeys:`n  Scroll modifier: Alt`n"+(($bindings|ForEach-Object {'  [Binding] Action: '+$_}) -join "`n")
+Assert (& $hotkeyCheck -ConfigText $managedConfig -HotkeyText $effective) 'Managed hotkeys were rejected'
+Assert (-not (& $hotkeyCheck -ConfigText $managedConfig -HotkeyText $effective.Replace('modifier: Alt','modifier: Ctrl+Alt'))) 'Silent fallback to default scroll modifier must be detected'
+Assert (-not (& $hotkeyCheck -ConfigText $managedConfig -HotkeyText $effective.Replace('Action: Alt+2','Action: Ctrl+Alt+2'))) 'Missing workspace binding must be detected'
+Assert (-not (& $hotkeyCheck -ConfigText $managedConfig -HotkeyText '')) 'Empty IPC response must not pass'
 if($DownloadRelease -or $ReleaseArchive){
     $portable=Join-Path $testRoot 'portable'
     $portableLeopard=Join-Path $portable 'leopardwm-test'
