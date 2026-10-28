@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -17,6 +17,13 @@ internal static class DesktopBridge {
     static readonly JavaScriptSerializer Json=new JavaScriptSerializer();
     static readonly string EventName=@"Local\Druzh.CatppuccinDesktop.Stop";
     static readonly string Runtime=Path.Combine(Root,"runtime");
+    static string LeopardRoot {get{return Path.Combine(Path.GetDirectoryName(Root.TrimEnd(Path.DirectorySeparatorChar)),"leopardwm-test");}}
+    static bool LeopardSelected {get{
+        string selection=Path.Combine(LeopardRoot,@"runtime\selection.json");
+        if(File.Exists(selection))return Get(Read(selection),"enabled","")=="True";
+        return File.Exists(Path.Combine(LeopardRoot,@"runtime\release.json"))&&Get(Read(Path.Combine(LeopardRoot,"settings.json")),"defaultManager","")=="Leopard";
+    }}
+    static string LeopardCli {get{var release=Read(Path.Combine(LeopardRoot,@"runtime\release.json"));return Path.Combine(LeopardRoot,"runtime",Get(release,"directory","missing"),"lwm.exe");}}
     static KomorebiFeed komorebi;
     static DateTime nextTaskbarCheck=DateTime.MinValue,nextProcessCheck=DateTime.MinValue;
     static HashSet<uint> yasbIds=new HashSet<uint>();
@@ -50,24 +57,57 @@ internal static class DesktopBridge {
     static readonly string[][] Services={
         new[]{"","Запустить помощники","StartAll"},new[]{"","Остановить помощники","StopAll"},new[]{"","Перезапустить помощники","RestartAll"},
         new[]{"","Восстановить отрисовку ChatGPT","ChatGPTRender"},
-        new[]{"ChatGPT","Запустить без GPU (тест)","ChatGPTSoftwareStart"},new[]{"ChatGPT","Запустить обычно","ChatGPTNormalStart"},
-        new[]{"Komorebi и горячие клавиши","Запустить","KomorebiStart"},new[]{"Komorebi и горячие клавиши","Остановить","KomorebiStop"},new[]{"Komorebi и горячие клавиши","Перезапустить","KomorebiRestart"},
+        new[]{"Менеджер окон","Запустить","WmStart"},new[]{"Менеджер окон","Остановить","WmStop"},new[]{"Менеджер окон","Перезапустить","WmRestart"},
+        new[]{"Менеджер окон","Включить LeopardWM","WmLeopard"},new[]{"Менеджер окон","Переключиться на komorebi","WmKomorebi"},new[]{"Менеджер окон","Обзор пространств LeopardWM","LeopardOverview"},
         new[]{"AHK","Включить все скрипты","AhkEnable"},new[]{"AHK","Выключить все скрипты","AhkDisable"},new[]{"AHK","Перезапустить разрешённые","AhkRestart"},new[]{"AHK","Возобновить после общей паузы","AhkResume"},
         new[]{"Vial helper","Запустить","VialStart"},new[]{"Vial helper","Остановить","VialStop"},new[]{"Vial helper","Перезапустить","VialRestart"},
         new[]{"ZMK helper","Запустить","ZmkStart"},new[]{"ZMK helper","Остановить","ZmkStop"},new[]{"ZMK helper","Перезапустить","ZmkRestart"},
         new[]{"","Открыть Vial безопасно…","OpenVial"}
     };
+    static IEnumerable<string[]> MenuServices(){
+        bool leopard=LeopardSelected;
+        foreach(var row in Services){
+            if((leopard&&row[2]=="WmLeopard")||(!leopard&&(row[2]=="WmKomorebi"||row[2]=="LeopardOverview")))continue;
+            yield return new[]{row[0]=="Менеджер окон"?(leopard?"LeopardWM":"Komorebi"):row[0],row[1],row[2]};
+        }
+    }
     static void Service(string action){if(!Services.Any(s=>s[2]==action))throw new ArgumentException("Unknown helper action");Run("powershell.exe","-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Services.ps1"))+" -Action "+action+" -Notify");}
     static void Open(string target){Process.Start(new ProcessStartInfo(target){UseShellExecute=true});}
     static Dictionary<string,object> State(string kind){
+        if(kind=="leopard")return LeopardState();
         if(kind=="ahk"){
             var s=Read(Path.Combine(LauncherRoot,@"runtime\status.json"));var mode=Get(s,"mode","offline");var scripts=Items(s,"scripts").Select(v=>v as Dictionary<string,object>).Where(v=>v!=null).ToArray();
-            string detail=String.Join("\n",scripts.Select(v=>Get(v,"name","")+": "+Get(v,"mode","?")));
-            return new Dictionary<string,object>{{"label",mode=="blocked"?"AHK · игра":mode=="paused"?"AHK · стоп":mode=="waiting"?"AHK · пауза":"AHK "+Get(s,"managedRunning","—")},{"tooltip",detail+"\nЛКМ: управление скриптами; ПКМ: выключить все"}};
+            bool on=Get(s,"globalEnabled",Get(s,"suspended","False")=="True"?"False":scripts.Any(v=>Get(v,"enabled","False")=="True").ToString())=="True";
+            string detail=on?"Запуск скриптов разрешён.":"Скрипты выключены.";
+            if(on&&mode=="blocked")detail+="\nИгра: скрипты временно заблокированы.";
+            else if(on&&mode=="waiting")detail+="\nОжидание безопасного возобновления после игры.";
+            else if(mode=="error"||mode=="offline"||mode=="stopped")detail+="\nПроверь менеджер скриптов в ↻ → AHK.";
+            return new Dictionary<string,object>{{"label",on?"AHK ON":"AHK OFF"},{"tooltip",detail+"\nЛКМ: включить/выключить все · ПКМ: выключить все\nОтдельные скрипты и отладка: ↻ → AHK"}};
         }
         string folder=kind=="vial"?"vial-helper":"zmk-yasb";var state=Read(Path.Combine(Data,folder+@"\state.json"));
         string prefix=kind=="vial"?"VIAL":"ZMK";string label=Get(state,"label","OFF");
         return new Dictionary<string,object>{{"label",prefix+" · "+label},{"tooltip",Get(state,"tooltip",Get(state,"effective","Нет подключения"))+(kind=="zmk"?"\nБатареи: "+Get(state,"battery_halves","—"):"\nЛКМ: раскладка и подписи AHK")}};
+    }
+    static Dictionary<string,object> LeopardState(){
+        try{
+            if(!LeopardSelected)throw new IOException("LeopardWM не выбран");
+            using(var p=new Process()){
+                p.StartInfo=new ProcessStartInfo(LeopardCli,"query workspaces"){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=Encoding.UTF8};
+                p.Start();var output=p.StandardOutput.ReadToEndAsync();var error=p.StandardError.ReadToEndAsync();
+                if(!p.WaitForExit(1800)){try{p.Kill();}catch{}throw new IOException("LeopardWM не отвечает");}
+                if(p.ExitCode!=0)throw new IOException("LeopardWM недоступен");
+                return LeopardSnapshot(output.Result);
+            }
+        }catch{return new Dictionary<string,object>{{"label","LWM · OFF"},{"tooltip","LeopardWM недоступен. ПКМ → LeopardWM → Перезапустить или переключиться на komorebi."}};}
+    }
+    internal static Dictionary<string,object> LeopardSnapshot(string text){
+        var frames=text.Split(new[]{'\r','\n'},StringSplitOptions.RemoveEmptyEntries).Select(s=>Json.DeserializeObject(s) as Dictionary<string,object>).ToArray();
+        if(frames.Length<2||frames.Any(f=>f==null)||Get(frames[0],"type","")!="workspace_snapshot_begin"||Get(frames[frames.Length-1],"type","")!="workspace_snapshot_end"||Get(frames[0],"revision","")!=Get(frames[frames.Length-1],"revision",""))throw new IOException("Incomplete workspace snapshot");
+        var records=frames.Where(f=>Get(f,"type","")=="workspace_snapshot_chunk").SelectMany(f=>Items(f,"records")).Select(r=>r as Dictionary<string,object>).Where(r=>r!=null).ToArray();
+        var displays=records.Where(r=>Get(r,"kind","")=="monitor").ToArray();if(displays.Length!=1)throw new IOException("Trial requires one monitor");
+        int active=Convert.ToInt32(Get(displays[0],"active_workspace_index","-1"));if(active<0||active>8)throw new IOException("Invalid active workspace");
+        int count=records.Count(r=>Get(r,"kind","")=="window"&&Get(r,"workspace_index","")==active.ToString());
+        return new Dictionary<string,object>{{"label","LWM · "+(active+1)},{"tooltip","Пространство "+(active+1)+" · окон: "+count+"\nAlt+1…9: пространства · Alt+колесо: окна\nЛКМ: обзор пространств · ПКМ: переключить менеджер"}};
     }
     static ToolStripMenuItem Item(string text,Action action){var item=new ToolStripMenuItem(text);item.Click+=delegate{try{action();}catch(Exception e){MessageBox.Show(e.Message,"Catppuccin");}};return item;}
     static bool InsideMenu(ToolStripDropDown menu,System.Drawing.Point cursor){
@@ -98,13 +138,11 @@ internal static class DesktopBridge {
             menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Включить все",()=>Service("AhkEnable")));menu.Items.Add(Item("Выключить все",()=>Service("AhkDisable")));menu.Items.Add(Item("Перезапустить разрешённые",()=>Service("AhkRestart")));menu.Items.Add(Item("Возобновить после общей паузы",()=>Service("AhkResume")));menu.Items.Add(Item("Настроить правила…",()=>Open(Path.Combine(LauncherRoot,"config.json"))));
         }else if(kind=="services"){
             var groups=new Dictionary<string,ToolStripMenuItem>();
-            foreach(var row in Services){string action=row[2];var item=Item(row[1],()=>Service(action));if(action=="ChatGPTRender")item.ToolTipText="Пересоздаёт графический слой; окно и чат остаются открыты.";if(row[0].Length==0){menu.Items.Add(item);continue;}ToolStripMenuItem group;if(!groups.TryGetValue(row[0],out group)){group=new ToolStripMenuItem(row[0]);groups.Add(row[0],group);menu.Items.Add(group);}group.DropDownItems.Add(item);}
-            menu.Items.Add(new ToolStripSeparator());menu.Items.Add(Item("Скрипты AHK и правила…",()=>Run(Path.Combine(Root,"DesktopBridge.exe"),"--menu ahk")));
+            foreach(var row in MenuServices()){string action=row[2];var item=Item(row[1],()=>Service(action));if(action=="ChatGPTRender")item.ToolTipText="Пересоздаёт графический слой; окно и чат остаются открыты.";if(row[0].Length==0){menu.Items.Add(item);continue;}ToolStripMenuItem group;if(!groups.TryGetValue(row[0],out group)){group=new ToolStripMenuItem(row[0]);groups.Add(row[0],group);menu.Items.Add(group);}group.DropDownItems.Add(item);}
+            groups["AHK"].DropDownItems.Add(new ToolStripSeparator());groups["AHK"].DropDownItems.Add(Item("Отдельные скрипты и правила…",()=>Run(Path.Combine(Root,"DesktopBridge.exe"),"--menu ahk")));
         }else{
             menu.Items.Add(Item("Библиотека Windows",()=>Run("explorer.exe","shell:AppsFolder")));
             menu.Items.Add(Item("Настройки Windows",()=>Open("ms-settings:")));
-            menu.Items.Add(Item("Вернуть состояние перед экспериментом",()=>Run("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Manage.ps1"))+" -Action RestoreCurrent")));
-            menu.Items.Add(Item("Вернуться к YASB до MyDockFinder",()=>Run("powershell.exe","-NoProfile -ExecutionPolicy Bypass -File "+Quote(Path.Combine(Root,"Manage.ps1"))+" -Action RestorePreDock")));
         }
         // YASB's bar does not activate itself. Its child popup can therefore lack
         // WinForms' usual owner activation; AutoClose alone misses outside clicks.
@@ -132,6 +170,21 @@ internal static class DesktopBridge {
     static bool Allowed(string process){return !new[]{"yasb","DesktopBridge","Dock_64","dock","ScreenRound","FinderWidgets","SearchHost","StartMenuExperienceHost","ShellExperienceHost","TextInputHost","LockApp"}.Contains(process,StringComparer.OrdinalIgnoreCase);}
     internal static bool IsDockGeometry(Rectangle r,Rectangle screen){return r.Bottom>screen.Top+screen.Height*0.7&&r.Height<=100&&r.Width>20;}
     internal static bool AtDockEdge(int x,int y,Rectangle screen){return x>=screen.Left&&x<screen.Right&&y>=screen.Bottom-3&&y<screen.Bottom;}
+    internal static bool DockPopup(string windowClass,bool visible,bool cloaked,Rectangle popup,Rectangle dock){
+        // Native shell property sheets can belong to YASB too. Only an actual
+        // Qt popup adjacent to this dock should keep it open; top-bar cards and
+        // unrelated dialogs must not pin the bottom bar across the desktop.
+        return visible&&!cloaked&&windowClass.StartsWith("Qt",StringComparison.Ordinal)&&popup.Height>120&&Rectangle.Inflate(dock,16,16).IntersectsWith(popup);
+    }
+    static bool TestDockPopup(){
+        var dock=new Rectangle(900,1366,600,64);var preview=new Rectangle(1000,1100,280,264);
+        if(!DockPopup("Qt6102QWindowToolSaveBits",true,false,preview,dock))return false;
+        if(DockPopup("#32770",true,false,new Rectangle(1315,898,419,534),dock))return false;
+        if(DockPopup("Qt6102QWindowToolSaveBits",false,false,preview,dock)||DockPopup("Qt6102QWindowToolSaveBits",true,true,preview,dock))return false;
+        if(DockPopup("Qt6102QWindowToolSaveBits",true,false,new Rectangle(1000,50,280,300),dock))return false;
+        if(DockPopup("Qt6102QWindowToolSaveBits",true,false,new Rectangle(1700,1100,280,264),dock))return false;
+        return true;
+    }
     internal static int DockAnimationY(int rest,int hidden,double progress,bool show){
         double t=Math.Max(0,Math.Min(1,progress));
         double ease=show?1-Math.Pow(1-t,3):t*t*t;
@@ -189,7 +242,7 @@ internal static class DesktopBridge {
         if(ids.Count==0){if(ShouldRestoreTaskbar(false,lastYasbSeen,DateTime.UtcNow))NativeTaskbar(true);return;}
         lastYasbSeen=DateTime.UtcNow;
         bool feedOnline=komorebi!=null&&Screen.AllScreens.Any(s=>komorebi.ForScreen(s.DeviceName).HasValue);
-        var docks=new List<Tuple<IntPtr,Rectangle>>();var occupants=new HashSet<string>();bool occupied=false,popup=false,fullscreen=false;Point cursor;GetCursorPos(out cursor);IntPtr fg=GetForegroundWindow();
+        var docks=new List<Tuple<IntPtr,Rectangle>>();var popups=new List<Tuple<string,bool,bool,Rectangle>>();var occupants=new HashSet<string>();bool occupied=false,popup=false,fullscreen=false;Point cursor;GetCursorPos(out cursor);IntPtr fg=GetForegroundWindow();
         EnumWindows(delegate(IntPtr hwnd,IntPtr data){
             uint id;GetWindowThreadProcessId(hwnd,out id);bool own=ids.Contains(id);
             // komorebi supplies workspace occupancy. Only the foreground window
@@ -199,7 +252,11 @@ internal static class DesktopBridge {
             Rect r;if(!GetWindowRect(hwnd,out r)||r.Right-r.Left<10||r.Bottom-r.Top<10)return true;var screen=Screen.FromRectangle(r.Value).Bounds;
             var title=new StringBuilder(512);GetWindowText(hwnd,title,title.Capacity);if(ids.Contains(id)){
                 if(title.ToString()=="YasbBar"&&IsDockGeometry(r.Value,screen))docks.Add(Tuple.Create(hwnd,r.Value));
-                else if(IsWindowVisible(hwnd)&&r.Bottom-r.Top>120)popup=true;return true;
+                else if(title.ToString()!="YasbBar"&&IsWindowVisible(hwnd)&&r.Bottom-r.Top>120){
+                    var type=new StringBuilder(128);GetClassName(hwnd,type,type.Capacity);int popupCloaked;
+                    bool hidden=DwmGetWindowAttribute(hwnd,14,out popupCloaked,4)==0&&popupCloaked!=0;
+                    popups.Add(Tuple.Create(type.ToString(),true,hidden,r.Value));
+                }return true;
             }
             if(!IsWindowVisible(hwnd)||IsIconic(hwnd)||(GetWindowLong(hwnd,-20)&0x80)!=0||title.Length==0)return true;
             var cls=new StringBuilder(128);GetClassName(hwnd,cls,cls.Capacity);if(new[]{"Progman","WorkerW","Shell_TrayWnd","Shell_SecondaryTrayWnd"}.Contains(cls.ToString()))return true;
@@ -213,7 +270,7 @@ internal static class DesktopBridge {
         },IntPtr.Zero);
         NativeTaskbar(false);
         bool? managed=null;
-        foreach(var dock in docks){var display=Screen.FromRectangle(dock.Item2);var screen=display.Bounds;managed=komorebi==null?null:komorebi.ForScreen(display.DeviceName);bool edge=AtDockEdge(cursor.X,cursor.Y,screen);bool hover=IsWindowVisible(dock.Item1)&&Rectangle.Inflate(dock.Item2,12,12).Contains(cursor.X,cursor.Y);bool show=DockShouldShow(managed??occupied,edge,hover,popup,fullscreen);if(IsWindowVisible(dock.Item1)!=show)DockVisibility(dock.Item1,show,!fullscreen);}
+        foreach(var dock in docks){var display=Screen.FromRectangle(dock.Item2);var screen=display.Bounds;managed=komorebi==null?null:komorebi.ForScreen(display.DeviceName);bool edge=AtDockEdge(cursor.X,cursor.Y,screen);bool hover=IsWindowVisible(dock.Item1)&&Rectangle.Inflate(dock.Item2,12,12).Contains(cursor.X,cursor.Y);bool dockPopup=popups.Any(p=>DockPopup(p.Item1,p.Item2,p.Item3,p.Item4,dock.Item2));popup|=dockPopup;bool show=DockShouldShow(managed??occupied,edge,hover,dockPopup,fullscreen);if(IsWindowVisible(dock.Item1)!=show)DockVisibility(dock.Item1,show,!fullscreen);}
         string state=Json.Serialize(new{mode="active",occupied=occupied,managedWorkspaceOccupied=managed,occupants=occupants.OrderBy(x=>x).ToArray(),fullscreen=fullscreen,popup=popup,docks=docks.Count,docksVisible=docks.Count(d=>IsWindowVisible(d.Item1))});if(state!=lastState||DateTime.UtcNow-lastWrite>TimeSpan.FromSeconds(10)){File.WriteAllText(Path.Combine(Runtime,"dock-status.json"),state,new UTF8Encoding(false));lastState=state;lastWrite=DateTime.UtcNow;}
     }
     static string lastState="";static DateTime lastWrite=DateTime.MinValue;
@@ -222,15 +279,17 @@ internal static class DesktopBridge {
             if(args.Length>0&&args[0]=="--read"){Output(State(args.Length>1?args[1]:"ahk"));return 0;}
             if(args.Length>0&&args[0]=="--menu"){Menu(args.Length>1?args[1]:"main");return 0;}
             if(args.Length>0&&args[0]=="--service"){Service(args.Length>1?args[1]:"RestartAll");return 0;}
-            if(args.Length>0&&args[0]=="--list-services"){Output(Services.Select(s=>new{group=s[0],label=s[1],action=s[2]}).ToArray());return 0;}
+            if(args.Length>0&&args[0]=="--list-services"){Output(MenuServices().Select(s=>new{group=s[0],label=s[1],action=s[2]}).ToArray());return 0;}
             if(args.Length>0&&args[0]=="--stop"){try{using(var e=EventWaitHandle.OpenExisting(EventName))e.Set();}catch(WaitHandleCannotBeOpenedException){}return 0;}
             if(args.Length>0&&args[0]=="--show-taskbar"){NativeTaskbar(true);return 0;}
+            if(args.Length>0&&args[0]=="--test-scroll-hook")return ScrollingMouseNavigation.TestHook()?0:7;
             if(args.Length>0&&args[0]=="--test-motion")return TestDockMotion()?0:5;
-            if(args.Length>0&&args[0]=="--test"){if(!TestDockEasing())return 5;var bounds=new Rectangle(0,0,2560,1440);if(!IsDockGeometry(new Rectangle(1245,1366,70,64),bounds)||IsDockGeometry(new Rectangle(0,0,2560,40),bounds)||IsDockGeometry(new Rectangle(0,1300,10,64),bounds)||IsDockGeometry(new Rectangle(0,1100,300,300),bounds))return 3;if(!AtDockEdge(0,1439,bounds)||!AtDockEdge(2559,1439,bounds)||AtDockEdge(1280,1400,bounds)||AtDockEdge(-1,1439,bounds)||AtDockEdge(2560,1439,bounds))return 4;var now=new DateTime(2026,10,24,0,0,10,DateTimeKind.Utc);if(ShouldRestoreTaskbar(true,now.AddSeconds(-20),now)||ShouldRestoreTaskbar(false,now.AddSeconds(-2),now)||!ShouldRestoreTaskbar(false,now.AddSeconds(-8),now)||!ShouldRestoreTaskbar(false,DateTime.MinValue,now))return 2;if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
+            if(args.Length>0&&(args[0]=="--test-dock-popup"||args[0]=="--test")){if(!TestDockPopup())return 8;if(args[0]=="--test-dock-popup")return 0;}
+            if(args.Length>0&&args[0]=="--test"){if(!ScrollingMouseNavigation.SelfTest()||!KomorebiFeed.TestScrollContext())return 6;if(!TestDockEasing())return 5;var bounds=new Rectangle(0,0,2560,1440);if(!IsDockGeometry(new Rectangle(1245,1366,70,64),bounds)||IsDockGeometry(new Rectangle(0,0,2560,40),bounds)||IsDockGeometry(new Rectangle(0,1300,10,64),bounds)||IsDockGeometry(new Rectangle(0,1100,300,300),bounds))return 3;if(!AtDockEdge(0,1439,bounds)||!AtDockEdge(2559,1439,bounds)||AtDockEdge(1280,1400,bounds)||AtDockEdge(-1,1439,bounds)||AtDockEdge(2560,1439,bounds))return 4;var now=new DateTime(2026,10,24,0,0,10,DateTimeKind.Utc);if(ShouldRestoreTaskbar(true,now.AddSeconds(-20),now)||ShouldRestoreTaskbar(false,now.AddSeconds(-2),now)||!ShouldRestoreTaskbar(false,now.AddSeconds(-8),now)||!ShouldRestoreTaskbar(false,DateTime.MinValue,now))return 2;if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
             bool created;using(var mutex=new Mutex(true,@"Local\Druzh.CatppuccinDesktop",out created)){if(!created)return 0;Directory.CreateDirectory(Runtime);Application.EnableVisualStyles();using(var stop=new EventWaitHandle(false,EventResetMode.ManualReset,EventName)){
-                komorebi=new KomorebiFeed(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"));
-                try{int n=0;while(!stop.WaitOne(400)){try{Tick();}catch(Exception e){if(n++%20==0){string log=Path.Combine(Runtime,"bridge.log");if(File.Exists(log)&&new FileInfo(log).Length>262144)File.WriteAllText(log,"");File.AppendAllText(log,DateTime.Now.ToString("o")+" "+e.Message+"\n");}}}}
-                finally{komorebi.Dispose();NativeTaskbar(true);}
+                komorebi=LeopardSelected?null:new KomorebiFeed(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"));
+                try{using(var mouse=komorebi==null?null:new ScrollingMouseNavigation(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"),komorebi.ScrollingContext,Path.Combine(LauncherRoot,@"runtime\status.json"),Runtime)){int n=0;while(!stop.WaitOne(400)){try{Tick();}catch(Exception e){if(n++%20==0){string log=Path.Combine(Runtime,"bridge.log");if(File.Exists(log)&&new FileInfo(log).Length>262144)File.WriteAllText(log,"");File.AppendAllText(log,DateTime.Now.ToString("o")+" "+e.Message+"\n");}}}}}
+                finally{if(komorebi!=null)komorebi.Dispose();NativeTaskbar(true);}
             }mutex.ReleaseMutex();}return 0;
         }catch(Exception e){try{Directory.CreateDirectory(Runtime);File.AppendAllText(Path.Combine(Runtime,"bridge.log"),e.ToString()+"\n");}catch{}return 1;}
     }

@@ -1,6 +1,6 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
-    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart')]
+    [ValidateSet('Status','StartAll','StopAll','RestartAll','AhkEnable','AhkDisable','AhkRestart','AhkResume','WmStart','WmStop','WmRestart','KomorebiStart','KomorebiStop','KomorebiRestart','VialStart','VialStop','VialRestart','ZmkStart','ZmkStop','ZmkRestart','OpenVial','ChatGPTRender','ChatGPTSoftwareStart','ChatGPTNormalStart','ScrollOne','ScrollTwo','ScrollBsp','ScrollSmooth','ScrollInstant','ScrollTrial','ScrollStrip','ScrollPrevious','WmLeopard','WmKomorebi','LeopardOverview')]
     [string]$Action='Status', [switch]$Notify
 )
 $ErrorActionPreference='Stop'
@@ -37,8 +37,22 @@ function Ahk($operation) {
     Wait-Client $launcher ('--'+$operation)
 }
 function Wm($operation) {
-    if(!(Test-Path -LiteralPath $wm)){throw 'The current komorebi support launcher is missing.'}
+    if(!(Test-Path -LiteralPath $wm)){throw 'The desktop window-manager launcher is missing.'}
     if($operation -eq 'Stop'){& $wm -Stop|Out-Null}elseif($operation -eq 'Restart'){& $wm -Restart|Out-Null}else{& $wm|Out-Null}
+}
+function Scrolling($mode) {
+    if((& (Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test\Get-WindowManager.ps1')) -eq 'Leopard'){throw 'LeopardWM is selected. Use Window manager > Switch to komorebi before changing komorebi layouts.'}
+    $scrollRoot=Join-Path (Split-Path -Parent $PSScriptRoot) 'komorebi-scrolling'
+    if($mode -in @('Trial','Strip','Previous')){
+        & (Join-Path $scrollRoot 'Use-SmoothMotion.ps1') -Mode $mode -Confirm:$false
+    }elseif($mode -in @('Smooth','Instant')){
+        & (Join-Path $scrollRoot 'Set-Motion.ps1') -Mode $mode -Confirm:$false
+    }elseif($mode -eq 'Bsp'){
+        & (Join-Path $scrollRoot 'Switch-Layout.ps1') -Mode Bsp -Confirm:$false
+    }else{
+        $columns=if($mode -eq 'One'){1}else{2}
+        & (Join-Path $scrollRoot 'Switch-Layout.ps1') -Mode Scrolling -Columns $columns -Peek 0 -Confirm:$false
+    }
 }
 function Vial-IsOpen {
     $gate=$null
@@ -77,7 +91,7 @@ function Write-ServiceEvent([string]$phase,[string]$component='', $failure=$null
             [IO.File]::WriteAllText($log,'')
         }
         $processes=@{}
-        foreach($name in @('yasb','komorebi','whkd','DesktopBridge','ScriptLauncher','ChatGPT')){
+        foreach($name in @('yasb','leopardwm','komorebi','whkd','DesktopBridge','ScriptLauncher','ChatGPT')){
             $processes[$name]=@(Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object SessionId -EQ $session | ForEach-Object Id)
         }
         $entry=[ordered]@{at=[DateTimeOffset]::Now.ToString('o');action=$Action;phase=$phase;component=$component;processes=$processes}
@@ -103,14 +117,21 @@ try {
         try{& $operation;Write-ServiceEvent 'component-complete' $label}catch{Write-ServiceEvent 'component-failed' $label $_.Exception;$failures.Add($label+': '+$_.Exception.Message)}
     }
     switch -Regex ($Action) {
-        '^StartAll$' {Attempt 'AHK' {Ahk 'resume'};Attempt 'Komorebi' {Wm 'Start'};Attempt 'Vial' {Hid 'Vial' 'Start'};Attempt 'ZMK' {Hid 'Zmk' 'Start'};break}
-        '^StopAll$' {Attempt 'AHK' {Ahk 'pause'};Attempt 'Komorebi' {Wm 'Stop'};Attempt 'Vial' {Hid 'Vial' 'Stop'};Attempt 'ZMK' {Hid 'Zmk' 'Stop'};break}
-        '^RestartAll$' {Attempt 'AHK' {Ahk 'restart-all'};Attempt 'Komorebi' {Wm 'Restart'};Attempt 'Vial' {Hid 'Vial' 'Restart'};Attempt 'ZMK' {Hid 'Zmk' 'Restart'};break}
+        '^Wm(Leopard|Komorebi)$' {& (Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test\Use-WindowManager.ps1') -Mode $Matches[1] -Confirm:$false;break}
+        '^LeopardOverview$' {
+            $trial=Join-Path (Split-Path $PSScriptRoot) 'leopardwm-test'
+            $release=[IO.File]::ReadAllText((Join-Path $trial 'runtime\release.json'))|ConvertFrom-Json
+            Wait-Client (Join-Path $trial ('runtime\'+$release.directory+'\lwm.exe')) 'toggle-overview';break
+        }
+        '^StartAll$' {Attempt 'AHK' {Ahk 'resume'};Attempt 'Window manager' {Wm 'Start'};Attempt 'Vial' {Hid 'Vial' 'Start'};Attempt 'ZMK' {Hid 'Zmk' 'Start'};break}
+        '^StopAll$' {Attempt 'AHK' {Ahk 'pause'};Attempt 'Window manager' {Wm 'Stop'};Attempt 'Vial' {Hid 'Vial' 'Stop'};Attempt 'ZMK' {Hid 'Zmk' 'Stop'};break}
+        '^RestartAll$' {Attempt 'AHK' {Ahk 'restart-all'};Attempt 'Window manager' {Wm 'Restart'};Attempt 'Vial' {Hid 'Vial' 'Restart'};Attempt 'ZMK' {Hid 'Zmk' 'Restart'};break}
         '^AhkEnable$' {Ahk 'resume';Ahk 'enable-all';break}
         '^AhkDisable$' {Ahk 'disable-all';break}
         '^AhkRestart$' {Ahk 'restart-all';break}
         '^AhkResume$' {Ahk 'resume';break}
-        '^Komorebi(Start|Stop|Restart)$' {Wm $Matches[1];break}
+        '^Scroll(One|Two|Bsp|Smooth|Instant|Trial|Strip|Previous)$' {Scrolling $Matches[1];break}
+        '^(?:Wm|Komorebi)(Start|Stop|Restart)$' {Wm $Matches[1];break}
         '^(Vial|Zmk)(Start|Stop|Restart)$' {Hid $Matches[1] $Matches[2];break}
         '^ChatGPTRender$' {& (Join-Path $PSScriptRoot 'Repair-ChatGPTRendering.ps1') -Confirm:$false;break}
         '^ChatGPT(Software|Normal)Start$' {
@@ -129,6 +150,9 @@ try {
     Write-Output ('Completed: '+$Action)
 } catch {
     Write-ServiceEvent 'failed' '' $_.Exception
+    # The operation has finished (including its rollback). A notification may
+    # stay open behind another window; it must not keep every menu action locked.
+    if($locked){$mutex.ReleaseMutex();$locked=$false}
     if($Notify){Add-Type -AssemblyName System.Windows.Forms;[void][Windows.Forms.MessageBox]::Show($_.Exception.Message,'Desktop helpers','OK','Warning')}
     throw
 } finally {if($locked){$mutex.ReleaseMutex()};$mutex.Dispose()}

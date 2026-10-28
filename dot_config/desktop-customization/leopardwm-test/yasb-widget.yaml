@@ -1,0 +1,18 @@
+  leopard_status:
+    type: yasb.custom.CustomWidget
+    options:
+      label: '{data[label]}'
+      label_placeholder: LWM
+      class_name: komorebi-workspaces
+      tooltip: true
+      tooltip_label: '{data[tooltip]}'
+      exec_options:
+        run_cmd: __BRIDGE_CMD__\DesktopBridge.exe --read leopard
+        run_interval: 2000
+        return_format: json
+        use_shell: false
+        encoding: utf-8
+        hide_empty: false
+      callbacks:
+        on_left: exec "__BRIDGE__\DesktopBridge.exe" --service LeopardOverview
+        on_right: exec "__BRIDGE__\DesktopBridge.exe" --menu services

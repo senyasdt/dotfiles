@@ -91,6 +91,12 @@ CHEZMOI_PROFILES=full,desktop "$(chezmoi source-path)/provision/update.sh"
 
 ## Windows
 
+Current HOMEPC desktop: **LeopardWM + YASB**, with komorebi retained as a fallback.
+See [the primary window-manager guide](dot_config/desktop-customization/leopardwm-test/README.md)
+for pinned installation, login selection, application widths and quick return.
+This branch contains the primary-manager configuration; master is not changed
+by selecting it locally. The `leopardwm-test` directory name is retained for path compatibility.
+
 The current recovery entry point is [Windows workstation restore](provision/windows/README.md).
 Run it natively as the intended desktop user. The default is plan-only:
 

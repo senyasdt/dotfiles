@@ -376,7 +376,7 @@ widgets:
       label: '{data[label]}'
       class_name: ahk-widget
       callbacks:
-        on_left: exec "__BRIDGE__\DesktopBridge.exe" --menu ahk
+        on_left: exec "__LAUNCHER__\ScriptLauncher.exe" --toggle-global
         on_right: exec "__LAUNCHER__\ScriptLauncher.exe" --disable-all
       label_alt: '{data[label]}'
       tooltip: true
@@ -433,7 +433,7 @@ widgets:
         on_left: exec "__BRIDGE__\DesktopBridge.exe" --menu main
         on_right: exec "__BRIDGE__\DesktopBridge.exe" --menu main
       tooltip: true
-      tooltip_label: Профиль Catppuccin · настройки и быстрый откат
+      tooltip_label: Библиотека Windows · настройки Windows
       exec_options:
         use_shell: false
   taskbar:

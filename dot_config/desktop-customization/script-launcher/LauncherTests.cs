@@ -100,6 +100,27 @@ internal static class LauncherTests
             engine.Control("resume","all");engine.Step(now.AddSeconds(23),true);
             Assert(host.Has(A)&&!host.Has(B),"Pause/resume changed manual overrides");
 
+            host=new FakeHost();engine=Engine(host,Config(Group(new[]{A,B},"Game.exe")));
+            engine.Control("disable","all");engine.Step(now,true);
+            engine.Control("toggle-global","all");engine.Step(now.AddSeconds(1),true);
+            Assert(engine.GlobalEnabled&&host.Has(A)&&host.Has(B),"Global on did not enable every script");
+            engine.Control("toggle-global","all");engine.Step(now.AddSeconds(2),true);
+            Assert(!engine.GlobalEnabled&&!host.Has(A)&&!host.Has(B),"Global off left scripts enabled");
+            engine.Control("toggle-global","all");engine.Control("toggle-global","all");
+            Assert(!engine.GlobalEnabled,"Rapid global toggles used stale status");
+            engine.Control("enable",A);engine.Step(now.AddSeconds(3),true);
+            engine.Control("toggle-global","all");engine.Step(now.AddSeconds(4),true);
+            Assert(!host.Has(A)&&!host.Has(B),"Mixed selection did not switch fully off");
+            engine.Control("pause","all");host.Program("Game.exe");engine.Step(now.AddSeconds(5),true);
+            engine.Control("toggle-global","all");var blocked=engine.Step(now.AddSeconds(6),true);
+            Assert(engine.GlobalEnabled&&!engine.Suspended&&!host.Has(A)&&!host.Has(B)&&(string)blocked["mode"]=="blocked","Global on bypassed game blocking or did not resume");
+            host.Close("Game.exe");engine.Step(now.AddSeconds(7),true);engine.Step(now.AddSeconds(21),true);
+            Assert(!host.Has(A)&&!host.Has(B),"Global on bypassed game resume delay");
+            engine.Step(now.AddSeconds(22),true);Assert(host.Has(A)&&host.Has(B),"All scripts did not return after game delay");
+            host.Program("Game.exe");engine.Step(now.AddSeconds(23),true);engine.Control("toggle-global","all");
+            host.Close("Game.exe");engine.Step(now.AddSeconds(24),true);engine.Step(now.AddSeconds(50),true);
+            Assert(!engine.GlobalEnabled&&!host.Has(A)&&!host.Has(B),"Game exit undid explicit global off");
+
             bool rejected=false;try{Configuration.Parse("{}");}catch{rejected=true;}Assert(rejected,"Invalid config accepted");
             rejected=false;try{Config(Group(new[]{"relative.ahk"}));}catch{rejected=true;}Assert(rejected,"Relative script accepted");
             rejected=false;try{Config(Group(new[]{A},"*.exe"));}catch{rejected=true;}Assert(rejected,"Wildcard process accepted");

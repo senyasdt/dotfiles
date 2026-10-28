@@ -1,0 +1,679 @@
+From e326128dcaf506c18a598e2482d48d95d23e5bed Mon Sep 17 00:00:00 2001
+From: senyasdt <senyasdt4745@gmail.com>
+Date: Wed, 28 Oct 2026 01:54:12 +0300
+Subject: [PATCH] Animate fixed-width Scrolling as a common vsync-aligned strip
+
+---
+ komorebi/src/animation/mod.rs   |   1 +
+ komorebi/src/animation/strip.rs | 529 ++++++++++++++++++++++++++++++++
+ komorebi/src/state.rs           |   1 +
+ komorebi/src/window.rs          |   1 +
+ komorebi/src/windows_api.rs     |   2 +-
+ komorebi/src/workspace.rs       |  23 +-
+ 6 files changed, 555 insertions(+), 2 deletions(-)
+ create mode 100644 komorebi/src/animation/strip.rs
+
+diff --git a/komorebi/src/animation/mod.rs b/komorebi/src/animation/mod.rs
+index 4566cbf..85abd66 100644
+--- a/komorebi/src/animation/mod.rs
++++ b/komorebi/src/animation/mod.rs
+@@ -18,6 +18,7 @@ pub mod prefix;
+ pub mod render_dispatcher;
+ pub use render_dispatcher::RenderDispatcher;
+ pub mod style;
++pub mod strip;
+ 
+ use serde::Deserialize;
+ use serde::Serialize;
+diff --git a/komorebi/src/animation/strip.rs b/komorebi/src/animation/strip.rs
+new file mode 100644
+index 0000000..85d6e61
+--- /dev/null
++++ b/komorebi/src/animation/strip.rs
+@@ -0,0 +1,529 @@
++//! Scrolling-only experiment: a common horizontal offset and one vsync worker.
++//! Structural changes snap; ordinary BSP/movement keeps the upstream engine.
++use std::collections::HashMap;
++use std::sync::atomic::{AtomicU64, Ordering};
++use std::sync::{Arc, LazyLock};
++use std::time::{Duration, Instant};
++
++use parking_lot::Mutex;
++use windows::Win32::Foundation::HWND;
++use windows::Win32::Graphics::Dwm::DwmFlush;
++use windows::Win32::UI::WindowsAndMessaging::{
++    BeginDeferWindowPos, DeferWindowPos, EndDeferWindowPos, IsWindow, SWP_ASYNCWINDOWPOS,
++    SWP_NOACTIVATE, SWP_NOSENDCHANGING, SWP_NOSIZE, SWP_NOZORDER, SetWindowPos,
++};
++
++use super::prefix::AnimationPrefix;
++use super::{ANIMATION_ENABLED_GLOBAL, ANIMATION_ENABLED_PER_ANIMATION, ANIMATION_MANAGER};
++use crate::core::Rect;
++use crate::windows_api::WindowsApi;
++use crate::{focus_manager, stackbar_manager, transparency_manager};
++
++pub const DURATION_MS: u64 = 180;
++type Targets = Vec<(isize, Rect)>;
++static GROUPS: LazyLock<Mutex<HashMap<u64, Arc<Mutex<State>>>>> =
++    LazyLock::new(|| Mutex::new(HashMap::new()));
++static RUNS: AtomicU64 = AtomicU64::new(1);
++
++pub fn enabled() -> bool {
++    ANIMATION_ENABLED_GLOBAL.load(Ordering::Relaxed)
++        || ANIMATION_ENABLED_PER_ANIMATION
++            .lock()
++            .get(&AnimationPrefix::Movement)
++            .copied()
++            .unwrap_or(false)
++}
++
++#[derive(Debug, PartialEq)]
++enum Update {
++    Same,
++    Pan,
++    Snap,
++}
++
++struct Motion {
++    targets: Targets,
++    from: f64,
++    offset: f64,
++    started: Instant,
++    moving: bool,
++}
++
++impl Motion {
++    fn new(targets: Targets, now: Instant) -> Self {
++        Self {
++            targets,
++            from: 0.0,
++            offset: 0.0,
++            started: now,
++            moving: false,
++        }
++    }
++
++    fn retarget(&mut self, next: Targets, now: Instant) -> Update {
++        if self.targets == next {
++            return Update::Same;
++        }
++        let shift = self
++            .targets
++            .first()
++            .zip(next.first())
++            .map(|(old, new)| i64::from(new.1.left) - i64::from(old.1.left));
++        let pan = self.targets.len() == next.len()
++            && shift.is_some()
++            && self
++                .targets
++                .iter()
++                .zip(&next)
++                .all(|((old_id, a), (new_id, b))| {
++                    old_id == new_id
++                        && a.top == b.top
++                        && a.right == b.right
++                        && a.bottom == b.bottom
++                        && Some(i64::from(b.left) - i64::from(a.left)) == shift
++                });
++        if pan {
++            // The last submitted frame is the origin. No per-HWND resampling,
++            // and no restart at all for an unchanged target.
++            self.offset -= shift.unwrap() as f64;
++            self.from = self.offset;
++            self.targets = next;
++            self.started = now;
++            self.moving = self.offset.abs() > 0.5;
++            Update::Pan
++        } else {
++            *self = Self::new(next, now);
++            Update::Snap
++        }
++    }
++
++    fn frame(&mut self, now: Instant) -> Targets {
++        if self.moving {
++            let t = (now.duration_since(self.started).as_secs_f64()
++                / (DURATION_MS as f64 / 1000.0))
++                .clamp(0.0, 1.0);
++            self.offset = self.from * (1.0 - t).powi(3);
++            if t >= 1.0 {
++                self.offset = 0.0;
++                self.moving = false;
++            }
++        }
++        let offset = self.offset.round() as i32;
++        self.targets
++            .iter()
++            .map(|(id, rect)| {
++                let mut r = *rect;
++                r.left = r.left.saturating_add(offset);
++                (*id, r)
++            })
++            .collect()
++    }
++}
++
++#[derive(Default)]
++struct State {
++    pending: Option<Targets>,
++    motion: Option<Motion>,
++    shadows: HashMap<isize, Rect>,
++    cancelled: bool,
++    running: bool,
++}
++
++pub fn submit(group: u64, targets: Targets) {
++    if targets.is_empty() {
++        cancel(group);
++        return;
++    }
++    // A layout switch may still have upstream per-window animations finishing.
++    for (hwnd, _) in &targets {
++        let key = format!("movement:{hwnd}");
++        if ANIMATION_MANAGER.lock().in_progress(&key) {
++            super::AnimationEngine::cancel(&key);
++        }
++    }
++    let slot = GROUPS.lock().entry(group).or_default().clone();
++    let mut state = slot.lock();
++    state.pending = Some(targets);
++    if state.running {
++        return;
++    }
++    state.running = true;
++    let run_key = format!(
++        "movement:strip:{group}:{}",
++        RUNS.fetch_add(1, Ordering::Relaxed)
++    );
++    ANIMATION_MANAGER.lock().start(&run_key);
++    stackbar_manager::STACKBAR_TEMPORARILY_DISABLED.store(true, Ordering::SeqCst);
++    let worker = Arc::clone(&slot);
++    std::thread::spawn(move || run(worker, run_key));
++}
++
++pub fn cancel(group: u64) {
++    let slot = GROUPS.lock().remove(&group);
++    if let Some(slot) = slot {
++        // The gate includes batch submission, so no stale batch can be issued
++        // after hide(), layout change, or a normal set_position() continues.
++        let mut state = slot.lock();
++        state.cancelled = true;
++        state.pending = None;
++    }
++}
++
++pub fn cancel_for_window(hwnd: isize) {
++    let groups: Vec<_> = GROUPS
++        .lock()
++        .iter()
++        .filter_map(|(id, slot)| {
++            let state = slot.lock();
++            let contains = state
++                .pending
++                .as_ref()
++                .is_some_and(|p| p.iter().any(|(h, _)| *h == hwnd))
++                || state
++                    .motion
++                    .as_ref()
++                    .is_some_and(|m| m.targets.iter().any(|(h, _)| *h == hwnd));
++            contains.then_some(*id)
++        })
++        .collect();
++    for group in groups {
++        cancel(group);
++    }
++}
++
++fn finish(state: &mut State, key: &str) {
++    state.running = false;
++    ANIMATION_MANAGER.lock().end(key);
++    if ANIMATION_MANAGER
++        .lock()
++        .count_in_progress(AnimationPrefix::Movement)
++        == 0
++    {
++        stackbar_manager::STACKBAR_TEMPORARILY_DISABLED.store(false, Ordering::SeqCst);
++        stackbar_manager::send_notification();
++        transparency_manager::send_notification();
++        if let Ok(hwnd) = WindowsApi::foreground_window() {
++            focus_manager::send_notification(hwnd);
++        }
++    }
++}
++
++fn run(slot: Arc<Mutex<State>>, key: String) {
++    loop {
++        let frame_started = Instant::now();
++        let complete;
++        {
++            let mut state = slot.lock();
++            if state.cancelled {
++                finish(&mut state, &key);
++                return;
++            }
++            let mut resize = false;
++            if let Some(next) = state.pending.take() {
++                let update = if let Some(motion) = &mut state.motion {
++                    motion.retarget(next, frame_started)
++                } else {
++                    state.motion = Some(Motion::new(next, frame_started));
++                    Update::Snap
++                };
++                if update == Update::Snap {
++                    let windows: Vec<_> = state
++                        .motion
++                        .as_ref()
++                        .unwrap()
++                        .targets
++                        .iter()
++                        .map(|(h, _)| *h)
++                        .collect();
++                    state.shadows.retain(|hwnd, _| windows.contains(hwnd));
++                    for hwnd in windows {
++                        if state.shadows.contains_key(&hwnd) {
++                            continue;
++                        }
++                        let mut shadow =
++                            WindowsApi::shadow_rect(HWND(hwnd as _)).unwrap_or_default();
++                        if shadow.left.abs() > 64
++                            || shadow.top.abs() > 64
++                            || shadow.right.abs() > 128
++                            || shadow.bottom.abs() > 128
++                        {
++                            shadow = Rect::default();
++                        }
++                        // Kept until geometry changes; DWM's rectangle can lag an
++                        // async move, so recomputing this per frame would wobble.
++                        state.shadows.insert(hwnd, shadow);
++                    }
++                    resize = true;
++                }
++            }
++            let motion = state.motion.as_mut().unwrap();
++            if !enabled() {
++                motion.moving = false;
++                motion.offset = 0.0;
++            }
++            let frame = motion.frame(frame_started);
++            complete = !motion.moving;
++            if let Err(error) = apply_batch(&frame, &state.shadows, resize) {
++                tracing::warn!("Strip batch failed: {error}");
++                // Forget the model so the next request performs a fresh snap.
++                state.motion = None;
++                finish(&mut state, &key);
++                return;
++            }
++        }
++        // One compositor-aligned clock for the whole strip, outside the gate so
++        // input and cancellation do not wait on vsync.
++        if unsafe { DwmFlush() }.is_err() {
++            std::thread::sleep(Duration::from_millis(16));
++        } else if frame_started.elapsed() < Duration::from_millis(2) {
++            // Some non-composited/idle environments return immediately.
++            std::thread::sleep(Duration::from_millis(2));
++        }
++        if complete {
++            let mut state = slot.lock();
++            if state.pending.is_none() || state.cancelled {
++                finish(&mut state, &key);
++                return;
++            }
++        }
++    }
++}
++
++fn apply_batch(
++    targets: &Targets,
++    shadows: &HashMap<isize, Rect>,
++    resize: bool,
++) -> windows::core::Result<()> {
++    let mut flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSENDCHANGING | SWP_ASYNCWINDOWPOS;
++    if !resize {
++        flags |= SWP_NOSIZE;
++    }
++    let entries: Vec<_> = targets
++        .iter()
++        .filter_map(|(hwnd, rect)| {
++            let handle = HWND(*hwnd as _);
++            if !unsafe { IsWindow(Some(handle)) }.as_bool() {
++                return None;
++            }
++            let shadow = shadows.get(hwnd).copied().unwrap_or_default();
++            Some((
++                handle,
++                Rect {
++                    left: rect.left + shadow.left,
++                    top: rect.top + shadow.top,
++                    right: rect.right + shadow.right,
++                    bottom: rect.bottom + shadow.bottom,
++                },
++            ))
++        })
++        .collect();
++    if entries.is_empty() {
++        return Ok(());
++    }
++    unsafe {
++        let mut batch = BeginDeferWindowPos(entries.len() as i32)?;
++        for (hwnd, r) in &entries {
++            match DeferWindowPos(batch, *hwnd, None, r.left, r.top, r.right, r.bottom, flags) {
++                Ok(next) => batch = next,
++                Err(_) => {
++                    // A failed DeferWindowPos destroys its HDWP. Reapply this
++                    // same frame asynchronously, never replay intermediate ones.
++                    for (hwnd, r) in &entries {
++                        if IsWindow(Some(*hwnd)).as_bool() {
++                            SetWindowPos(*hwnd, None, r.left, r.top, r.right, r.bottom, flags)?;
++                        }
++                    }
++                    return Ok(());
++                }
++            }
++        }
++        EndDeferWindowPos(batch)
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    fn targets(x: i32) -> Targets {
++        vec![
++            (
++                1,
++                Rect {
++                    left: x,
++                    top: 40,
++                    right: 700,
++                    bottom: 900,
++                },
++            ),
++            (
++                2,
++                Rect {
++                    left: x + 716,
++                    top: 40,
++                    right: 500,
++                    bottom: 900,
++                },
++            ),
++            (
++                3,
++                Rect {
++                    left: x + 1232,
++                    top: 40,
++                    right: 1100,
++                    bottom: 900,
++                },
++            ),
++        ]
++    }
++    #[test]
++    fn retarget_preserves_entire_visible_strip_and_final_widths() {
++        let now = Instant::now();
++        let mut m = Motion::new(targets(0), now);
++        assert_eq!(m.retarget(targets(-700), now), Update::Pan);
++        let shown = m.frame(now + Duration::from_millis(60));
++        assert_eq!(
++            m.retarget(targets(-1400), now + Duration::from_millis(60)),
++            Update::Pan
++        );
++        assert_eq!(m.frame(now + Duration::from_millis(60)), shown);
++        for step in 0..=18 {
++            let frame = m.frame(now + Duration::from_millis(60 + step * 10));
++            assert_eq!(frame[1].1.left - frame[0].1.left, 716);
++            assert_eq!(frame[2].1.left - frame[1].1.left, 516);
++            assert_eq!(
++                (frame[0].1.right, frame[1].1.right, frame[2].1.right),
++                (700, 500, 1100)
++            );
++        }
++        assert_eq!(m.frame(now + Duration::from_millis(240)), targets(-1400));
++        assert!(!m.moving);
++    }
++    #[test]
++    fn same_target_does_not_restart_clock_and_reversal_is_position_continuous() {
++        let now = Instant::now();
++        let mut m = Motion::new(targets(0), now);
++        m.retarget(targets(-700), now);
++        m.frame(now + Duration::from_millis(70));
++        assert_eq!(
++            m.retarget(targets(-700), now + Duration::from_millis(70)),
++            Update::Same
++        );
++        assert_eq!(m.started, now);
++        let shown = m.frame(now + Duration::from_millis(80));
++        m.retarget(targets(0), now + Duration::from_millis(80));
++        assert_eq!(m.frame(now + Duration::from_millis(80)), shown);
++        assert_eq!(m.frame(now + Duration::from_millis(260)), targets(0));
++    }
++    #[test]
++    fn resize_reorder_and_window_lifecycle_snap_as_a_group() {
++        let now = Instant::now();
++        let mut m = Motion::new(targets(0), now);
++        m.retarget(targets(-700), now);
++        m.frame(now + Duration::from_millis(20));
++        let mut resized = targets(-700);
++        resized[0].1.right = 950;
++        resized[1].1.left += 250;
++        resized[2].1.left += 250;
++        assert_eq!(m.retarget(resized.clone(), now), Update::Snap);
++        assert_eq!(m.frame(now), resized);
++        let mut reorder = resized.clone();
++        reorder.swap(0, 1);
++        assert_eq!(m.retarget(reorder, now), Update::Snap);
++        assert_eq!(m.retarget(targets(0)[..2].to_vec(), now), Update::Snap);
++    }
++    #[test]
++    fn cancel_invalidates_pending_group_before_it_can_render_again() {
++        let group = RUNS.fetch_add(1, Ordering::Relaxed) + 100000;
++        let slot = Arc::new(Mutex::new(State {
++            pending: Some(targets(0)),
++            ..Default::default()
++        }));
++        GROUPS.lock().insert(group, Arc::clone(&slot));
++        cancel(group);
++        assert!(slot.lock().cancelled);
++        assert!(slot.lock().pending.is_none());
++        assert!(!GROUPS.lock().contains_key(&group));
++    }
++    #[test]
++    fn real_win32_batch_moves_three_hidden_tool_windows_without_resizing() {
++        use windows::Win32::Foundation::RECT;
++        use windows::Win32::UI::WindowsAndMessaging::{
++            CreateWindowExW, DestroyWindow, GetWindowRect, WS_EX_TOOLWINDOW, WS_POPUP,
++        };
++        use windows::core::w;
++        struct Windows(Vec<HWND>);
++        impl Drop for Windows {
++            fn drop(&mut self) {
++                for h in &self.0 {
++                    unsafe {
++                        let _ = DestroyWindow(*h);
++                    }
++                }
++            }
++        }
++        let mut windows = Windows(Vec::new());
++        for i in 0..3 {
++            windows.0.push(unsafe {
++                CreateWindowExW(
++                    WS_EX_TOOLWINDOW,
++                    w!("STATIC"),
++                    w!("strip batch probe"),
++                    WS_POPUP,
++                    1000 + i * 420,
++                    200,
++                    400,
++                    300,
++                    None,
++                    None,
++                    None,
++                    None,
++                )
++                .unwrap()
++            });
++        }
++        let mut frame: Targets = windows
++            .0
++            .iter()
++            .enumerate()
++            .map(|(i, h)| {
++                (
++                    h.0 as isize,
++                    Rect {
++                        left: 500 + i as i32 * 420,
++                        top: 200,
++                        right: 900,
++                        bottom: 800,
++                    },
++                )
++            })
++            .collect();
++        apply_batch(&frame, &HashMap::new(), false).unwrap();
++        for (i, h) in windows.0.iter().enumerate() {
++            let mut rect = RECT::default();
++            unsafe {
++                GetWindowRect(*h, &mut rect).unwrap();
++            }
++            assert_eq!(
++                (
++                    rect.left,
++                    rect.top,
++                    rect.right - rect.left,
++                    rect.bottom - rect.top
++                ),
++                (500 + i as i32 * 420, 200, 400, 300)
++            );
++        }
++        for (_, r) in &mut frame {
++            r.right = 520;
++            r.bottom = 330;
++        }
++        apply_batch(&frame, &HashMap::new(), true).unwrap();
++        for h in &windows.0 {
++            let mut rect = RECT::default();
++            unsafe {
++                GetWindowRect(*h, &mut rect).unwrap();
++            }
++            assert_eq!((rect.right - rect.left, rect.bottom - rect.top), (520, 330));
++        }
++    }
++}
+diff --git a/komorebi/src/state.rs b/komorebi/src/state.rs
+index 8bc8a37..b6887b4 100644
+--- a/komorebi/src/state.rs
++++ b/komorebi/src/state.rs
+@@ -243,6 +243,7 @@ impl From<&WindowManager> for State {
+                         .workspaces()
+                         .iter()
+                         .map(|workspace| Workspace {
++                            strip_motion_id: workspace.strip_motion_id,
+                             name: workspace.name.clone(),
+                             containers: workspace.containers.clone(),
+                             monocle_container: workspace.monocle_container.clone(),
+diff --git a/komorebi/src/window.rs b/komorebi/src/window.rs
+index 3434203..5050437 100644
+--- a/komorebi/src/window.rs
++++ b/komorebi/src/window.rs
+@@ -444,6 +444,7 @@ impl Window {
+     }
+ 
+     pub fn set_position(&self, layout: &Rect, top: bool) -> eyre::Result<()> {
++        crate::animation::strip::cancel_for_window(self.hwnd);
+         let window_rect = WindowsApi::window_rect(self.hwnd)?;
+ 
+         if window_rect.eq(layout) {
+diff --git a/komorebi/src/windows_api.rs b/komorebi/src/windows_api.rs
+index 326c4d5..a83c030 100644
+--- a/komorebi/src/windows_api.rs
++++ b/komorebi/src/windows_api.rs
+@@ -776,7 +776,7 @@ impl WindowsApi {
+     /// the window painted region. The four values in the returned Rect can be
+     /// added to a position rect to compute a size for set_window_pos that will
+     /// fill the target area, ignoring shadows.
+-    fn shadow_rect(hwnd: HWND) -> eyre::Result<Rect> {
++    pub(crate) fn shadow_rect(hwnd: HWND) -> eyre::Result<Rect> {
+         let window_rect = Self::window_rect(hwnd.0 as isize)?;
+ 
+         let mut srect = Default::default();
+diff --git a/komorebi/src/workspace.rs b/komorebi/src/workspace.rs
+index 8a7a6f5..c06b834 100644
+--- a/komorebi/src/workspace.rs
++++ b/komorebi/src/workspace.rs
+@@ -47,10 +47,17 @@ use serde::Deserialize;
+ use serde::Serialize;
+ use uds_windows::UnixStream;
+ 
++fn new_strip_motion_id() -> u64 {
++    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
++    NEXT.fetch_add(1, Ordering::Relaxed)
++}
++
+ #[allow(clippy::struct_field_names)]
+ #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+ #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+ pub struct Workspace {
++    #[serde(skip, default = "new_strip_motion_id")]
++    pub(crate) strip_motion_id: u64,
+     pub name: Option<String>,
+     pub containers: Ring<Container>,
+     pub monocle_container: Option<Container>,
+@@ -119,6 +126,7 @@ impl_ring_elements!(Workspace, Window, "floating_window");
+ impl Default for Workspace {
+     fn default() -> Self {
+         Self {
++            strip_motion_id: new_strip_motion_id(),
+             name: None,
+             containers: Ring::default(),
+             monocle_container: None,
+@@ -377,6 +385,7 @@ impl Workspace {
+     }
+ 
+     pub fn hide(&mut self, omit: Option<isize>) {
++        crate::animation::strip::cancel(self.strip_motion_id);
+         for window in self.floating_windows_mut().iter_mut().rev() {
+             let mut should_hide = omit.is_none();
+ 
+@@ -683,6 +692,15 @@ impl Workspace {
+             self.window_container_behaviour = updated_behaviour;
+         }
+ 
++        let strip_motion = self.tile && self.monocle_container.is_none()
++            && self.maximized_window.is_none() && !self.containers().is_empty()
++            && matches!(self.layout, Layout::Default(DefaultLayout::Scrolling))
++            && self.effective_layout_options().and_then(|o| o.scrolling)
++                .and_then(|o| o.fixed_column_width).unwrap_or(false)
++            && crate::animation::strip::enabled();
++        let strip_id = self.strip_motion_id;
++        if !strip_motion { crate::animation::strip::cancel(strip_id); }
++
+         let managed_maximized_window = self.maximized_window.is_some();
+ 
+         if self.tile {
+@@ -722,6 +740,7 @@ impl Workspace {
+                 let no_titlebar = NO_TITLEBAR.lock().clone();
+                 let regex_identifiers = REGEX_IDENTIFIERS.lock().clone();
+ 
++                let mut strip_targets = Vec::new();
+                 let containers = self.containers_mut();
+ 
+                 for (i, container) in containers.iter_mut().enumerate() {
+@@ -766,11 +785,13 @@ impl Workspace {
+                                     WindowsApi::restore_window(window.hwnd);
+                                 }
+                             }
+-                            window.set_position(layout, false)?;
++                            if strip_motion { strip_targets.push((window.hwnd, *layout)); }
++                            else { window.set_position(layout, false)?; }
+                         }
+                     }
+                 }
+ 
++                if strip_motion { crate::animation::strip::submit(strip_id, strip_targets); }
+                 self.latest_layout = layouts;
+             }
+         }
+-- 
+2.54.0.windows.1
+

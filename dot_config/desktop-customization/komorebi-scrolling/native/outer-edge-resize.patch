@@ -1,0 +1,142 @@
+From a125aa35b9127fe81ebbf1925f7c9d5ec1868d74 Mon Sep 17 00:00:00 2001
+From: senyasdt <senyasdt4745@gmail.com>
+Date: Tue, 27 Oct 2026 04:28:31 +0300
+Subject: [PATCH] Allow independent strip column resizing at both outer edges
+
+---
+ komorebi-layouts/src/default_layout.rs       | 24 ++++++++++++
+ komorebi-layouts/src/default_layout_tests.rs | 41 ++++++++++++++++++++
+ komorebi/src/window_manager.rs               | 33 ++++++++++++++++
+ 3 files changed, 98 insertions(+)
+
+diff --git a/komorebi-layouts/src/default_layout.rs b/komorebi-layouts/src/default_layout.rs
+index ba89426..e2b670f 100644
+--- a/komorebi-layouts/src/default_layout.rs
++++ b/komorebi-layouts/src/default_layout.rs
+@@ -30,6 +30,30 @@ pub const DEFAULT_SECONDARY_RATIO: f32 = 0.25;
+ /// These are the golden ratio steps used by PaperWM: 1/phi^2, 1/2, 1/phi
+ pub const DEFAULT_WIDTH_STEPS: [f32; 3] = [0.381_966, 0.5, 0.618_034];
+ 
++/// Resize one fixed-width strip column without requiring an adjacent tile.
++/// `current_width` is the last laid-out content width, so work-area offsets and
++/// padding are already accounted for. Deltas keep komorebi's half-pixel encoding.
++#[must_use]
++pub fn resize_scrolling_delta(
++    current_width: i32,
++    previous: Option<Rect>,
++    delta: i32,
++    sizing: Sizing,
++) -> Option<Rect> {
++    let mut rect = previous.unwrap_or_default();
++    let step = i64::from(delta).abs() / 2;
++    let signed = match sizing {
++        Sizing::Increase => step,
++        Sizing::Decrease => -step,
++    };
++    // Keep a usable content rectangle and stay inside Win32's size range.
++    // The upper bound is independent of the viewport width.
++    let target = (i64::from(current_width) + signed).clamp(64, 32_767);
++    let encoded = i64::from(rect.right) + 2 * (target - i64::from(current_width));
++    rect.right = encoded.clamp(i64::from(i32::MIN), i64::from(i32::MAX)) as i32;
++    Some(rect)
++}
++
+ /// Validates and converts a Vec of width steps into a fixed-size array.
+ ///
+ /// Unlike [`validate_ratios`], width steps are *alternatives* rather than a
+diff --git a/komorebi-layouts/src/default_layout_tests.rs b/komorebi-layouts/src/default_layout_tests.rs
+index b4e439a..3a8ae8f 100644
+--- a/komorebi-layouts/src/default_layout_tests.rs
++++ b/komorebi-layouts/src/default_layout_tests.rs
+@@ -1025,3 +1025,44 @@ mod width_step_tests {
+         assert_eq!(cycle_width_step(0.5, &[], CycleDirection::Next), None);
+     }
+ }
++
++#[test]
++fn independent_column_resize_exceeds_base_and_viewport_without_neighbours() {
++    let mut width = 1000;
++    let mut delta = None;
++    for _ in 0..60 {
++        delta = resize_scrolling_delta(width, delta, 100, Sizing::Increase);
++        width += 50;
++    }
++    assert_eq!(width, 4000);
++    assert_eq!(delta.unwrap().right, 6000);
++}
++
++#[test]
++fn independent_column_resize_preserves_previous_left_edge_delta() {
++    let previous = Rect {
++        left: -160,
++        top: 0,
++        right: 300,
++        bottom: 0,
++    };
++    let next = resize_scrolling_delta(1230, Some(previous), 160, Sizing::Increase).unwrap();
++    assert_eq!(next.left, -160);
++    assert_eq!(next.right, 460);
++}
++
++#[test]
++fn independent_column_resize_bounds_avoid_negative_width_and_win32_overflow() {
++    let small = resize_scrolling_delta(100, None, 1000, Sizing::Decrease).unwrap();
++    assert_eq!(100 + small.right / 2, 64);
++    let large = resize_scrolling_delta(32000, None, i32::MAX, Sizing::Increase).unwrap();
++    assert_eq!(32000 + large.right / 2, 32767);
++}
++
++#[test]
++fn independent_column_resize_increase_then_decrease_restores_width() {
++    let increased = resize_scrolling_delta(1000, None, 160, Sizing::Increase);
++    let restored = resize_scrolling_delta(1080, increased, 160, Sizing::Decrease).unwrap();
++    assert_eq!(restored.right, 0);
++    assert_eq!(restored.left, 0);
++}
+diff --git a/komorebi/src/window_manager.rs b/komorebi/src/window_manager.rs
+index ecfbce2..44906a1 100644
+--- a/komorebi/src/window_manager.rs
++++ b/komorebi/src/window_manager.rs
+@@ -1278,6 +1278,39 @@ impl WindowManager {
+                             .get(focused_idx)
+                             .ok_or_eyre("there is no resize adjustment for this container")?;
+ 
++                        // Opt-in strip columns resize independently, including
++                        // the only column and either outer edge. Directional
++                        // neighbour checks remain unchanged for focus and BSP.
++                        if matches!(layout, DefaultLayout::Scrolling)
++                            && workspace
++                                .layout_options
++                                .and_then(|o| o.scrolling)
++                                .and_then(|s| s.fixed_column_width)
++                                .unwrap_or(false)
++                            && matches!(
++                                direction,
++                                OperationDirection::Left | OperationDirection::Right
++                            )
++                        {
++                            let width = workspace
++                                .latest_layout
++                                .get(focused_idx)
++                                .ok_or_eyre("there is no last layout for this column")?
++                                .right;
++                            workspace.resize_dimensions[focused_idx] =
++                                komorebi_layouts::resize_scrolling_delta(
++                                    width,
++                                    *focused_idx_resize,
++                                    delta,
++                                    sizing,
++                                );
++                            return if update {
++                                self.update_focused_workspace(false, false)
++                            } else {
++                                Ok(())
++                            };
++                        }
++
+                         if direction
+                             .destination(
+                                 workspace.layout.as_boxed_direction().as_ref(),
+-- 
+2.54.0.windows.1
+

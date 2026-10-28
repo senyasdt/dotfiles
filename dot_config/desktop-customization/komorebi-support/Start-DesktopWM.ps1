@@ -1,7 +1,14 @@
-param([switch]$Restart,[switch]$Stop)
+param([switch]$Restart,[switch]$Stop,[switch]$PreserveState)
 $ErrorActionPreference='Stop'
 $profileRoot=[Environment]::GetFolderPath('UserProfile')
 $desktopRoot=Split-Path $PSScriptRoot -Parent
+$leopard=Join-Path $desktopRoot 'leopardwm-test'
+$selection=Join-Path $leopard 'runtime\selection.json'
+if((& (Join-Path $leopard 'Get-WindowManager.ps1')) -eq 'Leopard'){
+    $operation=if($Stop){'Stop'}elseif(-not (Test-Path -LiteralPath $selection)){'Switch'}elseif($Restart){'Restart'}else{'Start'}
+    & (Join-Path $leopard 'Use-WindowManager.ps1') -Mode Leopard -Operation $operation -Confirm:$false
+    return
+}
 $runtime=Join-Path $desktopRoot 'komorebi-runtime'
 $data=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'komorebi'
 function Resolve-Binary([string]$Name,[string]$Package) {
@@ -18,6 +25,21 @@ $settingsPath=Join-Path $PSScriptRoot 'settings.json'
 $useJunction=$false
 if(Test-Path -LiteralPath $settingsPath){$useJunction=[bool]((Get-Content -LiteralPath $settingsPath -Raw|ConvertFrom-Json).runtimeJunction)}
 $config=Join-Path $profileRoot 'komorebi.json'
+# Optional local trial bundle. Absent flag leaves the standard Scoop binaries/config.
+$trialRoot=Join-Path $desktopRoot 'komorebi-scrolling\runtime'
+$trialFlag=Join-Path $trialRoot 'native-profile.json'
+if((Test-Path -LiteralPath $trialFlag) -and (Get-Content -LiteralPath $trialFlag -Raw|ConvertFrom-Json).enabled){
+    $native=Join-Path $trialRoot 'native'
+    $build=Get-Content -LiteralPath (Join-Path $native 'build-info.json') -Raw|ConvertFrom-Json
+    foreach($file in @('komorebi.exe','komorebic.exe')){
+        if((Get-FileHash -LiteralPath (Join-Path $native $file) -Algorithm SHA256).Hash -ine $build.hashes.$file){throw "Trial binary hash mismatch: $file"}
+    }
+    $exe=Join-Path $native 'komorebi.exe'
+    $client=Join-Path $native 'komorebic.exe'
+    $config=Join-Path $trialRoot 'native-config.json'
+    $PreserveState=$true
+}
+
 $session=[Diagnostics.Process]::GetCurrentProcess().SessionId
 $env:PATH=(Join-Path $profileRoot 'scoop\shims')+';'+$env:PATH
 function Local-Processes([string]$Name) { return @(Get-Process -Name $Name -ErrorAction SilentlyContinue | Where-Object SessionId -EQ $session) }
@@ -88,7 +110,8 @@ try {
     if($Stop){ Write-Output 'Komorebi stopped.'; return }
     if(-not(Local-Processes 'komorebi').Count) {
         for($attempt=0;$attempt -lt 2;$attempt++){
-        $arguments='--config "'+$config+'" --clean-state'
+        $arguments='--config "'+$config+'"'
+        if(-not $PreserveState){$arguments+=' --clean-state'}
         $daemon=Start-Process -FilePath $exe -ArgumentList $arguments -WindowStyle Hidden -WorkingDirectory $profileRoot -RedirectStandardOutput (Join-Path $PSScriptRoot 'daemon-stdout.log') -RedirectStandardError (Join-Path $PSScriptRoot 'daemon-stderr.log') -PassThru
         $deadline=[DateTime]::UtcNow.AddSeconds(8)
         $ready=$false

@@ -1,0 +1,289 @@
+From 7092b727cf9deb6c7a9c467860ea63b301b36914 Mon Sep 17 00:00:00 2001
+From: senyasdt <senyasdt4745@gmail.com>
+Date: Wed, 28 Oct 2026 01:10:44 +0300
+Subject: [PATCH] Retarget window movement with one latest-target renderer per
+ HWND
+
+---
+ komorebi/src/animation/mod.rs               |   1 +
+ komorebi/src/animation/render_dispatcher.rs |   3 +
+ komorebi/src/animation/retarget.rs          | 214 ++++++++++++++++++++
+ komorebi/src/window.rs                      |   8 +-
+ 4 files changed, 225 insertions(+), 1 deletion(-)
+ create mode 100644 komorebi/src/animation/retarget.rs
+
+diff --git a/komorebi/src/animation/mod.rs b/komorebi/src/animation/mod.rs
+index 4566cbf..c5cd220 100644
+--- a/komorebi/src/animation/mod.rs
++++ b/komorebi/src/animation/mod.rs
+@@ -16,6 +16,7 @@ pub mod engine;
+ pub mod lerp;
+ pub mod prefix;
+ pub mod render_dispatcher;
++pub mod retarget;
+ pub use render_dispatcher::RenderDispatcher;
+ pub mod style;
+ 
+diff --git a/komorebi/src/animation/render_dispatcher.rs b/komorebi/src/animation/render_dispatcher.rs
+index 6456668..5c2df3e 100644
+--- a/komorebi/src/animation/render_dispatcher.rs
++++ b/komorebi/src/animation/render_dispatcher.rs
+@@ -2,6 +2,9 @@ use color_eyre::eyre;
+ 
+ pub trait RenderDispatcher {
+     fn get_animation_key(&self) -> String;
++    fn refresh_start(&mut self) -> eyre::Result<()> {
++        Ok(())
++    }
+     fn pre_render(&self) -> eyre::Result<()>;
+     fn render(&self, delta: f64) -> eyre::Result<()>;
+     fn post_render(&self) -> eyre::Result<()>;
+diff --git a/komorebi/src/animation/retarget.rs b/komorebi/src/animation/retarget.rs
+new file mode 100644
+index 0000000..610bf98
+--- /dev/null
++++ b/komorebi/src/animation/retarget.rs
+@@ -0,0 +1,214 @@
++//! Latest-target movement: one renderer per HWND, no cancellation wait or backlog.
++use std::collections::HashMap;
++use std::sync::Arc;
++use std::sync::LazyLock;
++use std::sync::atomic::Ordering;
++use std::time::Duration;
++use std::time::Instant;
++
++use parking_lot::Mutex;
++
++use super::ANIMATION_FPS;
++use super::ANIMATION_MANAGER;
++use super::RenderDispatcher;
++
++struct Request {
++    dispatcher: Box<dyn RenderDispatcher + Send>,
++    duration: Duration,
++}
++
++type Slot = Arc<Mutex<Option<Request>>>;
++static MOVEMENTS: LazyLock<Mutex<HashMap<String, Slot>>> =
++    LazyLock::new(|| Mutex::new(HashMap::new()));
++
++pub fn animate(dispatcher: impl RenderDispatcher + Send + 'static, duration: Duration) {
++    let key = dispatcher.get_animation_key();
++    let request = Request {
++        dispatcher: Box::new(dispatcher),
++        duration,
++    };
++    let mut registry = MOVEMENTS.lock();
++    if let Some(slot) = registry.get(&key) {
++        // Replace an obsolete destination instead of spawning another renderer.
++        *slot.lock() = Some(request);
++        return;
++    }
++    let slot = Arc::new(Mutex::new(Some(request)));
++    registry.insert(key.clone(), Arc::clone(&slot));
++    ANIMATION_MANAGER.lock().start(&key);
++    std::thread::spawn(move || run(key, slot));
++}
++
++fn run(key: String, slot: Slot) {
++    let mut active: Option<Request> = None;
++    let mut started = Instant::now();
++    loop {
++        let frame_start = Instant::now();
++        let pending = slot.lock().take();
++        if let Some(mut next) = pending {
++            // The previous frame has completed on this same thread. Read the real
++            // window rectangle now, never the position captured by the caller.
++            let prepared = next
++                .dispatcher
++                .refresh_start()
++                .and_then(|()| next.dispatcher.pre_render());
++            active = Some(next);
++            started = Instant::now();
++            if prepared.is_err() {
++                if finish(&key, &slot, active.as_ref().unwrap()) {
++                    return;
++                }
++                continue;
++            }
++        }
++        let request = active
++            .as_ref()
++            .expect("a movement always starts with a target");
++        let progress = if request.duration.is_zero() {
++            1.0
++        } else {
++            (started.elapsed().as_secs_f64() / request.duration.as_secs_f64()).min(1.0)
++        };
++        if (request.dispatcher.render(progress).is_err() || progress >= 1.0)
++            && finish(&key, &slot, request)
++        {
++            return;
++        }
++        let fps = ANIMATION_FPS.load(Ordering::Relaxed).clamp(1, 1000);
++        let frame = Duration::from_secs_f64(1.0 / fps as f64);
++        if let Some(remaining) = frame.checked_sub(frame_start.elapsed()) {
++            std::thread::sleep(remaining);
++        }
++    }
++}
++
++fn finish(key: &str, slot: &Slot, request: &Request) -> bool {
++    // Keep the slot registered through post_render so there can be no second
++    // renderer for this HWND. Never hold the global lock across Win32 calls.
++    {
++        let _registry = MOVEMENTS.lock();
++        if slot.lock().is_some() {
++            return false;
++        }
++        ANIMATION_MANAGER.lock().end(key);
++    }
++    request.dispatcher.post_render().ok();
++    let mut registry = MOVEMENTS.lock();
++    if slot.lock().is_some() {
++        ANIMATION_MANAGER.lock().start(key);
++        return false;
++    }
++    registry.remove(key);
++    true
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use color_eyre::eyre;
++    use std::sync::atomic::AtomicUsize;
++    use std::sync::mpsc;
++
++    static KEYS: AtomicUsize = AtomicUsize::new(0);
++    struct Probe {
++        key: String,
++        target: f64,
++        start: f64,
++        position: Arc<Mutex<f64>>,
++        starts: Arc<Mutex<Vec<(f64, f64)>>>,
++        block: Option<(mpsc::Sender<()>, mpsc::Receiver<()>)>,
++        done: mpsc::Sender<f64>,
++        fail: bool,
++    }
++    impl RenderDispatcher for Probe {
++        fn get_animation_key(&self) -> String {
++            self.key.clone()
++        }
++        fn refresh_start(&mut self) -> eyre::Result<()> {
++            self.start = *self.position.lock();
++            self.starts.lock().push((self.target, self.start));
++            Ok(())
++        }
++        fn pre_render(&self) -> eyre::Result<()> {
++            Ok(())
++        }
++        fn render(&self, progress: f64) -> eyre::Result<()> {
++            if self.fail {
++                return Err(eyre::eyre!("closed window"));
++            }
++            *self.position.lock() = self.start + (self.target - self.start) * progress;
++            if let Some((entered, release)) = &self.block {
++                entered.send(()).unwrap();
++                release.recv_timeout(Duration::from_secs(2)).unwrap();
++            }
++            Ok(())
++        }
++        fn post_render(&self) -> eyre::Result<()> {
++            self.done.send(self.target).unwrap();
++            Ok(())
++        }
++    }
++    #[test]
++    fn burst_replaces_pending_target_and_restarts_at_last_rendered_position() {
++        let key = format!("movement-probe-{}", KEYS.fetch_add(1, Ordering::SeqCst));
++        let position = Arc::new(Mutex::new(25.0));
++        let starts = Arc::new(Mutex::new(Vec::new()));
++        let (done, completed) = mpsc::channel();
++        let (entered, rendering) = mpsc::channel();
++        let (release, wait) = mpsc::channel();
++        let probe = |target, block| Probe {
++            key: key.clone(),
++            target,
++            start: -999.0,
++            position: position.clone(),
++            starts: starts.clone(),
++            block,
++            done: done.clone(),
++            fail: false,
++        };
++        animate(
++            probe(100.0, Some((entered, wait))),
++            Duration::from_millis(160),
++        );
++        rendering.recv_timeout(Duration::from_secs(2)).unwrap();
++        let last_frame = *position.lock();
++        for target in [200.0, 300.0, -50.0] {
++            animate(probe(target, None), Duration::from_millis(35));
++        }
++        release.send(()).unwrap();
++        assert_eq!(
++            completed.recv_timeout(Duration::from_secs(2)).unwrap(),
++            -50.0
++        );
++        assert!((*position.lock() + 50.0).abs() < 0.00001);
++        assert_eq!(*starts.lock(), vec![(100.0, 25.0), (-50.0, last_frame)]);
++        assert!(completed.try_recv().is_err());
++    }
++    #[test]
++    fn render_failure_cleans_up_and_same_key_can_be_used_again() {
++        let key = format!("movement-probe-{}", KEYS.fetch_add(1, Ordering::SeqCst));
++        let position = Arc::new(Mutex::new(0.0));
++        let starts = Arc::new(Mutex::new(Vec::new()));
++        let (done, completed) = mpsc::channel();
++        for fail in [true, false] {
++            animate(
++                Probe {
++                    key: key.clone(),
++                    target: 10.0,
++                    start: 0.0,
++                    position: position.clone(),
++                    starts: starts.clone(),
++                    block: None,
++                    done: done.clone(),
++                    fail,
++                },
++                Duration::ZERO,
++            );
++            completed.recv_timeout(Duration::from_secs(2)).unwrap();
++        }
++        assert_eq!(*position.lock(), 10.0);
++        // Acquire the registry to wait for the completion section to leave.
++        assert!(!MOVEMENTS.lock().contains_key(&key));
++        assert!(!ANIMATION_MANAGER.lock().in_progress(&key));
++    }
++}
+diff --git a/komorebi/src/window.rs b/komorebi/src/window.rs
+index 3434203..7849423 100644
+--- a/komorebi/src/window.rs
++++ b/komorebi/src/window.rs
+@@ -188,6 +188,11 @@ impl MovementRenderDispatcher {
+ }
+ 
+ impl RenderDispatcher for MovementRenderDispatcher {
++    fn refresh_start(&mut self) -> eyre::Result<()> {
++        self.start_rect = WindowsApi::window_rect(self.hwnd)?;
++        Ok(())
++    }
++
+     fn get_animation_key(&self) -> String {
+         new_animation_key(MovementRenderDispatcher::PREFIX, self.hwnd.to_string())
+     }
+@@ -470,7 +475,8 @@ impl Window {
+             let render_dispatcher =
+                 MovementRenderDispatcher::new(self.hwnd, window_rect, *layout, top, style);
+ 
+-            AnimationEngine::animate(render_dispatcher, duration)
++            crate::animation::retarget::animate(render_dispatcher, duration);
++            Ok(())
+         } else {
+             WindowsApi::position_window(self.hwnd, layout, top, true)
+         }
+-- 
+2.54.0.windows.1
+
