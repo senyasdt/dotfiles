@@ -1,0 +1,1526 @@
+{
+  "version": 1,
+  "defaultGroup": "Служебное",
+  "entries": [
+    {
+      "title": "Google Chrome",
+      "group": "",
+      "order": 0
+    },
+    {
+      "title": "ChatGPT",
+      "group": "",
+      "order": 1
+    },
+    {
+      "title": "Telegram",
+      "group": "",
+      "order": 2
+    },
+    {
+      "title": "Discord",
+      "group": "",
+      "order": 3
+    },
+    {
+      "title": "Files",
+      "group": "",
+      "order": 4
+    },
+    {
+      "title": "WezTerm",
+      "group": "",
+      "order": 5
+    },
+    {
+      "title": "Visual Studio Code",
+      "group": "",
+      "order": 6
+    },
+    {
+      "title": "Unity Hub",
+      "group": "",
+      "order": 7
+    },
+    {
+      "title": "Obsidian",
+      "group": "",
+      "order": 8
+    },
+    {
+      "title": "Steam",
+      "group": "",
+      "order": 9
+    },
+    {
+      "title": "Blender 4.5",
+      "group": "Графика и 3D",
+      "order": 10
+    },
+    {
+      "title": "Blender 5.1",
+      "group": "Графика и 3D",
+      "order": 11
+    },
+    {
+      "title": "CLIP STUDIO",
+      "group": "Графика и 3D",
+      "order": 12
+    },
+    {
+      "title": "ImageMagick (color depth=q16) (Ubuntu)",
+      "group": "Графика и 3D",
+      "order": 13
+    },
+    {
+      "title": "PureRef",
+      "group": "Графика и 3D",
+      "order": 14
+    },
+    {
+      "title": "ZBrush 2025.1",
+      "group": "Графика и 3D",
+      "order": 15
+    },
+    {
+      "title": "Baldur's Gate 3",
+      "group": "Игры",
+      "order": 16
+    },
+    {
+      "title": "Battle.net",
+      "group": "Игры",
+      "order": 17
+    },
+    {
+      "title": "EA",
+      "group": "Игры",
+      "order": 18
+    },
+    {
+      "title": "Game Bar",
+      "group": "Игры",
+      "order": 19
+    },
+    {
+      "title": "GearUP",
+      "group": "Игры",
+      "order": 20
+    },
+    {
+      "title": "Manor Lords",
+      "group": "Игры",
+      "order": 21
+    },
+    {
+      "title": "Papers, Please",
+      "group": "Игры",
+      "order": 22
+    },
+    {
+      "title": "Potion Craft",
+      "group": "Игры",
+      "order": 23
+    },
+    {
+      "title": "SeleZen Games Launcher",
+      "group": "Игры",
+      "order": 24
+    },
+    {
+      "title": "Solitaire & Casual Games",
+      "group": "Игры",
+      "order": 25
+    },
+    {
+      "title": "The Lord of the Rings Journeys in Middle-earth",
+      "group": "Игры",
+      "order": 26
+    },
+    {
+      "title": "Ubisoft Connect",
+      "group": "Игры",
+      "order": 27
+    },
+    {
+      "title": "VALORANT",
+      "group": "Игры",
+      "order": 28
+    },
+    {
+      "title": "XBOX",
+      "group": "Игры",
+      "order": 29
+    },
+    {
+      "title": "Запустить Civilization VI",
+      "group": "Игры",
+      "order": 30
+    },
+    {
+      "title": "Запустить Civilization VI DX12",
+      "group": "Игры",
+      "order": 31
+    },
+    {
+      "title": "Запустить Factorio",
+      "group": "Игры",
+      "order": 32
+    },
+    {
+      "title": "Запустить IXION",
+      "group": "Игры",
+      "order": 33
+    },
+    {
+      "title": "Запустить Marvels Spider Man Miles Morales",
+      "group": "Игры",
+      "order": 34
+    },
+    {
+      "title": "Запустить PRAGMATA",
+      "group": "Игры",
+      "order": 35
+    },
+    {
+      "title": "Запустить STAR WARS Zero Company",
+      "group": "Игры",
+      "order": 36
+    },
+    {
+      "title": "Клиент Riot",
+      "group": "Игры",
+      "order": 37
+    },
+    {
+      "title": "AMD Software꞉ Adrenalin Edition",
+      "group": "Настройки",
+      "order": 38
+    },
+    {
+      "title": "Bloody WorkShop8",
+      "group": "Клавиатуры и устройства",
+      "order": 39
+    },
+    {
+      "title": "Canon Print Assistant",
+      "group": "Клавиатуры и устройства",
+      "order": 40
+    },
+    {
+      "title": "F. L Driver",
+      "group": "Клавиатуры и устройства",
+      "order": 41
+    },
+    {
+      "title": "FL Esports",
+      "group": "Клавиатуры и устройства",
+      "order": 42
+    },
+    {
+      "title": "Microsoft Keyboard Layout Creator 1.4",
+      "group": "Клавиатуры и устройства",
+      "order": 43
+    },
+    {
+      "title": "NVIDIA App",
+      "group": "Настройки",
+      "order": 44
+    },
+    {
+      "title": "NVIDIA Control Panel",
+      "group": "Настройки",
+      "order": 45
+    },
+    {
+      "title": "QMK MSYS",
+      "group": "Клавиатуры и устройства",
+      "order": 46
+    },
+    {
+      "title": "Realtek Audio Console",
+      "group": "Настройки",
+      "order": 47
+    },
+    {
+      "title": "senyatyl-firmware (22)",
+      "group": "Клавиатуры и устройства",
+      "order": 48
+    },
+    {
+      "title": "Vial",
+      "group": "Клавиатуры и устройства",
+      "order": 49
+    },
+    {
+      "title": "XPPenTablet",
+      "group": "Клавиатуры и устройства",
+      "order": 50
+    },
+    {
+      "title": "ZMK Studio",
+      "group": "Клавиатуры и устройства",
+      "order": 51
+    },
+    {
+      "title": "Autodesk Fusion",
+      "group": "Мастерская",
+      "order": 52
+    },
+    {
+      "title": "balenaEtcher",
+      "group": "Мастерская",
+      "order": 53
+    },
+    {
+      "title": "Calculator Tools 10.0",
+      "group": "Мастерская",
+      "order": 54
+    },
+    {
+      "title": "Drawing Sheet Editor 10.0",
+      "group": "Мастерская",
+      "order": 55
+    },
+    {
+      "title": "Gerber Viewer 10.0",
+      "group": "Мастерская",
+      "order": 56
+    },
+    {
+      "title": "Image Converter 10.0",
+      "group": "Мастерская",
+      "order": 57
+    },
+    {
+      "title": "KiCad 10.0",
+      "group": "Мастерская",
+      "order": 58
+    },
+    {
+      "title": "KiCad 10.0 Command Prompt",
+      "group": "Мастерская",
+      "order": 59
+    },
+    {
+      "title": "LycheeSlicer",
+      "group": "Мастерская",
+      "order": 60
+    },
+    {
+      "title": "OrcaSlicer",
+      "group": "Мастерская",
+      "order": 61
+    },
+    {
+      "title": "PCB Editor 10.0 (standalone)",
+      "group": "Мастерская",
+      "order": 62
+    },
+    {
+      "title": "Raspberry Pi Imager",
+      "group": "Мастерская",
+      "order": 63
+    },
+    {
+      "title": "Schematic Editor 10.0 (standalone)",
+      "group": "Мастерская",
+      "order": 64
+    },
+    {
+      "title": "SD Card Formatter",
+      "group": "Мастерская",
+      "order": 65
+    },
+    {
+      "title": "Microsoft 365 Copilot",
+      "group": "Медиа и повседневное",
+      "order": 66
+    },
+    {
+      "title": "Microsoft Teams",
+      "group": "Медиа и повседневное",
+      "order": 67
+    },
+    {
+      "title": "Microsoft Teams (personal)",
+      "group": "Медиа и повседневное",
+      "order": 68
+    },
+    {
+      "title": "Microsoft To Do",
+      "group": "Медиа и повседневное",
+      "order": 69
+    },
+    {
+      "title": "OneDrive",
+      "group": "Медиа и повседневное",
+      "order": 70
+    },
+    {
+      "title": "Outlook",
+      "group": "Медиа и повседневное",
+      "order": 71
+    },
+    {
+      "title": "Paint",
+      "group": "Медиа и повседневное",
+      "order": 72
+    },
+    {
+      "title": "µTorrent",
+      "group": "Медиа и повседневное",
+      "order": 73
+    },
+    {
+      "title": "Блокнот",
+      "group": "Медиа и повседневное",
+      "order": 74
+    },
+    {
+      "title": "Заметки в Яндекс.Диске",
+      "group": "Медиа и повседневное",
+      "order": 75
+    },
+    {
+      "title": "Записки",
+      "group": "Медиа и повседневное",
+      "order": 76
+    },
+    {
+      "title": "Звукозапись",
+      "group": "Медиа и повседневное",
+      "order": 77
+    },
+    {
+      "title": "Календарь",
+      "group": "Медиа и повседневное",
+      "order": 78
+    },
+    {
+      "title": "Калькулятор",
+      "group": "Медиа и повседневное",
+      "order": 79
+    },
+    {
+      "title": "Камера",
+      "group": "Медиа и повседневное",
+      "order": 80
+    },
+    {
+      "title": "Карты",
+      "group": "Медиа и повседневное",
+      "order": 81
+    },
+    {
+      "title": "Кино и ТВ",
+      "group": "Медиа и повседневное",
+      "order": 82
+    },
+    {
+      "title": "Медиаплеер",
+      "group": "Медиа и повседневное",
+      "order": 83
+    },
+    {
+      "title": "Ножницы",
+      "group": "Медиа и повседневное",
+      "order": 84
+    },
+    {
+      "title": "Погода",
+      "group": "Медиа и повседневное",
+      "order": 85
+    },
+    {
+      "title": "Почта",
+      "group": "Медиа и повседневное",
+      "order": 86
+    },
+    {
+      "title": "Связь с телефоном",
+      "group": "Медиа и повседневное",
+      "order": 87
+    },
+    {
+      "title": "Скриншоты в Яндекс.Диске",
+      "group": "Медиа и повседневное",
+      "order": 88
+    },
+    {
+      "title": "Фотографии",
+      "group": "Медиа и повседневное",
+      "order": 89
+    },
+    {
+      "title": "Часы",
+      "group": "Медиа и повседневное",
+      "order": 90
+    },
+    {
+      "title": "Яндекс.Диск",
+      "group": "Медиа и повседневное",
+      "order": 91
+    },
+    {
+      "title": "Яндекс.Музыка",
+      "group": "Медиа и повседневное",
+      "order": 92
+    },
+    {
+      "title": "Ahk2Exe",
+      "group": "Разработка",
+      "order": 93
+    },
+    {
+      "title": "Application Verifier (WOW)",
+      "group": "Разработка",
+      "order": 94
+    },
+    {
+      "title": "Application Verifier (X64)",
+      "group": "Разработка",
+      "order": 95
+    },
+    {
+      "title": "AutoHotkey Dash",
+      "group": "Разработка",
+      "order": 96
+    },
+    {
+      "title": "AutoHotkey Window Spy",
+      "group": "Разработка",
+      "order": 97
+    },
+    {
+      "title": "Debuggable Package Manager",
+      "group": "Разработка",
+      "order": 98
+    },
+    {
+      "title": "Developer Command Prompt for VS 2019",
+      "group": "Разработка",
+      "order": 99
+    },
+    {
+      "title": "Developer Command Prompt for VS 2022",
+      "group": "Разработка",
+      "order": 100
+    },
+    {
+      "title": "Developer PowerShell for VS 2019",
+      "group": "Разработка",
+      "order": 101
+    },
+    {
+      "title": "Developer PowerShell for VS 2022",
+      "group": "Разработка",
+      "order": 102
+    },
+    {
+      "title": "Git Bash",
+      "group": "Разработка",
+      "order": 103
+    },
+    {
+      "title": "Git CMD",
+      "group": "Разработка",
+      "order": 104
+    },
+    {
+      "title": "Git GUI",
+      "group": "Разработка",
+      "order": 105
+    },
+    {
+      "title": "IDLE (Python 3.12 64-bit)",
+      "group": "Разработка",
+      "order": 106
+    },
+    {
+      "title": "IDLE (Python 3.14)",
+      "group": "Разработка",
+      "order": 107
+    },
+    {
+      "title": "Neovim",
+      "group": "Разработка",
+      "order": 108
+    },
+    {
+      "title": "Node.js command prompt",
+      "group": "Разработка",
+      "order": 109
+    },
+    {
+      "title": "Oh My Posh",
+      "group": "Разработка",
+      "order": 110
+    },
+    {
+      "title": "Power Automate",
+      "group": "Разработка",
+      "order": 111
+    },
+    {
+      "title": "Python 3.12 (64-bit)",
+      "group": "Разработка",
+      "order": 112
+    },
+    {
+      "title": "Python 3.14",
+      "group": "Разработка",
+      "order": 113
+    },
+    {
+      "title": "Thonny",
+      "group": "Разработка",
+      "order": 114
+    },
+    {
+      "title": "Tools for Desktop Apps",
+      "group": "Разработка",
+      "order": 115
+    },
+    {
+      "title": "Tools for UWP Apps",
+      "group": "Разработка",
+      "order": 116
+    },
+    {
+      "title": "Ubuntu",
+      "group": "Разработка",
+      "order": 117
+    },
+    {
+      "title": "Windows App Cert Kit",
+      "group": "Разработка",
+      "order": 118
+    },
+    {
+      "title": "Windows PowerShell",
+      "group": "Разработка",
+      "order": 119
+    },
+    {
+      "title": "Windows PowerShell ISE",
+      "group": "Разработка",
+      "order": 120
+    },
+    {
+      "title": "Windows Software Development Kit",
+      "group": "Разработка",
+      "order": 121
+    },
+    {
+      "title": "WSL",
+      "group": "Разработка",
+      "order": 122
+    },
+    {
+      "title": "WSL Settings",
+      "group": "Настройки",
+      "order": 123
+    },
+    {
+      "title": "x64 Native Tools Command Prompt for VS 2019",
+      "group": "Разработка",
+      "order": 124
+    },
+    {
+      "title": "x64 Native Tools Command Prompt for VS 2022",
+      "group": "Разработка",
+      "order": 125
+    },
+    {
+      "title": "x64_x86 Cross Tools Command Prompt for VS 2019",
+      "group": "Разработка",
+      "order": 126
+    },
+    {
+      "title": "x64_x86 Cross Tools Command Prompt for VS 2022",
+      "group": "Разработка",
+      "order": 127
+    },
+    {
+      "title": "x86 Native Tools Command Prompt for VS 2019",
+      "group": "Разработка",
+      "order": 128
+    },
+    {
+      "title": "x86 Native Tools Command Prompt for VS 2022",
+      "group": "Разработка",
+      "order": 129
+    },
+    {
+      "title": "x86_x64 Cross Tools Command Prompt for VS 2019",
+      "group": "Разработка",
+      "order": 130
+    },
+    {
+      "title": "x86_x64 Cross Tools Command Prompt for VS 2022",
+      "group": "Разработка",
+      "order": 131
+    },
+    {
+      "title": "Командная строка",
+      "group": "Разработка",
+      "order": 132
+    },
+    {
+      "title": "Терминал",
+      "group": "Разработка",
+      "order": 133
+    },
+    {
+      "title": "7-Zip File Manager",
+      "group": "Система и сеть",
+      "order": 134
+    },
+    {
+      "title": "AHK Script Launcher",
+      "group": "Система и сеть",
+      "order": 135
+    },
+    {
+      "title": "AIDA64 Extreme",
+      "group": "Система и сеть",
+      "order": 136
+    },
+    {
+      "title": "AmneziaVPN",
+      "group": "Система и сеть",
+      "order": 137
+    },
+    {
+      "title": "CrystalMark Retro Aoi Edition",
+      "group": "Система и сеть",
+      "order": 138
+    },
+    {
+      "title": "Flow Launcher",
+      "group": "Система и сеть",
+      "order": 139
+    },
+    {
+      "title": "Microsoft Store",
+      "group": "Система и сеть",
+      "order": 140
+    },
+    {
+      "title": "Pageant",
+      "group": "Система и сеть",
+      "order": 141
+    },
+    {
+      "title": "PowerToys (Preview)",
+      "group": "Настройки",
+      "order": 142
+    },
+    {
+      "title": "PSFTP",
+      "group": "Система и сеть",
+      "order": 143
+    },
+    {
+      "title": "PuTTY",
+      "group": "Система и сеть",
+      "order": 144
+    },
+    {
+      "title": "PuTTYgen",
+      "group": "Система и сеть",
+      "order": 145
+    },
+    {
+      "title": "Remote Desktop Connection",
+      "group": "Система и сеть",
+      "order": 146
+    },
+    {
+      "title": "Restore previous desktop",
+      "group": "Настройки",
+      "order": 147
+    },
+    {
+      "title": "Restore YASB before MyDockFinder",
+      "group": "Настройки",
+      "order": 148
+    },
+    {
+      "title": "Rufus",
+      "group": "Система и сеть",
+      "order": 149
+    },
+    {
+      "title": "Windhawk",
+      "group": "Настройки",
+      "order": 150
+    },
+    {
+      "title": "WinRAR",
+      "group": "Система и сеть",
+      "order": 151
+    },
+    {
+      "title": "WizTree",
+      "group": "Система и сеть",
+      "order": 152
+    },
+    {
+      "title": "YASB",
+      "group": "Настройки",
+      "order": 153
+    },
+    {
+      "title": "Архивация Windows",
+      "group": "Настройки",
+      "order": 154
+    },
+    {
+      "title": "Безопасность Windows",
+      "group": "Настройки",
+      "order": 155
+    },
+    {
+      "title": "Все приложения Windows",
+      "group": "Система и сеть",
+      "order": 156
+    },
+    {
+      "title": "Выполнить",
+      "group": "Настройки",
+      "order": 157
+    },
+    {
+      "title": "Диспетчер задач",
+      "group": "Настройки",
+      "order": 158
+    },
+    {
+      "title": "Конфигурация системы",
+      "group": "Настройки",
+      "order": 159
+    },
+    {
+      "title": "Монитор брандмауэра Защитника Windows в режиме повышенной безопасности",
+      "group": "Настройки",
+      "order": 160
+    },
+    {
+      "title": "Монитор ресурсов",
+      "group": "Настройки",
+      "order": 161
+    },
+    {
+      "title": "Настройки",
+      "group": "Настройки",
+      "order": 162
+    },
+    {
+      "title": "Оптимизация дисков",
+      "group": "Настройки",
+      "order": 163
+    },
+    {
+      "title": "Очистка диска",
+      "group": "Настройки",
+      "order": 164
+    },
+    {
+      "title": "Палитра команд",
+      "group": "Система и сеть",
+      "order": 165
+    },
+    {
+      "title": "Панель управления",
+      "group": "Настройки",
+      "order": 166
+    },
+    {
+      "title": "Планировщик задач",
+      "group": "Настройки",
+      "order": 167
+    },
+    {
+      "title": "Проводник",
+      "group": "Система и сеть",
+      "order": 168
+    },
+    {
+      "title": "Просмотр событий",
+      "group": "Настройки",
+      "order": 169
+    },
+    {
+      "title": "Редактор реестра",
+      "group": "Настройки",
+      "order": 170
+    },
+    {
+      "title": "Сведения о системе",
+      "group": "Настройки",
+      "order": 171
+    },
+    {
+      "title": "Службы",
+      "group": "Настройки",
+      "order": 172
+    },
+    {
+      "title": "Управление компьютером",
+      "group": "Настройки",
+      "order": 173
+    },
+    {
+      "title": "7-Zip Help",
+      "group": "Служебное",
+      "order": 174
+    },
+    {
+      "title": "Administrative Tools",
+      "group": "Настройки",
+      "order": 175
+    },
+    {
+      "title": "All Applications",
+      "group": "Служебное",
+      "order": 176
+    },
+    {
+      "title": "App Recovery",
+      "group": "Служебное",
+      "order": 177
+    },
+    {
+      "title": "Calendar",
+      "group": "Служебное",
+      "order": 178
+    },
+    {
+      "title": "Catppuccin",
+      "group": "Служебное",
+      "order": 179
+    },
+    {
+      "title": "Character Map",
+      "group": "Служебное",
+      "order": 180
+    },
+    {
+      "title": "Command Prompt",
+      "group": "Служебное",
+      "order": 181
+    },
+    {
+      "title": "Component Services",
+      "group": "Настройки",
+      "order": 182
+    },
+    {
+      "title": "Computer Management",
+      "group": "Настройки",
+      "order": 183
+    },
+    {
+      "title": "Contact Source IT",
+      "group": "Служебное",
+      "order": 184
+    },
+    {
+      "title": "Control Panel",
+      "group": "Настройки",
+      "order": 185
+    },
+    {
+      "title": "dfrgui",
+      "group": "Настройки",
+      "order": 186
+    },
+    {
+      "title": "Disk Cleanup",
+      "group": "Настройки",
+      "order": 187
+    },
+    {
+      "title": "Documentation for Desktop Apps",
+      "group": "Служебное",
+      "order": 188
+    },
+    {
+      "title": "Documentation for UWP Apps",
+      "group": "Служебное",
+      "order": 189
+    },
+    {
+      "title": "Download Free trial of M3 Multimedia Manager",
+      "group": "Служебное",
+      "order": 190
+    },
+    {
+      "title": "DriverHub",
+      "group": "Настройки",
+      "order": 191
+    },
+    {
+      "title": "EA Error Reporter",
+      "group": "Служебное",
+      "order": 192
+    },
+    {
+      "title": "EA Updater",
+      "group": "Служебное",
+      "order": 193
+    },
+    {
+      "title": "Event Viewer",
+      "group": "Настройки",
+      "order": 194
+    },
+    {
+      "title": "File Explorer",
+      "group": "Служебное",
+      "order": 195
+    },
+    {
+      "title": "FreeCAD Website",
+      "group": "Служебное",
+      "order": 196
+    },
+    {
+      "title": "FreeCAD Wiki",
+      "group": "Служебное",
+      "order": 197
+    },
+    {
+      "title": "Git FAQs (Frequently Asked Questions)",
+      "group": "Служебное",
+      "order": 198
+    },
+    {
+      "title": "Glide",
+      "group": "Служебное",
+      "order": 199
+    },
+    {
+      "title": "Glide Private Browsing",
+      "group": "Служебное",
+      "order": 200
+    },
+    {
+      "title": "Homepage",
+      "group": "Служебное",
+      "order": 201
+    },
+    {
+      "title": "Install Additional Tools for Node.js",
+      "group": "Служебное",
+      "order": 202
+    },
+    {
+      "title": "iSCSI Initiator",
+      "group": "Настройки",
+      "order": 203
+    },
+    {
+      "title": "LiveCaptions",
+      "group": "Настройки",
+      "order": 204
+    },
+    {
+      "title": "Magnify",
+      "group": "Настройки",
+      "order": 205
+    },
+    {
+      "title": "Memory Diagnostics Tool",
+      "group": "Настройки",
+      "order": 206
+    },
+    {
+      "title": "Microsoft Edge",
+      "group": "Служебное",
+      "order": 207
+    },
+    {
+      "title": "Microsoft Support and Recovery Assistant",
+      "group": "Служебное",
+      "order": 208
+    },
+    {
+      "title": "Narrator",
+      "group": "Настройки",
+      "order": 209
+    },
+    {
+      "title": "Node.js documentation",
+      "group": "Служебное",
+      "order": 210
+    },
+    {
+      "title": "Node.js website",
+      "group": "Служебное",
+      "order": 211
+    },
+    {
+      "title": "ODBC Data Sources (32-bit)",
+      "group": "Настройки",
+      "order": 212
+    },
+    {
+      "title": "ODBC Data Sources (64-bit)",
+      "group": "Настройки",
+      "order": 213
+    },
+    {
+      "title": "On-Screen Keyboard",
+      "group": "Настройки",
+      "order": 214
+    },
+    {
+      "title": "OVGorskiy.ru",
+      "group": "Служебное",
+      "order": 215
+    },
+    {
+      "title": "People",
+      "group": "Служебное",
+      "order": 216
+    },
+    {
+      "title": "Performance Monitor",
+      "group": "Настройки",
+      "order": 217
+    },
+    {
+      "title": "Power Automate Troubleshooter",
+      "group": "Служебное",
+      "order": 218
+    },
+    {
+      "title": "Print Management",
+      "group": "Настройки",
+      "order": 219
+    },
+    {
+      "title": "Prusa3D Github",
+      "group": "Служебное",
+      "order": 220
+    },
+    {
+      "title": "Purchase Pics Print",
+      "group": "Служебное",
+      "order": 221
+    },
+    {
+      "title": "PuTTY Manual",
+      "group": "Служебное",
+      "order": 222
+    },
+    {
+      "title": "PuTTY Web Site",
+      "group": "Служебное",
+      "order": 223
+    },
+    {
+      "title": "PyDoc (Python 3.14)",
+      "group": "Служебное",
+      "order": 224
+    },
+    {
+      "title": "Python 3.12 Manuals (64-bit)",
+      "group": "Служебное",
+      "order": 225
+    },
+    {
+      "title": "Python 3.12 Module Docs (64-bit)",
+      "group": "Служебное",
+      "order": 226
+    },
+    {
+      "title": "Python 3.14 Manuals",
+      "group": "Служебное",
+      "order": 227
+    },
+    {
+      "title": "Python 3.14 Online Documentation",
+      "group": "Служебное",
+      "order": 228
+    },
+    {
+      "title": "Python install manager",
+      "group": "Служебное",
+      "order": 229
+    },
+    {
+      "title": "Rainmeter",
+      "group": "Служебное",
+      "order": 230
+    },
+    {
+      "title": "RecoveryDrive",
+      "group": "Настройки",
+      "order": 231
+    },
+    {
+      "title": "Registry Editor",
+      "group": "Настройки",
+      "order": 232
+    },
+    {
+      "title": "Report a Problem with Unity",
+      "group": "Служебное",
+      "order": 233
+    },
+    {
+      "title": "Resource Monitor",
+      "group": "Настройки",
+      "order": 234
+    },
+    {
+      "title": "Riot Client",
+      "group": "Служебное",
+      "order": 235
+    },
+    {
+      "title": "Run",
+      "group": "Настройки",
+      "order": 236
+    },
+    {
+      "title": "Sample Desktop Apps",
+      "group": "Служебное",
+      "order": 237
+    },
+    {
+      "title": "Sample UWP Apps",
+      "group": "Служебное",
+      "order": 238
+    },
+    {
+      "title": "Security Configuration Management",
+      "group": "Настройки",
+      "order": 239
+    },
+    {
+      "title": "services",
+      "group": "Настройки",
+      "order": 240
+    },
+    {
+      "title": "Source IT Website",
+      "group": "Служебное",
+      "order": 241
+    },
+    {
+      "title": "Start Tor Browser",
+      "group": "Служебное",
+      "order": 242
+    },
+    {
+      "title": "Steam Support Center",
+      "group": "Служебное",
+      "order": 243
+    },
+    {
+      "title": "Steps Recorder",
+      "group": "Настройки",
+      "order": 244
+    },
+    {
+      "title": "Support",
+      "group": "Служебное",
+      "order": 245
+    },
+    {
+      "title": "System Configuration",
+      "group": "Настройки",
+      "order": 246
+    },
+    {
+      "title": "System Information",
+      "group": "Настройки",
+      "order": 247
+    },
+    {
+      "title": "Task Manager",
+      "group": "Настройки",
+      "order": 248
+    },
+    {
+      "title": "Task Scheduler",
+      "group": "Настройки",
+      "order": 249
+    },
+    {
+      "title": "Unistall XPPenTablet",
+      "group": "Служебное",
+      "order": 250
+    },
+    {
+      "title": "uTorrentClients",
+      "group": "Служебное",
+      "order": 251
+    },
+    {
+      "title": "Visual Studio Installer",
+      "group": "Служебное",
+      "order": 252
+    },
+    {
+      "title": "VoiceAccess",
+      "group": "Настройки",
+      "order": 253
+    },
+    {
+      "title": "Website",
+      "group": "Служебное",
+      "order": 254
+    },
+    {
+      "title": "Win32DiskImager on the Web",
+      "group": "Служебное",
+      "order": 255
+    },
+    {
+      "title": "Windows Defender Firewall with Advanced Security",
+      "group": "Настройки",
+      "order": 256
+    },
+    {
+      "title": "Windows Fax and Scan",
+      "group": "Служебное",
+      "order": 257
+    },
+    {
+      "title": "Windows Media Player Legacy",
+      "group": "Служебное",
+      "order": 258
+    },
+    {
+      "title": "Windows PowerShell (x86)",
+      "group": "Служебное",
+      "order": 259
+    },
+    {
+      "title": "Windows PowerShell ISE (x86)",
+      "group": "Служебное",
+      "order": 260
+    },
+    {
+      "title": "Windows PowerShell ISE (x86) (1)",
+      "group": "Служебное",
+      "order": 261
+    },
+    {
+      "title": "Yandex Disk",
+      "group": "Служебное",
+      "order": 262
+    },
+    {
+      "title": "Автоматические субтитры",
+      "group": "Настройки",
+      "order": 263
+    },
+    {
+      "title": "Голосовой доступ",
+      "group": "Настройки",
+      "order": 264
+    },
+    {
+      "title": "Деинсталлировать Civilization VI",
+      "group": "Служебное",
+      "order": 265
+    },
+    {
+      "title": "Деинсталлировать Factorio",
+      "group": "Служебное",
+      "order": 266
+    },
+    {
+      "title": "Деинсталлировать IXION",
+      "group": "Служебное",
+      "order": 267
+    },
+    {
+      "title": "Деинсталлировать Marvels Spider Man Miles Morales",
+      "group": "Служебное",
+      "order": 268
+    },
+    {
+      "title": "Деинсталлировать PRAGMATA",
+      "group": "Служебное",
+      "order": 269
+    },
+    {
+      "title": "Деинсталлировать STAR WARS Zero Company",
+      "group": "Служебное",
+      "order": 270
+    },
+    {
+      "title": "Деинсталлировать Telegram",
+      "group": "Служебное",
+      "order": 271
+    },
+    {
+      "title": "Деинсталлировать WizTree",
+      "group": "Служебное",
+      "order": 272
+    },
+    {
+      "title": "Действие щелчком",
+      "group": "Служебное",
+      "order": 273
+    },
+    {
+      "title": "Диск восстановления",
+      "group": "Настройки",
+      "order": 274
+    },
+    {
+      "title": "Документация AIDA64 Extreme",
+      "group": "Служебное",
+      "order": 275
+    },
+    {
+      "title": "Инициатор iSCSI",
+      "group": "Настройки",
+      "order": 276
+    },
+    {
+      "title": "Инструменты Windows",
+      "group": "Настройки",
+      "order": 277
+    },
+    {
+      "title": "Источники данных ODBC (32-разрядная версия)",
+      "group": "Настройки",
+      "order": 278
+    },
+    {
+      "title": "Источники данных ODBC (64-разрядная версия)",
+      "group": "Настройки",
+      "order": 279
+    },
+    {
+      "title": "Локальная политика безопасности",
+      "group": "Настройки",
+      "order": 280
+    },
+    {
+      "title": "Начало работы",
+      "group": "Служебное",
+      "order": 281
+    },
+    {
+      "title": "Новости",
+      "group": "Служебное",
+      "order": 282
+    },
+    {
+      "title": "Новости в последней версии",
+      "group": "Служебное",
+      "order": 283
+    },
+    {
+      "title": "Обновление EA app",
+      "group": "Служебное",
+      "order": 284
+    },
+    {
+      "title": "Руководство по консольной версии RAR",
+      "group": "Служебное",
+      "order": 285
+    },
+    {
+      "title": "Сайт AIDA64 Extreme в Интернете",
+      "group": "Служебное",
+      "order": 286
+    },
+    {
+      "title": "Системный монитор",
+      "group": "Настройки",
+      "order": 287
+    },
+    {
+      "title": "Службы компонентов",
+      "group": "Настройки",
+      "order": 288
+    },
+    {
+      "title": "Средство записи действий",
+      "group": "Настройки",
+      "order": 289
+    },
+    {
+      "title": "Средство проверки памяти Windows",
+      "group": "Настройки",
+      "order": 290
+    },
+    {
+      "title": "Таблица символов",
+      "group": "Служебное",
+      "order": 291
+    },
+    {
+      "title": "Техническая поддержка",
+      "group": "Служебное",
+      "order": 292
+    },
+    {
+      "title": "Техническая поддержка Microsoft Support and Recovery Assistant",
+      "group": "Служебное",
+      "order": 293
+    },
+    {
+      "title": "Удалить Papers, Please",
+      "group": "Служебное",
+      "order": 294
+    },
+    {
+      "title": "Управление печатью",
+      "group": "Настройки",
+      "order": 295
+    },
+    {
+      "title": "Установить Bloody WorkShop8",
+      "group": "Служебное",
+      "order": 296
+    },
+    {
+      "title": "Факсы и сканирование",
+      "group": "Служебное",
+      "order": 297
+    },
+    {
+      "title": "Центр отзывов",
+      "group": "Служебное",
+      "order": 298
+    },
+    {
+      "title": "Экранная клавиатура",
+      "group": "Настройки",
+      "order": 299
+    },
+    {
+      "title": "Экранная лупа",
+      "group": "Настройки",
+      "order": 300
+    },
+    {
+      "title": "Экранный диктор",
+      "group": "Настройки",
+      "order": 301
+    },
+    {
+      "title": "Яндекс Браузер с Алисой AI",
+      "group": "Служебное",
+      "order": 302
+    },
+    {
+      "title": "Яндекс Музыка",
+      "group": "Служебное",
+      "order": 303
+    }
+  ]
+}
