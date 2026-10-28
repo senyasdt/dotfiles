@@ -161,6 +161,21 @@ internal static class DesktopBridge {
     static bool Allowed(string process){return !new[]{"yasb","DesktopBridge","Dock_64","dock","ScreenRound","FinderWidgets","SearchHost","StartMenuExperienceHost","ShellExperienceHost","TextInputHost","LockApp"}.Contains(process,StringComparer.OrdinalIgnoreCase);}
     internal static bool IsDockGeometry(Rectangle r,Rectangle screen){return r.Bottom>screen.Top+screen.Height*0.7&&r.Height<=100&&r.Width>20;}
     internal static bool AtDockEdge(int x,int y,Rectangle screen){return x>=screen.Left&&x<screen.Right&&y>=screen.Bottom-3&&y<screen.Bottom;}
+    internal static bool DockPopup(string windowClass,bool visible,bool cloaked,Rectangle popup,Rectangle dock){
+        // Native shell property sheets can belong to YASB too. Only an actual
+        // Qt popup adjacent to this dock should keep it open; top-bar cards and
+        // unrelated dialogs must not pin the bottom bar across the desktop.
+        return visible&&!cloaked&&windowClass.StartsWith("Qt",StringComparison.Ordinal)&&popup.Height>120&&Rectangle.Inflate(dock,16,16).IntersectsWith(popup);
+    }
+    static bool TestDockPopup(){
+        var dock=new Rectangle(900,1366,600,64);var preview=new Rectangle(1000,1100,280,264);
+        if(!DockPopup("Qt6102QWindowToolSaveBits",true,false,preview,dock))return false;
+        if(DockPopup("#32770",true,false,new Rectangle(1315,898,419,534),dock))return false;
+        if(DockPopup("Qt6102QWindowToolSaveBits",false,false,preview,dock)||DockPopup("Qt6102QWindowToolSaveBits",true,true,preview,dock))return false;
+        if(DockPopup("Qt6102QWindowToolSaveBits",true,false,new Rectangle(1000,50,280,300),dock))return false;
+        if(DockPopup("Qt6102QWindowToolSaveBits",true,false,new Rectangle(1700,1100,280,264),dock))return false;
+        return true;
+    }
     internal static int DockAnimationY(int rest,int hidden,double progress,bool show){
         double t=Math.Max(0,Math.Min(1,progress));
         double ease=show?1-Math.Pow(1-t,3):t*t*t;
@@ -218,7 +233,7 @@ internal static class DesktopBridge {
         if(ids.Count==0){if(ShouldRestoreTaskbar(false,lastYasbSeen,DateTime.UtcNow))NativeTaskbar(true);return;}
         lastYasbSeen=DateTime.UtcNow;
         bool feedOnline=komorebi!=null&&Screen.AllScreens.Any(s=>komorebi.ForScreen(s.DeviceName).HasValue);
-        var docks=new List<Tuple<IntPtr,Rectangle>>();var occupants=new HashSet<string>();bool occupied=false,popup=false,fullscreen=false;Point cursor;GetCursorPos(out cursor);IntPtr fg=GetForegroundWindow();
+        var docks=new List<Tuple<IntPtr,Rectangle>>();var popups=new List<Tuple<string,bool,bool,Rectangle>>();var occupants=new HashSet<string>();bool occupied=false,popup=false,fullscreen=false;Point cursor;GetCursorPos(out cursor);IntPtr fg=GetForegroundWindow();
         EnumWindows(delegate(IntPtr hwnd,IntPtr data){
             uint id;GetWindowThreadProcessId(hwnd,out id);bool own=ids.Contains(id);
             // komorebi supplies workspace occupancy. Only the foreground window
@@ -228,7 +243,11 @@ internal static class DesktopBridge {
             Rect r;if(!GetWindowRect(hwnd,out r)||r.Right-r.Left<10||r.Bottom-r.Top<10)return true;var screen=Screen.FromRectangle(r.Value).Bounds;
             var title=new StringBuilder(512);GetWindowText(hwnd,title,title.Capacity);if(ids.Contains(id)){
                 if(title.ToString()=="YasbBar"&&IsDockGeometry(r.Value,screen))docks.Add(Tuple.Create(hwnd,r.Value));
-                else if(IsWindowVisible(hwnd)&&r.Bottom-r.Top>120)popup=true;return true;
+                else if(title.ToString()!="YasbBar"&&IsWindowVisible(hwnd)&&r.Bottom-r.Top>120){
+                    var type=new StringBuilder(128);GetClassName(hwnd,type,type.Capacity);int popupCloaked;
+                    bool hidden=DwmGetWindowAttribute(hwnd,14,out popupCloaked,4)==0&&popupCloaked!=0;
+                    popups.Add(Tuple.Create(type.ToString(),true,hidden,r.Value));
+                }return true;
             }
             if(!IsWindowVisible(hwnd)||IsIconic(hwnd)||(GetWindowLong(hwnd,-20)&0x80)!=0||title.Length==0)return true;
             var cls=new StringBuilder(128);GetClassName(hwnd,cls,cls.Capacity);if(new[]{"Progman","WorkerW","Shell_TrayWnd","Shell_SecondaryTrayWnd"}.Contains(cls.ToString()))return true;
@@ -242,7 +261,7 @@ internal static class DesktopBridge {
         },IntPtr.Zero);
         NativeTaskbar(false);
         bool? managed=null;
-        foreach(var dock in docks){var display=Screen.FromRectangle(dock.Item2);var screen=display.Bounds;managed=komorebi==null?null:komorebi.ForScreen(display.DeviceName);bool edge=AtDockEdge(cursor.X,cursor.Y,screen);bool hover=IsWindowVisible(dock.Item1)&&Rectangle.Inflate(dock.Item2,12,12).Contains(cursor.X,cursor.Y);bool show=DockShouldShow(managed??occupied,edge,hover,popup,fullscreen);if(IsWindowVisible(dock.Item1)!=show)DockVisibility(dock.Item1,show,!fullscreen);}
+        foreach(var dock in docks){var display=Screen.FromRectangle(dock.Item2);var screen=display.Bounds;managed=komorebi==null?null:komorebi.ForScreen(display.DeviceName);bool edge=AtDockEdge(cursor.X,cursor.Y,screen);bool hover=IsWindowVisible(dock.Item1)&&Rectangle.Inflate(dock.Item2,12,12).Contains(cursor.X,cursor.Y);bool dockPopup=popups.Any(p=>DockPopup(p.Item1,p.Item2,p.Item3,p.Item4,dock.Item2));popup|=dockPopup;bool show=DockShouldShow(managed??occupied,edge,hover,dockPopup,fullscreen);if(IsWindowVisible(dock.Item1)!=show)DockVisibility(dock.Item1,show,!fullscreen);}
         string state=Json.Serialize(new{mode="active",occupied=occupied,managedWorkspaceOccupied=managed,occupants=occupants.OrderBy(x=>x).ToArray(),fullscreen=fullscreen,popup=popup,docks=docks.Count,docksVisible=docks.Count(d=>IsWindowVisible(d.Item1))});if(state!=lastState||DateTime.UtcNow-lastWrite>TimeSpan.FromSeconds(10)){File.WriteAllText(Path.Combine(Runtime,"dock-status.json"),state,new UTF8Encoding(false));lastState=state;lastWrite=DateTime.UtcNow;}
     }
     static string lastState="";static DateTime lastWrite=DateTime.MinValue;
@@ -256,6 +275,7 @@ internal static class DesktopBridge {
             if(args.Length>0&&args[0]=="--show-taskbar"){NativeTaskbar(true);return 0;}
             if(args.Length>0&&args[0]=="--test-scroll-hook")return ScrollingMouseNavigation.TestHook()?0:7;
             if(args.Length>0&&args[0]=="--test-motion")return TestDockMotion()?0:5;
+            if(args.Length>0&&(args[0]=="--test-dock-popup"||args[0]=="--test")){if(!TestDockPopup())return 8;if(args[0]=="--test-dock-popup")return 0;}
             if(args.Length>0&&args[0]=="--test"){if(!ScrollingMouseNavigation.SelfTest()||!KomorebiFeed.TestScrollContext())return 6;if(!TestDockEasing())return 5;var bounds=new Rectangle(0,0,2560,1440);if(!IsDockGeometry(new Rectangle(1245,1366,70,64),bounds)||IsDockGeometry(new Rectangle(0,0,2560,40),bounds)||IsDockGeometry(new Rectangle(0,1300,10,64),bounds)||IsDockGeometry(new Rectangle(0,1100,300,300),bounds))return 3;if(!AtDockEdge(0,1439,bounds)||!AtDockEdge(2559,1439,bounds)||AtDockEdge(1280,1400,bounds)||AtDockEdge(-1,1439,bounds)||AtDockEdge(2560,1439,bounds))return 4;var now=new DateTime(2026,10,24,0,0,10,DateTimeKind.Utc);if(ShouldRestoreTaskbar(true,now.AddSeconds(-20),now)||ShouldRestoreTaskbar(false,now.AddSeconds(-2),now)||!ShouldRestoreTaskbar(false,now.AddSeconds(-8),now)||!ShouldRestoreTaskbar(false,DateTime.MinValue,now))return 2;if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
             bool created;using(var mutex=new Mutex(true,@"Local\Druzh.CatppuccinDesktop",out created)){if(!created)return 0;Directory.CreateDirectory(Runtime);Application.EnableVisualStyles();using(var stop=new EventWaitHandle(false,EventResetMode.ManualReset,EventName)){
                 komorebi=LeopardSelected?null:new KomorebiFeed(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"));
