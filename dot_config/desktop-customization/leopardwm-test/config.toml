@@ -619,6 +619,13 @@ column_width = 0.618
 
 [[window_rules]]
 match_executable = "chrome.exe"
+match_class = "^Chrome_WidgetWin_1$"
+match_title = "^Bitwarden( - Google Chrome)?$"
+action = "tile"
+column_width = 0.38
+
+[[window_rules]]
+match_executable = "chrome.exe"
 action = "tile"
 column_width = 0.618
 
