@@ -8,6 +8,14 @@ $activeProfiles=@(($Profiles -join ',').Split(',')|ForEach-Object {$_.Trim()})
 if(@($activeProfiles|Where-Object {$_ -notin @('lite','full','desktop')}).Count -or ($activeProfiles -contains 'lite' -and $activeProfiles.Count -gt 1) -or ($activeProfiles -contains 'desktop' -and $activeProfiles -notcontains 'full')){throw 'Use lite, full or full,desktop'}
 $desktop=$activeProfiles -contains 'desktop'
 
+$profileString = if ($env:CHEZMOI_PROFILES) { $env:CHEZMOI_PROFILES } else { "full" }
+$profiles = @(
+    ($profileString -split ",") |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ }
+)
+$isFull = ($profiles -contains "full") -or ($profiles -contains "desktop")
+
 function Write-Step {
     param([string]$Message)
     Write-Host "==> $Message" -ForegroundColor Cyan
@@ -99,6 +107,11 @@ $wingetPackages = @(
 if($activeProfiles -contains 'lite'){$scoopPackages=@('git','ripgrep','fd','fzf','bat','jq','chezmoi')}
 if($desktop){$scoopPackages+=@('komorebi','whkd')}else{$wingetPackages=@()}
 if($desktop -and $Bar -eq 'yasb'){$wingetPackages+='AmN.yasb'}
+
+if ($isFull) {
+    $scoopPackages += "mise"
+    $wingetPackages += "Docker.DockerDesktop"
+}
 
 $powershellModules = @(
     "posh-git",

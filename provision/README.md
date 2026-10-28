@@ -17,6 +17,28 @@ Profiles keep the same meaning as in `chezmoi`:
 - `full` - CLI workstation
 - `full,desktop` - GUI workstation
 
+The `full` profile installs a platform-native Docker runtime:
+
+- Debian / Ubuntu: Docker Engine from Docker's official APT repository,
+  including Buildx and the Compose plugin. The service is enabled and the
+  provisioned user is added to the `docker` group.
+- macOS: Docker Desktop through the `docker-desktop` Homebrew cask.
+- Windows: Docker Desktop through the `Docker.DockerDesktop` WinGet package.
+
+Linux group membership takes effect after signing out and back in. Docker
+Desktop may request permissions on its first launch.
+
+The `full` profile also installs `mise` for versions of Java, Go, Node.js,
+Python, and other development tools. Zsh uses `mise activate`; native Windows
+uses Scoop's mise shims. The managed global mise config selects Temurin Java 21
+as the workstation default. Choose other versions per project, for example:
+
+```sh
+mise use java@temurin-17 go@latest
+```
+
+Use `mise use -g ...` only when another machine-wide default is intentional.
+
 macOS desktop installs AeroSpace and Karabiner-Elements. Windows desktop uses
 komorebi/komorebic, whkd, YASB, and AutoHotkey.
 
