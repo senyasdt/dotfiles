@@ -38,6 +38,46 @@ LeopardWM закреплён на 0.3.4: SHA256 архива
 Значки используют [JetBrainsMono Nerd Font](https://github.com/matthewjberger/scoop-nerd-fonts/blob/master/bucket/JetBrainsMono-NF.json),
 который добавлен в план YASB. При необходимости обновить шрифтовый кэш входом в Windows.
 
+## Сохранённый вид WezTerm и YASB
+
+Срез HOMEPC от 28 октября 2026: **WezTerm Nord Cold Grey, непрозрачность
+60%, однотонный фон, размер шрифта 10**. Настройки хранятся в
+`.chezmoidata/windows-desktop.json`, схема — в `dot_config/wezterm/themes/`.
+На пустом профиле restore выбирает этот вид. Обычный Apply сохраняет
+последующий выбор пользователя: тему, opacity и solid/image.
+Конфиги, клавиши и остальные модули WezTerm также входят в desktop-профиль.
+Оба входных файла используют одну модульную конфигурацию: `.config/wezterm/wezterm.lua`
+передаёт управление `.wezterm.lua`, поскольку имеет более высокий приоритет
+в [поиске конфигурации WezTerm](https://wezterm.org/config/files.html).
+
+Для явного возврата к сохранённому виду после применения source:
+
+```powershell
+$appearance = "$env:USERPROFILE\.config\desktop-customization\appearance\Manage-Appearance.ps1"
+& $appearance -Action RestoreWezTerm -WhatIf
+& $appearance -Action RestoreWezTerm
+```
+
+Команда возвращает четыре файла выбора темы/opacity/фона, сохраняет резервную
+копию с SHA256 и не перезапускает приложения. Размер шрифта восстанавливает
+сам конфиг chezmoi. Путь `WorkingFolder/desktop-customization` на HOMEPC
+остаётся прежним; новый source в этой работе к живому профилю не применялся.
+
+YASB восстанавливает Cold Grey CSS, конфигурацию панели/дока, callbacks и
+библиотеку. Сохранён переносимый порядок и группы **303 приложений**:
+`yasb-catppuccin/launchpad-layout.json` содержит только title/group/order.
+На новом ПК Import-Apps сканирует установленные программы, создаёт местные
+пути/значки и применяет эту раскладку. Отсутствующие программы не устанавливаются
+из каталога; существующий каталог при обычном Apply не затирается.
+Смешанный ручной порядок папок и приложений требует отдельного
+[расширения Launchpad для YASB 2.0.7](../../dot_config/desktop-customization/yasb-catppuccin/launchpad-order/README.md).
+Оно устанавливается вручную с закрытой панелью, не через автоматический bootstrap.
+Личные pins, DPAPI/VPN, snapshots, кэш и журнал не входят в переносимую раскладку.
+
+После будущей перестановки приложений выполнить `Launchpad-Layout.ps1 -Action Export`,
+перенести результат в source и закоммитить. Для нового сохранённого вида WezTerm
+обновить shared defaults и соответствующий TOML в source: живой выбор сам в Git не попадает.
+
 ## Komorebi и переключение
 
 Для нового ПК с альтернативой: `chezmoi init --branch komorebi
@@ -104,12 +144,18 @@ AHK manual state, каталог Launchpad и snapshots, проверить по
 
 ## Проверка и сопровождение
 
-`Test-Desktop.ps1` проверяет планы, PS5.1/PS7, 48 проверок AHK, 23 проверки
+`Test-Desktop.ps1` проверяет планы, PS5.1/PS7, 48 проверок AHK, 48 проверок
 оформления, выбор WM, адаптацию панели и изолированные сборки помощников.
 `-DownloadRelease` дополнительно разворачивает закреплённый релиз в temp,
 проверяет повторную установку и отказ при изменённом controller. Реальный WM
 в тестах не запускается. `provision/tests/check_desktop_profiles.py` проверяет
 9 сочетаний OS/профиля, `check_catppuccin_profile.py --schema <schema.json>` — YASB.
+
+`provision/tests/check_desktop_recovery.py` выполняет настоящий точечный chezmoi apply
+в пустую временную папку и проверяет WezTerm/YASB и сохранение последующего выбора.
+`provision/tests/Test-WezTermRecovery.ps1 -RenderedHome <fixture> -WezTerm <wezterm.exe>`
+проверяет оба входа настоящим WezTerm CLI, с сохранёнными и отсутствующими
+state-файлами. GUI не запускается.
 
 Чистая Windows VM, полная установка пакетов, новая учётная запись, reboot,
 игры и физические HID в релизной проверке не воспроизводились. Текущий

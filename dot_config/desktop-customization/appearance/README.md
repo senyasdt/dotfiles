@@ -27,8 +27,10 @@ JetBrainsMono Nerd Font Mono. Размеры зависят от приложе�
   Расширение не требуется; при выборе другой темы эти overrides не действуют.
 - Windows Terminal: схема Cold Grey, dark UI, единые defaults для профилей.
   Имена профилей, команды, клавиши и фоновые изображения сохраняются.
-- WezTerm: собственный TOML, существующие theme.lua/active_scheme.toml и
-  переключатель тем. Opacity, фон и клавиши не переопределяются.
+- WezTerm: сохранён Nord Cold Grey, opacity 0.60, фон solid, Windows font size 10.
+  Значения задаёт `.chezmoidata/windows-desktop.json`, TOML темы хранится в source.
+  Обычный Apply заполняет отсутствующее состояние и сохраняет существующий выбор.
+  Явный RestoreWezTerm возвращает сохранённые тему, opacity и фон; клавиши не меняет.
 - Neovim full: Cold Grey добавлен в существующий theme_sync поверх Catppuccin.
   Генератор не устанавливает плагины и не подменяет engine/интеграции.
 - Chrome: стандартное оформление по выбору владельца; исключён из наших адаптеров.
@@ -58,8 +60,10 @@ Code/Terminal source settings и Neovim palette. Геометрия YASB ред�
 Нет постоянного нового процесса.
 
 Команда объединяет только поля оформления с существующими Code/Terminal JSON.
-Неподдерживаемый JSONC вызывает отказ до записи. WezTerm получает TOML и выбор
-темы. Все меняемые файлы сначала сохраняются побайтово в `backup/<date-id>`
+Неподдерживаемый JSONC вызывает отказ до записи. WezTerm получает адаптер Cold Grey;
+его текущие theme/active_scheme.toml, opacity и background_mode сохраняются.
+Если state отсутствует, используется сохранённый Nord Cold Grey / 0.60 / solid.
+Все меняемые файлы сначала сохраняются побайтово в `backup/<date-id>`
 с SHA256 и манифестом. Для возврата:
 
 ```powershell
@@ -72,6 +76,21 @@ Code/Terminal source settings и Neovim palette. Геометрия YASB ред�
 При неполной записи исходные `.old` и манифест остаются для ручного восстановления.
 `-TargetHome` предназначен для проверки отдельного/офлайн профиля; по умолчанию
 используются текущий UserProfile и стандартные APPDATA/LOCALAPPDATA.
+
+## Вернуть сохранённый WezTerm
+
+После применения chezmoi файлов WezTerm и appearance:
+
+```powershell
+.\Manage-Appearance.ps1 -Action RestoreWezTerm -WhatIf
+.\Manage-Appearance.ps1 -Action RestoreWezTerm
+```
+
+Возвращает четыре state-файла; Code/Terminal не читаются и не меняются.
+Копия и guarded Restore работают так же, как выше. Отсутствующий TOML темы
+вызывает отказ до записи. Шрифт 10 задаёт сам Windows-конфиг chezmoi.
+Обновление source не делает Git-снимок новых пользовательских предпочтений:
+для следующего восстановления их нужно осознанно сохранить в shared defaults.
 
 ## Chrome
 
@@ -98,9 +117,6 @@ dotfiles, генератора и рабочей папки. Restore не уст
 Discord, Telegram, Unity/Blender и новый GUI вид Code/Terminal не были
 подтверждены владельцем. Реальные игры, античит, reboot и чистая VM не проверялись.
 
-WSL имеет отдельную домашнюю директорию. Для текущего WSL сохранены прежние
-theme/active_scheme.toml в `~/.local/state/desktop-appearance/<date>`; выбрана Cold Grey.
-При возврате вида скопировать из этой копии `1.old` в `~/.config/wezterm/theme`,
-`2.old` в `~/.config/wezterm/active_scheme.toml`. Generated palette и другие темы
-не удаляются. После обычного restore WSL тему можно выбрать в existing WezTerm
-command palette; Windows-скрипт сам не запускает WSL.
+WSL имеет отдельную домашнюю директорию. Windows-помощник её не изменяет.
+Историческая операция с WSL state сохранена в точной архивной версии этого
+документа; она не является инструкцией восстановления нового Windows-профиля.

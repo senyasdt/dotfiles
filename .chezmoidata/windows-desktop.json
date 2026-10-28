@@ -2,6 +2,12 @@
   "windowsDesktop": {
     "windowManager": "Leopard",
     "bar": "yasb",
-    "theme": "catppuccin"
+    "theme": "catppuccin",
+    "wezterm": {
+      "theme": "nord-cold-grey",
+      "opacity": 0.6,
+      "backgroundMode": "solid",
+      "fontSize": 10
+    }
   }
 }

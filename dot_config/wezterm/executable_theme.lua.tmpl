@@ -8,7 +8,7 @@ local active_scheme_file = wezterm.home_dir .. "/.config/wezterm/active_scheme.t
 local theme_dir = wezterm.home_dir .. "/.config/wezterm/themes"
 local generate_theme_script = wezterm.home_dir .. "/.config/wezterm/generate-theme-from-wallpaper.sh"
 local generate_theme_script_wsl = "~/.config/wezterm/generate-theme-from-wallpaper.sh"
-local default_color_scheme = "Catppuccin Macchiato"
+local default_color_scheme = "{{ .windowsDesktop.wezterm.theme }}"
 
 local function theme_name_from_path(path)
 	local filename = path:match("([^/\\]+)$") or path
@@ -189,7 +189,7 @@ function M.palette_entries(state)
 
 	-- Keep the approved desktop palette easy to return to after theme experiments.
 	local favorite_theme = "nord-cold-grey"
-	if state.custom_schemes[favorite_theme] then
+	if favorite_theme ~= state.default_color_scheme and state.custom_schemes[favorite_theme] then
 		table.insert(entries, 1, {
 			brief = "Theme | Nord Cold Grey" .. (state.name == favorite_theme and " (current)" or ""),
 			icon = "md_star",

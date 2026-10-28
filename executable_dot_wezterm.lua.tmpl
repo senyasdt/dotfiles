@@ -31,7 +31,7 @@ config.initial_rows = 28
 {{ if eq .chezmoi.os "darwin" -}}
 config.font_size = 16
 {{- else if eq .chezmoi.os "windows" -}}
-config.font_size = 11
+config.font_size = {{ .windowsDesktop.wezterm.fontSize }}
 {{- else -}}
 config.font_size = 10
 {{- end }}
@@ -40,17 +40,17 @@ config.status_update_interval = 250
 local function read_background_mode()
 	local file = io.open(background_mode_file, "r")
 	if not file then
-		return "image"
+		return "{{ .windowsDesktop.wezterm.backgroundMode }}"
 	end
 
 	local mode = file:read("*l")
 	file:close()
 
-	if mode == "solid" then
-		return "solid"
+	if mode == "solid" or mode == "image" then
+		return mode
 	end
 
-	return "image"
+	return "{{ .windowsDesktop.wezterm.backgroundMode }}"
 end
 
 local function write_background_mode(mode)
