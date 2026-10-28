@@ -144,6 +144,11 @@ internal sealed class LauncherEngine
     }
     public void Control(string operation,string selector)
     {
+        if(operation=="toggle-global") {
+            if(selector!="all")throw new ArgumentException("Global switch requires all scripts.");
+            operation=GlobalEnabled?"disable":"enable";
+            Suspended=false;
+        }
         if(operation=="pause" || operation=="resume") { Suspended=operation=="pause"; Save(); return; }
         var paths=Config.Scripts.Keys.Where(p=>selector=="all" || String.Equals(p,selector,StringComparison.OrdinalIgnoreCase) || String.Equals(System.IO.Path.GetFileName(p),selector,StringComparison.OrdinalIgnoreCase)).ToArray();
         if(paths.Length==0)throw new ArgumentException("No configured script matches "+selector);
@@ -157,6 +162,9 @@ internal sealed class LauncherEngine
         }
         Save();
     }
+    public bool GlobalEnabled { get { return !Suspended && Config!=null && Config.Scripts.Values.Any(s=>{
+        bool selected;return s.Enabled && (!Overrides.TryGetValue(s.Path,out selected)||selected);
+    }); } }
     static bool Same(string first,string second) { return String.Equals(first,second,StringComparison.OrdinalIgnoreCase); }
     bool Stop(ObservedProcess process,List<ObservedProcess> observed,ScriptState state)
     {
@@ -225,7 +233,7 @@ internal sealed class LauncherEngine
         var ahk=observed.Where(p=>p.Ahk).ToArray();
         string overall=Suspended?"paused":scripts.Any(s=>(string)s["mode"]=="blocked")?"blocked":scripts.Any(s=>(string)s["mode"]=="waiting")?"waiting":scripts.Any(s=>(string)s["mode"]=="error")?"error":"idle";
         return new Dictionary<string,object> {
-            {"mode",overall},{"suspended",Suspended},{"blockedBy",allBlockers.ToArray()},{"ahkProcessCount",ahk.Length},
+            {"mode",overall},{"suspended",Suspended},{"globalEnabled",GlobalEnabled},{"blockedBy",allBlockers.ToArray()},{"ahkProcessCount",ahk.Length},
             {"managedRunning",scripts.Count(s=>(bool)s["running"])},
             {"unmanagedAhkCount",ahk.Count(p=>p.Script==null || !Config.Scripts.ContainsKey(p.Script))},
             {"scripts",scripts},{"groupCount",Config.Rules.Count}
@@ -423,7 +431,7 @@ internal static class ScriptLauncher
         if(args.Length>0 && args[0]!="--run") {
             string op=args[0].TrimStart('-'); string selector=args.Length>1?args[1]:"all";
             if(op.EndsWith("-all"))op=op.Substring(0,op.Length-4);
-            if(!new string[]{"enable","disable","toggle","restart","pause","resume","stop"}.Contains(op))return 2;
+            if(!new string[]{"enable","disable","toggle","toggle-global","restart","pause","resume","stop"}.Contains(op))return 2;
             return Send(op,selector);
         }
         bool created;
@@ -447,7 +455,7 @@ internal static class ScriptLauncher
                         while(Requests.TryDequeue(out request)) {
                             try {
                                 if(request.Operation=="stop")StopEvent.Set();
-                                else if(!new string[]{"enable","disable","toggle","restart","pause","resume"}.Contains(request.Operation))throw new ArgumentException("Unsupported operation");
+                                else if(!new string[]{"enable","disable","toggle","toggle-global","restart","pause","resume"}.Contains(request.Operation))throw new ArgumentException("Unsupported operation");
                                 else engine.Control(request.Operation,request.Selector);
                             } catch(Exception e) { request.Error=e.Message; }
                             finally { request.Done.Set(); }

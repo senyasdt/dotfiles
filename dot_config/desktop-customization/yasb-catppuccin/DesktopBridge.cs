@@ -77,8 +77,12 @@ internal static class DesktopBridge {
         if(kind=="leopard")return LeopardState();
         if(kind=="ahk"){
             var s=Read(Path.Combine(LauncherRoot,@"runtime\status.json"));var mode=Get(s,"mode","offline");var scripts=Items(s,"scripts").Select(v=>v as Dictionary<string,object>).Where(v=>v!=null).ToArray();
-            string detail=String.Join("\n",scripts.Select(v=>Get(v,"name","")+": "+Get(v,"mode","?")));
-            return new Dictionary<string,object>{{"label",mode=="blocked"?"AHK · игра":mode=="paused"?"AHK · стоп":mode=="waiting"?"AHK · пауза":"AHK "+Get(s,"managedRunning","—")},{"tooltip",detail+"\nЛКМ: управление скриптами; ПКМ: выключить все"}};
+            bool on=Get(s,"globalEnabled",Get(s,"suspended","False")=="True"?"False":scripts.Any(v=>Get(v,"enabled","False")=="True").ToString())=="True";
+            string detail=on?"Запуск скриптов разрешён.":"Скрипты выключены.";
+            if(on&&mode=="blocked")detail+="\nИгра: скрипты временно заблокированы.";
+            else if(on&&mode=="waiting")detail+="\nОжидание безопасного возобновления после игры.";
+            else if(mode=="error"||mode=="offline"||mode=="stopped")detail+="\nПроверь менеджер скриптов в ↻ → AHK.";
+            return new Dictionary<string,object>{{"label",on?"AHK ON":"AHK OFF"},{"tooltip",detail+"\nЛКМ: включить/выключить все · ПКМ: выключить все\nОтдельные скрипты и отладка: ↻ → AHK"}};
         }
         string folder=kind=="vial"?"vial-helper":"zmk-yasb";var state=Read(Path.Combine(Data,folder+@"\state.json"));
         string prefix=kind=="vial"?"VIAL":"ZMK";string label=Get(state,"label","OFF");
