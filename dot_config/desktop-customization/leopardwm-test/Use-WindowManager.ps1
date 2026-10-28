@@ -83,7 +83,9 @@ function Stop-Leopard {
 function Start-Leopard {
     if(Get-Process komorebi -ErrorAction SilentlyContinue){throw 'Komorebi is still running; LeopardWM was not started.'}
     if(Get-Process whkd -ErrorAction SilentlyContinue){throw 'whkd is still running; conflicting hotkeys were left untouched.'}
-    $expected=[IO.File]::ReadAllText($appConfig)
+    # Validate against the managed profile, never against another default config
+    # selected by a packaged caller's redirected AppData view.
+    $expected=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'config.toml'))
     for($attempt=0;$attempt -lt 2;$attempt++){
     if(-not @(Owned $daemon).Count){
         # The daemon inherits its launching CLI's stdout handles. Do not wait
@@ -100,6 +102,10 @@ function Start-Leopard {
     $effective=Command $lwm 'query hotkeys' 4000
     if(& (Join-Path $PSScriptRoot 'Test-EffectiveHotkeys.ps1') -ConfigText $expected -HotkeyText $effective){return}
     # Reload is asynchronous; give it a bounded opportunity before one restart.
+    if((Digest $appConfig) -ne (Digest (Join-Path $PSScriptRoot 'config.toml'))){
+        Copy-Item -LiteralPath $appConfig -Destination (Join-Path $runtime ('config-before-startup-repair-'+[Guid]::NewGuid().ToString('N')+'.toml'))
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'config.toml') -Destination $appConfig -Force
+    }
     Command $lwm 'reload' 4000|Out-Null
     for($check=0;$check -lt 6;$check++){
         Start-Sleep -Milliseconds 250
