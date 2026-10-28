@@ -103,9 +103,11 @@ $src = chezmoi source-path
 ```
 
 Windows uses a native PowerShell provisioner; Ansible remains for Linux/macOS.
-The grouped AHK manager and tray widgets are built from source after apply.
-MyDockFinder and YASB are optional bar choices; the independent **All Applications**
-shortcut remains available without either. Existing HOMEPC migration requires
+The grouped AHK manager and YASB DesktopBridge are built from source after apply.
+The target desktop is stock komorebi/whkd with YASB; `-Bar none` keeps a native
+recovery baseline. MyDockFinder and FinderWidgets are retired from provisioning
+and startup. The independent **All Applications** shortcut remains available.
+See the [complete Windows integration change list](provision/windows/CHANGES.md). Existing HOMEPC migration requires
 reviewing old Startup/tasks and its repaired komorebi junction first; this source
 update alone does not migrate the running helpers. WSL is not required.
 

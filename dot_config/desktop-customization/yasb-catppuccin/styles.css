@@ -1,0 +1,125 @@
+/* Cool translucent neutral grey. Compact layout based on the owner's pre-patch YASB. */
+* {
+    font-family: "Segoe UI", "JetBrainsMono NFP", "JetBrainsMono Nerd Font";
+    font-size: 13px;
+    color: #d6d9df;
+    font-weight: 600;
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+.bar.catppuccin-top {
+    background-color: rgba(28, 30, 34, 64);
+    border: 1px solid rgba(161, 170, 184, 35);
+    border-radius: 6px;
+}
+.bar.catppuccin-dock {
+    background-color: rgba(28, 30, 34, 128);
+    border: 1px solid rgba(161, 170, 184, 60);
+    border-radius: 10px;
+    padding: 0 4px;
+}
+.widget { padding: 0 4px; margin: 0; border-radius: 5px; }
+.widget .label { padding: 0 2px; }
+.widget .icon { color: #a8b7ca; font-size: 16px; }
+.widget:hover { background-color: rgba(161, 170, 184, 26); }
+.launchpad-widget .label { color: #acb9ca; font-size: 18px; }
+.komorebi-workspaces { padding: 0 3px; }
+.komorebi-workspaces .widget-container { padding: 0; }
+.komorebi-workspaces .ws-btn {
+    color: #858d99; background-color: transparent; border-radius: 4px;
+    padding: 0 4px; margin: 0 3px; min-width: 12px; font-size: 15px; font-weight: 600;
+}
+.komorebi-workspaces .ws-btn.populated { color: #a8b7ca; background-color: transparent; }
+.komorebi-workspaces .ws-btn.active { color: #d2d9e3; background-color: transparent; border-bottom: 2px solid #acb9ca; }
+.komorebi-workspaces .ws-btn:hover { color: #e1e5eb; background-color: #343840; }
+.komorebi-active-layout .label { color: #a8b7ca; font-size: 10px; font-weight: 700; }
+.active-window-widget .label { color: #a8afb9; font-size: 12px; }
+.clock-widget .label { color: #c6cdd7; font-weight: 600; padding: 0 6px; }
+.ahk-widget .label { color: #aebbb6; }
+.services-widget .label { font-family: "Segoe UI Symbol", "Segoe UI"; color: #a8b7ca; font-size: 19px; font-weight: 600; min-width: 18px; }
+.vial-widget .label { color: #b4bcc7; }
+.zmk-widget .label { color: #adb9c8; }
+.vpn-domain-submit-widget .label { color: #a8b7ca; }
+.language-widget .label { color: #b9bec7; }
+.open-meteo-widget .label { color: #b4bcc7; }
+.volume-widget .label { color: #a8b8cb; }
+.power-menu-widget .label { color: #c799a3; font-size: 15px; }
+.desktop-menu .label { color: #a8afb9; font-size: 16px; }
+.media-widget { background-color: transparent; margin-right: 4px; }
+.media-widget .label { color: #a8afb9; font-size: 11px; }
+.media-widget .btn { padding: 0 5px; color: #acb9ca; }
+.systray .unpinned-visibility-btn { color: #a8afb9; padding: 0 3px; }
+.systray .button { padding: 2px; margin: 0 2px; border-radius: 5px; }
+.systray-popup { background-color: rgba(40, 43, 49, 80); border: none; border-radius: 10px; padding: 10px; }
+.systray-popup .button { min-width: 24px; min-height: 24px; padding: 3px; margin: 2px; border-radius: 6px; background-color: transparent; }
+.systray-popup .button:hover { background-color: rgba(161, 170, 184, 40); }
+.catppuccin-dock .widget { padding: 0 5px; margin: 4px 1px; border-radius: 11px; }
+.catppuccin-dock .launchpad-widget .label { font-size: 28px; color: #acb9ca; padding: 0 7px; }
+.catppuccin-dock .quick-launch-widget .label { font-size: 23px; color: #a8b7ca; padding: 0 6px; }
+.catppuccin-dock .taskbar-widget { border-left: 1px solid rgba(161,170,184,60); padding-left: 6px; }
+/* No CSS margin: Qt still dispatches clicks inside that transparent margin.
+   Hover and active styles cover the complete 48 px hit target. */
+.taskbar-widget .app-container { min-width: 0px; max-width: 32px; padding: 6px 8px; margin: 0; background-color: transparent; border-radius: 8px; border-bottom: 2px solid transparent; }
+.taskbar-widget .app-icon { padding: 0; margin: 0; }
+.taskbar-widget .app-container.running { border-bottom: 2px solid #626b79; }
+.taskbar-widget .app-container.foreground { background-color: #343840; border-bottom: 2px solid #acb9ca; }
+.taskbar-widget .app-container:hover { background-color: #4b515c; }
+.taskbar-widget .app-container.flashing { background-color: #b4bcc7; }
+.taskbar-preview, .taskbar-preview .header { background-color: rgba(32, 34, 39, 190); border-radius: 12px; padding: 8px; }
+QToolTip { background-color: rgba(32, 34, 39, 190); color: #d6d9df; border: 1px solid #4b515c; border-radius: 7px; padding: 8px 12px; }
+.context-menu { background-color: rgba(32, 34, 39, 190); border: 1px solid #4b515c; border-radius: 10px; padding: 6px; }
+.context-menu::item { padding: 8px 24px 8px 12px; border-radius: 6px; }
+.context-menu::item:selected { background-color: #4b515c; color: #d6d9df; }
+.context-menu::separator { height: 1px; background-color: #343840; margin: 5px; }
+.launchpad { background-color: transparent; }
+.launchpad .launchpad-container { background-color: rgba(32, 34, 39, 190); border: none; border-radius: 8px; padding: 25px; }
+.launchpad .search-container { background-color: transparent; padding: 4px 16px 20px; }
+.launchpad .search-input { background-color: #343840; border: 1px solid transparent; border-radius: 6px; padding: 13px 18px; color: #d6d9df; font-size: 15px; }
+.launchpad .search-input:focus { border: 1px solid #626b79; }
+.launchpad .launchpad-scroll-area, .launchpad #grid-container, .launchpad .launchpad-scroll-area QWidget { background-color: transparent; }
+.launchpad .app-icon { background-color: transparent; border: 1px solid transparent; border-radius: 8px; padding: 10px 5px; }
+.launchpad .app-icon:hover, .launchpad .app-icon:focus { background-color: #343840; border: 1px solid transparent; }
+.launchpad .app-icon .title { color: #d6d9df; font-family: "Segoe UI"; font-size: 12px; padding-top: 8px; }
+.launchpad .app-icon .icon { background-color: transparent; }
+.launchpad .group-icon { background-color: #343840; border-radius: 8px; }
+.launchpad .group-back-button { background-color: #4b515c; border-radius: 8px; padding: 8px 16px; }
+QScrollBar:vertical { background-color: transparent; width: 6px; margin: 3px; }
+QScrollBar::handle:vertical { background-color: #626b79; border-radius: 3px; min-height: 24px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
+.app-dialog { background-color: rgba(32, 34, 39, 190); padding: 20px; }
+.app-dialog QLineEdit { background-color: #343840; border-radius: 7px; padding: 9px; }
+.app-dialog .button { background-color: #4b515c; border-radius: 7px; padding: 8px 18px; }
+.app-dialog .button.save, .app-dialog .button.add { background-color: #acb9ca; color: #202227; }
+.calendar, .volume-slider, .audio-menu, .language-menu, .weather-card, .open-meteo-card {
+    background-color: rgba(32, 34, 39, 190); border: 1px solid #4b515c; border-radius: 14px; padding: 14px;
+}
+.calendar .calendar-table { background-color: transparent; }
+.calendar .calendar-table::item:selected { background-color: #acb9ca; color: #202227; border-radius: 6px; }
+.calendar .day-label, .calendar .month-label, .calendar .date-label { color: #acb9ca; }
+.language-menu .layout-item { padding: 10px 16px; border-radius: 7px; }
+.language-menu .layout-item:hover, .language-menu .layout-item.active { background-color: #343840; color: #acb9ca; }
+.volume-slider QSlider::groove:horizontal { background: #4b515c; height: 5px; border-radius: 2px; }
+.volume-slider QSlider::sub-page:horizontal { background: #a8b8cb; border-radius: 2px; }
+.volume-slider QSlider::handle:horizontal { background: #a8b8cb; width: 14px; margin: -5px 0; border-radius: 7px; }
+.power-menu-popup { background-color: rgba(24, 26, 30, 235); border: 1px solid #4b515c; border-radius: 20px; padding: 24px; }
+.power-menu-popup .button { background-color: #343840; border-radius: 14px; padding: 24px; margin: 8px; }
+.power-menu-popup .button:hover { background-color: #4b515c; }
+.power-menu-popup .button .icon { color: #acb9ca; font-size: 32px; }
+
+/* Give the top-right status widgets and controls distinct, padded hit areas. */
+.catppuccin-top .language-widget,
+.catppuccin-top .open-meteo-widget,
+.catppuccin-top .volume-widget { padding: 0 4px; }
+.catppuccin-top .language-widget .label,
+.catppuccin-top .open-meteo-widget .label,
+.catppuccin-top .volume-widget .label { padding: 0 2px; }
+.catppuccin-top .open-meteo-widget .icon,
+.catppuccin-top .volume-widget .icon { padding-right: 2px; }
+.catppuccin-top .systray { padding: 0 4px; }
+.catppuccin-top .systray .unpinned-visibility-btn { min-width: 12px; padding: 0 2px; }
+.catppuccin-top .desktop-menu,
+.catppuccin-top .power-menu-widget { padding: 0 5px; }
+.catppuccin-top .desktop-menu .label,
+.catppuccin-top .power-menu-widget .label { min-width: 14px; padding: 0 2px; }

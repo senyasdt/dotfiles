@@ -76,9 +76,15 @@ jobs:
 
       - name: Check desktop profile boundaries
         if: runner.os == 'Linux' && matrix.profile == 'full,desktop'
-        run: python3 provision/tests/check_desktop_profiles.py
+        run: |
+          python3 -m pip install 'PyYAML>=6.0.1,<7'
+          python3 provision/tests/check_desktop_profiles.py
+          python3 provision/tests/check_catppuccin_profile.py
 
       - name: Build and test native desktop helpers
         if: runner.os == 'Windows' && matrix.profile == 'full,desktop'
         shell: pwsh
-        run: ./provision/windows/Test-Desktop.ps1
+        run: |
+          ./provision/windows/Test-Desktop.ps1
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./provision/windows/Test-Desktop.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell 5.1 desktop checks failed' }

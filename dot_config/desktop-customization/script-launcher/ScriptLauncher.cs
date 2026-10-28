@@ -121,6 +121,7 @@ internal sealed class ScriptState
 internal sealed class LauncherEngine
 {
     public Configuration Config;
+    public bool Suspended;
     public Dictionary<string,bool> Overrides=new Dictionary<string,bool>(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> Pending=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     readonly Dictionary<string,ScriptState> states=new Dictionary<string,ScriptState>(StringComparer.OrdinalIgnoreCase);
@@ -143,12 +144,14 @@ internal sealed class LauncherEngine
     }
     public void Control(string operation,string selector)
     {
+        if(operation=="pause" || operation=="resume") { Suspended=operation=="pause"; Save(); return; }
         var paths=Config.Scripts.Keys.Where(p=>selector=="all" || String.Equals(p,selector,StringComparison.OrdinalIgnoreCase) || String.Equals(System.IO.Path.GetFileName(p),selector,StringComparison.OrdinalIgnoreCase)).ToArray();
         if(paths.Length==0)throw new ArgumentException("No configured script matches "+selector);
         if(selector!="all" && paths.Length>1)throw new ArgumentException("Ambiguous filename; use the full script path.");
         foreach(string path in paths) {
             bool current; bool wanted=Config.Scripts[path].Enabled && (!Overrides.TryGetValue(path,out current) || current);
-            Overrides[path]=operation=="disable"?false:operation=="toggle"?!wanted:true;
+            // Restart never changes the owner's explicit enabled/disabled choice.
+            if(operation!="restart")Overrides[path]=operation=="disable"?false:operation=="toggle"?!wanted:true;
             if(operation=="restart")states[path].Restart=true;
             states[path].RetryAfter=DateTime.MinValue; states[path].Failures=0; states[path].Error="";
         }
@@ -197,11 +200,11 @@ internal sealed class LauncherEngine
             } else if(state.WasBlocked) { state.WasBlocked=false; state.ClearSince=now; }
             bool waiting=state.ClearSince.HasValue && (now-state.ClearSince.Value).TotalSeconds<Config.Delay;
             if(!waiting && blockers.Count==0 && Pending.Remove(path))pendingChanged=true;
-            bool mustStop=!wanted || blockers.Count>0 || state.Restart;
+            bool mustStop=!wanted || Suspended || blockers.Count>0 || state.Restart;
             if(mustStop)foreach(var process in processes)Stop(process,observed,state);
             bool running=observed.Any(p=>p.Ahk && Same(p.Script,path));
             if(!running)state.Restart=false;
-            if(wanted && !running && blockers.Count==0 && !waiting && allowStart && now>=state.RetryAfter) {
+            if(wanted && !Suspended && !running && blockers.Count==0 && !waiting && allowStart && now>=state.RetryAfter) {
                 try {
                     var started=host.Start(spec); observed.Add(started); running=true;
                     state.Failures=0; state.Error=""; Log("Started "+System.IO.Path.GetFileName(path));
@@ -210,7 +213,7 @@ internal sealed class LauncherEngine
                     state.Error=e.Message;
                 }
             }
-            string mode=!wanted?"disabled":blockers.Count>0?"blocked":waiting?"waiting":running?"running":state.Error.Length>0?"error":"stopped";
+            string mode=!wanted?"disabled":Suspended?"paused":blockers.Count>0?"blocked":waiting?"waiting":running?"running":state.Error.Length>0?"error":"stopped";
             state.PreviouslyRunning=running;
             scripts.Add(new Dictionary<string,object> {
                 {"path",path},{"name",System.IO.Path.GetFileNameWithoutExtension(path)},{"enabled",wanted},{"running",running},
@@ -220,9 +223,9 @@ internal sealed class LauncherEngine
         }
         if(pendingChanged)Save();
         var ahk=observed.Where(p=>p.Ahk).ToArray();
-        string overall=scripts.Any(s=>(string)s["mode"]=="blocked")?"blocked":scripts.Any(s=>(string)s["mode"]=="waiting")?"waiting":scripts.Any(s=>(string)s["mode"]=="error")?"error":"idle";
+        string overall=Suspended?"paused":scripts.Any(s=>(string)s["mode"]=="blocked")?"blocked":scripts.Any(s=>(string)s["mode"]=="waiting")?"waiting":scripts.Any(s=>(string)s["mode"]=="error")?"error":"idle";
         return new Dictionary<string,object> {
-            {"mode",overall},{"blockedBy",allBlockers.ToArray()},{"ahkProcessCount",ahk.Length},
+            {"mode",overall},{"suspended",Suspended},{"blockedBy",allBlockers.ToArray()},{"ahkProcessCount",ahk.Length},
             {"managedRunning",scripts.Count(s=>(bool)s["running"])},
             {"unmanagedAhkCount",ahk.Count(p=>p.Script==null || !Config.Scripts.ContainsKey(p.Script))},
             {"scripts",scripts},{"groupCount",Config.Rules.Count}
@@ -399,13 +402,14 @@ internal static class ScriptLauncher
         } catch(Exception e) { if(!StopEvent.WaitOne(0)) { Log("Control: "+e.Message); Thread.Sleep(500); } }
         finally { activePipe=null; }
     }
-    static void Save(LauncherEngine engine) { Atomic(StatePath,new { overrides=engine.Overrides,resumeAfterBlock=engine.Pending.ToArray(),knownScripts=engine.KnownScripts.ToArray() }); }
+    static void Save(LauncherEngine engine) { Atomic(StatePath,new { suspended=engine.Suspended,overrides=engine.Overrides,resumeAfterBlock=engine.Pending.ToArray(),knownScripts=engine.KnownScripts.ToArray() }); }
     static void Load(LauncherEngine engine)
     {
         if(!File.Exists(StatePath))return;
         var data=new JavaScriptSerializer().DeserializeObject(ReadText(StatePath)) as Dictionary<string,object>;
         if(data==null)throw new InvalidDataException("Invalid state.json; saved state retained.");
         object value;
+        if(data.TryGetValue("suspended",out value))engine.Suspended=Convert.ToBoolean(value);
         if(data.TryGetValue("overrides",out value))foreach(var entry in (Dictionary<string,object>)value)engine.Overrides[entry.Key]=Convert.ToBoolean(entry.Value);
         if(data.TryGetValue("resumeAfterBlock",out value))foreach(object path in (object[])value)engine.Pending.Add(Convert.ToString(path));
         if(data.TryGetValue("knownScripts",out value))foreach(object path in (object[])value)engine.Remembered.Add(Convert.ToString(path));
@@ -419,7 +423,7 @@ internal static class ScriptLauncher
         if(args.Length>0 && args[0]!="--run") {
             string op=args[0].TrimStart('-'); string selector=args.Length>1?args[1]:"all";
             if(op.EndsWith("-all"))op=op.Substring(0,op.Length-4);
-            if(!new string[]{"enable","disable","toggle","restart","stop"}.Contains(op))return 2;
+            if(!new string[]{"enable","disable","toggle","restart","pause","resume","stop"}.Contains(op))return 2;
             return Send(op,selector);
         }
         bool created;
@@ -443,7 +447,7 @@ internal static class ScriptLauncher
                         while(Requests.TryDequeue(out request)) {
                             try {
                                 if(request.Operation=="stop")StopEvent.Set();
-                                else if(!new string[]{"enable","disable","toggle","restart"}.Contains(request.Operation))throw new ArgumentException("Unsupported operation");
+                                else if(!new string[]{"enable","disable","toggle","restart","pause","resume"}.Contains(request.Operation))throw new ArgumentException("Unsupported operation");
                                 else engine.Control(request.Operation,request.Selector);
                             } catch(Exception e) { request.Error=e.Message; }
                             finally { request.Done.Set(); }

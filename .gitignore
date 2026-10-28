@@ -7,6 +7,8 @@
 *.swp
 *.swo
 *~
+dot_config/desktop-customization/yasb-catppuccin/private/
+dot_config/desktop-customization/yasb-catppuccin/settings.json
 dot_config/desktop-customization/**/runtime/
 dot_config/desktop-customization/**/backup/
 dot_config/desktop-customization/**/test-output/
