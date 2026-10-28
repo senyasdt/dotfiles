@@ -212,7 +212,10 @@ if($Action -eq 'Apply'){
         Copy-Item -LiteralPath (Join-Path $root 'win-launchpad.ahk') -Destination (Join-Path $profileRoot '.config\autohotkey\mydockfinder-hotkeys.ahk') -Force
         foreach($name in @('MyDockFinder.lnk','Finder Widgets.lnk','yasb.cmd')){$p=Join-Path $startup $name;if(Test-Path -LiteralPath $p){Remove-Item -LiteralPath $p}}
         foreach($v in $s.dockRun){Remove-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name $v.name -ErrorAction SilentlyContinue}
-        if(!(Test-Path -LiteralPath (Join-Path $startup 'Desktop Session.lnk'))){$shell=New-Object -ComObject WScript.Shell;$lnk=$shell.CreateShortcut((Join-Path $startup 'YASB Catppuccin.lnk'));$lnk.TargetPath=Join-Path $env:WINDIR 'System32\wscript.exe';$lnk.Arguments='"'+(Join-Path $root 'Start.vbs')+'"';$lnk.WorkingDirectory=$root;$lnk.Description='YASB Catppuccin and smart dock';$lnk.Save()}
+        $sessionTask=Get-ScheduledTask -TaskName 'Druzh Desktop Session' -ErrorAction SilentlyContinue
+        $sessionFile=Join-Path (Split-Path $root) 'Start-Session.ps1'
+        $scheduledSession=$sessionTask -and @($sessionTask.Actions).Count -eq 1 -and $sessionTask.Actions[0].Arguments.Contains('"'+$sessionFile+'"')
+        if(!(Test-Path -LiteralPath (Join-Path $startup 'Desktop Session.lnk')) -and -not $scheduledSession){$shell=New-Object -ComObject WScript.Shell;$lnk=$shell.CreateShortcut((Join-Path $startup 'YASB Catppuccin.lnk'));$lnk.TargetPath=Join-Path $env:WINDIR 'System32\wscript.exe';$lnk.Arguments='"'+(Join-Path $root 'Start.vbs')+'"';$lnk.WorkingDirectory=$root;$lnk.Description='YASB Catppuccin and smart dock';$lnk.Save()}
         $shell=New-Object -ComObject WScript.Shell
         Theme-Environment 'catppuccin';Mode 'catppuccin';Ensure-Launcher;Start-Profile;Restart-WinHelper
         Start-Sleep -Seconds 5

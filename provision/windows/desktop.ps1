@@ -37,7 +37,10 @@ $link=$shell.CreateShortcut($linkPath)
 $powershell=Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $argument='-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "'+(Join-Path $rootPath 'Start-Session.ps1')+'"'
 if((Test-Path -LiteralPath $linkPath) -and ($link.TargetPath -ine $powershell -or $link.Arguments -cne $argument)){throw 'Existing Desktop Session shortcut belongs to a different installation'}
-$link.TargetPath=$powershell;$link.Arguments=$argument;$link.WorkingDirectory=$rootPath;$link.WindowStyle=7;$link.Save()
+$sessionTask=Get-ScheduledTask -TaskName 'Druzh Desktop Session' -ErrorAction SilentlyContinue
+if($sessionTask){
+    if(@($sessionTask.Actions).Count -ne 1 -or $sessionTask.Actions[0].Arguments -cne $argument){throw 'Existing scheduled Desktop Session belongs to another installation'}
+}else{$link.TargetPath=$powershell;$link.Arguments=$argument;$link.WorkingDirectory=$rootPath;$link.WindowStyle=7;$link.Save()}
 $appLinkPath=Join-Path ([Environment]::GetFolderPath('Programs')) 'All Applications.lnk'
 $apps=$shell.CreateShortcut($appLinkPath)
 $explorer=Join-Path $env:WINDIR 'explorer.exe'

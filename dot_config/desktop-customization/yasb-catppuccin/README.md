@@ -59,6 +59,9 @@ Desktop Session повторяет неудачный запуск компон�
 и пишет `../runtime/session-startup.log`. Это короткий запускатор, без нового
 фонового процесса. Он вызывает только AHK Start и сохраняет ручной OFF и игровые
 правила. Legacy `YASB Catppuccin.lnk` не должен дублировать Desktop Session.
+На HOMEPC после аудита Desktop Session — ранняя задача Планировщика с задержкой
+1 s от входа; отдельная штатная задача YASB отключена. Apply распознаёт эту
+задачу и не создаёт второй Startup-ярлык. [Порядок входа и откат](../../../provision/windows/STARTUP-AUDIT-2026-10-28.md).
 Обычный restart WM переподключает его виджеты. Изменение config.yaml заставляет
 сам YASB перезапустить панель; это не palette-only watcher. Поэтому для одной
 палитры используется stylesheet watcher, без пересоздания app bars.
