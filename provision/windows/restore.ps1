@@ -24,6 +24,9 @@ if(-not $Apply){
     return
 }
 if(-not(Get-Command chezmoi -ErrorAction SilentlyContinue)){throw 'Install chezmoi and initialize the dotfiles repository first.'}
+$managedRoot=Join-Path ([Environment]::GetFolderPath('UserProfile')) '.config\desktop-customization'
+$priorChoice=Join-Path $managedRoot 'leopardwm-test\runtime\selection.json'
+if($Theme -eq 'classic' -and (Test-Path -LiteralPath $priorChoice) -and (Get-Content -LiteralPath $priorChoice -Raw|ConvertFrom-Json).enabled){throw 'Switch to komorebi before restoring the classic theme; no packages or files were changed.'}
 $env:CHEZMOI_PROFILES=$profileText
 $env:WINDOWS_DESKTOP_BAR=$Bar
 $env:WINDOWS_DESKTOP_THEME=$Theme
@@ -49,9 +52,12 @@ if($profileText.Split(',') -contains 'desktop'){
                 # Return restores an older bar snapshot; render the current shared UI again.
                 & (Join-Path $themeRoot 'Manage.ps1') -Action Refresh
             }
+            & (Join-Path $managedRoot 'komorebi-support\Start-DesktopWM.ps1')
         }
         $appearanceRoot=Join-Path ([Environment]::GetFolderPath('UserProfile')) '.config\desktop-customization\appearance'
         & (Join-Path $appearanceRoot 'Manage-Appearance.ps1') -Action Apply
+    }else{
+        & (Join-Path $managedRoot 'komorebi-support\Start-DesktopWM.ps1')
     }
 }
 # Keep future native Windows sessions/apply consistent with the chosen profile.
