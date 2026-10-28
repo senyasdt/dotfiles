@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - main
+      - komorebi
   pull_request:
 
 jobs:
