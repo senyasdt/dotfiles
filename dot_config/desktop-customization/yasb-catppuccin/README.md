@@ -73,3 +73,11 @@ renders, три YAML по схеме 2.0.7, LWM adapter и popup policy. На HO
 
 Предыдущая подробная история диагностики сохранена в
 [Git](https://github.com/senyasdt/dotfiles/blob/1338c468883bd0763de153cf69e2087828edfe45/dot_config/desktop-customization/yasb-catppuccin/README.md).
+
+## Ручной порядок библиотеки (опционально)
+
+[Launchpad order](launchpad-order/README.md) сохраняет общий ручной порядок папок
+и отдельных приложений и порядок внутри папок. Расширение рассчитано только
+на проверенную сборку YASB 2.0.7, имеет проверку SHA256 и откат. Оно не включается
+автоматически при восстановлении; обновление YASB требует повторной проверки.
+Порядок экспортируется штатным Launchpad-Layout, приватный apps.json в Git не попадает.
