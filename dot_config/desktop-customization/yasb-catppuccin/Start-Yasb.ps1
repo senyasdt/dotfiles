@@ -9,7 +9,15 @@ $yasb=Join-Path $env:ProgramFiles 'YASB\yasb.exe'
 $cliRoot=Join-Path $profileRoot 'scoop\apps\komorebi\current'
 $komorebic=Join-Path $cliRoot 'komorebic.exe'
 if(!(Test-Path -LiteralPath $yasb)){throw 'YASB is not installed'}
-if(!(Test-Path -LiteralPath $komorebic)){throw 'The managed Scoop komorebic is not installed'}
+
+# The saved WM choice is shared with Manage/Use-WindowManager. A LeopardWM
+# session has no komorebi socket, and YASB must not require its CLI or IPC.
+$selectionPath=Join-Path (Split-Path $PSScriptRoot -Parent) 'leopardwm-test\runtime\selection.json'
+$useKomorebi=$true
+if(Test-Path -LiteralPath $selectionPath){
+    $selection=Get-Content -LiteralPath $selectionPath -Raw|ConvertFrom-Json
+    if($selection.enabled -is [bool] -and $selection.enabled){$useKomorebi=$false}
+}
 
 function New-LaunchInfo($file){
     $info=New-Object Diagnostics.ProcessStartInfo
@@ -25,6 +33,8 @@ function New-LaunchInfo($file){
 
 # Check before Manage stops a working bar. Normalized paths cannot remove
 # socket restrictions inherited from an isolated parent process (WSAENETDOWN).
+if($useKomorebi){
+if(!(Test-Path -LiteralPath $komorebic)){throw 'The managed Scoop komorebic is not installed'}
 $info=New-LaunchInfo $komorebic
 $info.Arguments='query focused-workspace-index'
 $info.RedirectStandardOutput=$true
@@ -47,6 +57,7 @@ try{
     # 10061 is expected when komorebi is stopped. YASB will subscribe when it
     # comes back; there is no need to wait for WM or restart the panel again.
 }finally{$probe.Dispose()}
+}
 if($CheckOnly){return}
 
 $session=[Diagnostics.Process]::GetCurrentProcess().SessionId

@@ -1,11 +1,11 @@
-"""Manual mixed folder/app ordering for YASB 2.0.7. No resident helper."""
+"""Manual ordering and search-first opening for YASB 2.0.7. No resident helper."""
 import json
 import logging
 import os
 import tempfile
 from pathlib import Path
 
-PATCH_VERSION = 1
+PATCH_VERSION = 5
 MIME = 'application/x-yasb-manual-order'
 
 
@@ -71,12 +71,97 @@ def install(cls):
         return
     from PyQt6.QtCore import QMimeData, Qt, QTimer
     from PyQt6.QtGui import QColor, QDrag, QPainter
-    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication, QLineEdit, QPlainTextEdit, QTextEdit
 
     original_app = cls._create_app_icon_widget
     original_group = cls._create_group_widget
     original_grouped = cls._populate_grouped_grid
     original_flat = cls._populate_flat_grid
+    original_first_icon = cls._focus_first_icon
+    original_key_press = cls._handle_popup_key_press
+
+    def popup_key_press(owner, event):
+        # This is a local fallback for keys an icon/background did not consume,
+        # never a system-wide hook. Editors and shortcuts keep their own input.
+        popup = owner._launchpad_popup
+        text = event.text()
+        backspace = event.key() == Qt.Key.Key_Backspace
+        modifiers = event.modifiers()
+        shortcut = modifiers & (Qt.KeyboardModifier.ControlModifier
+                                | Qt.KeyboardModifier.AltModifier
+                                | Qt.KeyboardModifier.MetaModifier)
+        focused = QApplication.focusWidget()
+        modal = QApplication.activeModalWidget()
+        menu = QApplication.activePopupWidget()
+        if (popup and popup.isVisible() and popup.isActiveWindow() and not owner._is_closing
+                and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and not shortcut
+                and focused is popup.search_input and popup.search_input.isVisible()
+                and modal in (None, popup) and menu in (None, popup)):
+            # Use the displayed filtered order, including group: searches.
+            # Leave explicit icon selection to the upstream keyboard handler.
+            if (not event.isAutoRepeat() and popup.search_input.text().strip()
+                    and not hasattr(owner, '_current_group') and owner._app_icons):
+                first = owner._app_icons[0]
+                if not getattr(first, 'is_group', False):
+                    owner._launch_app(first.app_data)
+            event.accept()
+            return
+        if (popup and popup.isVisible() and popup.isActiveWindow() and not owner._is_closing
+                and (backspace or (text and text.isprintable())) and not shortcut
+                and modal in (None, popup) and menu in (None, popup)
+                and (focused is None or focused.window() is popup)
+                and not isinstance(focused, (QLineEdit, QPlainTextEdit, QTextEdit))):
+            def forward_text():
+                if (owner._launchpad_popup is not popup or owner._is_closing
+                        or not popup.isVisible() or not popup.isActiveWindow()
+                        or QApplication.activeModalWidget() not in (None, popup)
+                        or QApplication.activePopupWidget() not in (None, popup)):
+                    return
+                was_group = hasattr(owner, '_current_group')
+                if was_group:
+                    # Move focus off the old icon before the grid reparents it;
+                    # otherwise that detached frame can become the active window.
+                    popup.search_input.show()
+                    popup.search_input.setFocus(Qt.FocusReason.OtherFocusReason)
+                    owner._close_group()
+                popup.search_input.setFocus(Qt.FocusReason.OtherFocusReason)
+                if backspace:
+                    popup.search_input.backspace()
+                else:
+                    popup.search_input.insert(text)
+                if was_group:
+                    def finish_group_focus():
+                        active = QApplication.activeWindow()
+                        if (owner._launchpad_popup is popup and not owner._is_closing
+                                and popup.isVisible() and QApplication.activeModalWidget() in (None, popup)
+                                and QApplication.activePopupWidget() in (None, popup)
+                                and (active is popup or getattr(active, '_manual_owner', None) is owner)):
+                            popup.activateWindow()
+                            popup.search_input.setFocus(Qt.FocusReason.OtherFocusReason)
+                    # Upstream reparents old icons into detached frames. Finish
+                    # their pending focus events, without stealing from other apps.
+                    QTimer.singleShot(0, finish_group_focus)
+
+            if hasattr(owner, '_current_group'):
+                # Closing a group rebuilds/reparents the receiving icon. Wait
+                # until its current key event has finished before doing that.
+                QTimer.singleShot(0, forward_text)
+            else:
+                forward_text()
+            event.accept()
+            return
+        original_key_press(owner, event)
+
+    def initial_focus(owner):
+        # In 2.0.7 only the popup show callback queues _focus_first_icon.
+        # Change that initial choice; keep explicit arrow/Tab navigation intact.
+        popup = owner._launchpad_popup
+        if not popup or not popup.isVisible() or owner._is_closing:
+            return
+        if popup.search_input.isVisible():
+            popup.search_input.setFocus(Qt.FocusReason.PopupFocusReason)
+        elif hasattr(owner, '_current_group'):
+            original_first_icon(owner)
 
     def scope_for(owner):
         popup = owner._launchpad_popup
@@ -290,5 +375,7 @@ def install(cls):
     cls._create_group_widget = create_group
     cls._populate_grouped_grid = grouped
     cls._populate_flat_grid = flat
+    cls._focus_first_icon = initial_focus
+    cls._handle_popup_key_press = popup_key_press
     cls._manual_order_version = PATCH_VERSION
-    logging.info('Launchpad manual mixed order patch v%s loaded', PATCH_VERSION)
+    logging.info('Launchpad manual order/search focus patch v%s loaded', PATCH_VERSION)
