@@ -4,7 +4,7 @@ local act = wezterm.action
 local M = {}
 
 local opacity_file = wezterm.home_dir .. "/.config/wezterm/opacity"
-local default_window_background_opacity = 0.90
+local default_window_background_opacity = {{ .windowsDesktop.wezterm.opacity }}
 
 local function clamp_opacity(value)
 	if value < 0.0 then

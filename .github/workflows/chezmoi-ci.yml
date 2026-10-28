@@ -82,6 +82,7 @@ jobs:
           python3 provision/tests/check_desktop_profiles.py
           python3 provision/tests/check_catppuccin_profile.py
           python3 provision/tests/check_window_manager_profile.py
+          python3 provision/tests/check_desktop_recovery.py
 
       - name: Build and test native desktop helpers
         if: runner.os == 'Windows' && matrix.profile == 'full,desktop'

@@ -1,6 +1,7 @@
 {{- $profiles := splitList "," (env "CHEZMOI_PROFILES" | default "full") -}}
 
 # Repo metadata
+archive/**
 README.md
 AGENTS.md
 WORKFLOW.md
