@@ -101,8 +101,16 @@ function Start-Yasb { & (Join-Path $root 'Start-Yasb.ps1') }
 function Start-Profile {
     Assert-YasbVersion
     if(!(Test-Path -LiteralPath $bridge)){throw 'Run -Action Build first'}
-    if(!(Owned-Processes 'yasb' $yasb).Count){Start-Yasb}
-    if(!(Owned-Processes 'DesktopBridge' $bridge).Count){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}
+    $failures=@()
+    try{if(!(Owned-Processes 'yasb' $yasb).Count){Start-Yasb}}catch{$failures+=$_.Exception.Message}
+    # The dock controller is independent of komorebi's socket/preflight.
+    try{
+        if(!(Owned-Processes 'DesktopBridge' $bridge).Count){Start-Process -FilePath $bridge -WorkingDirectory $root -WindowStyle Hidden}
+        $deadline=[DateTime]::UtcNow.AddSeconds(4)
+        while(!(Owned-Processes 'DesktopBridge' $bridge).Count -and [DateTime]::UtcNow -lt $deadline){Start-Sleep -Milliseconds 100}
+        if(!(Owned-Processes 'DesktopBridge' $bridge).Count){throw 'DesktopBridge did not stay running.'}
+    }catch{$failures+=$_.Exception.Message}
+    if($failures.Count){throw ($failures -join [Environment]::NewLine)}
 }
 function Restore-Current {
     $s=Snapshot;Stop-Yasb;Stop-Bridge;Stop-Dock
@@ -119,7 +127,7 @@ function Restore-Current {
 }
 if($Action -in @('Apply','Refresh','Start','RestorePreDock')){Assert-YasbVersion}
 # Validate the caller before any stop/copy operation, including Build's resume.
-if($Action -in @('Apply','Refresh','Start','RestorePreDock','RestoreCurrent','Build')){
+if($Action -in @('Apply','Refresh','RestorePreDock','RestoreCurrent','Build')){
     & (Join-Path $root 'Start-Yasb.ps1') -CheckOnly
 }
 if($Action -eq 'Build'){

@@ -60,6 +60,8 @@ function Command($path,[string]$arguments,[int]$timeout=8000){
     $p.StartInfo.UseShellExecute=$false;$p.StartInfo.CreateNoWindow=$true
     $p.StartInfo.RedirectStandardOutput=$true;$p.StartInfo.RedirectStandardError=$true
     $p.StartInfo.StandardOutputEncoding=[Text.Encoding]::UTF8
+    $p.StartInfo.EnvironmentVariables['USERPROFILE']=[Environment]::GetFolderPath('UserProfile')
+    $p.StartInfo.EnvironmentVariables['APPDATA']=[Environment]::GetFolderPath('ApplicationData')
     $p.StartInfo.EnvironmentVariables['LOCALAPPDATA']=[Environment]::GetFolderPath('LocalApplicationData')
     try{
         [void]$p.Start();$out=$p.StandardOutput.ReadToEndAsync();$err=$p.StandardError.ReadToEndAsync()
@@ -81,13 +83,35 @@ function Stop-Leopard {
 function Start-Leopard {
     if(Get-Process komorebi -ErrorAction SilentlyContinue){throw 'Komorebi is still running; LeopardWM was not started.'}
     if(Get-Process whkd -ErrorAction SilentlyContinue){throw 'whkd is still running; conflicting hotkeys were left untouched.'}
+    $expected=[IO.File]::ReadAllText($appConfig)
+    for($attempt=0;$attempt -lt 2;$attempt++){
     if(-not @(Owned $daemon).Count){
         # The daemon inherits its launching CLI's stdout handles. Do not wait
         # for EOF on redirected output of `run`: readiness is checked separately.
-        $p=Start-Process -FilePath $lwm -ArgumentList 'run --no-watchdog --wait-ms 8000' -WindowStyle Hidden -PassThru
+        $info=New-Object Diagnostics.ProcessStartInfo($lwm,'run --no-watchdog --wait-ms 8000')
+        $info.UseShellExecute=$false;$info.CreateNoWindow=$true;$info.WorkingDirectory=$bin
+        $info.EnvironmentVariables['USERPROFILE']=[Environment]::GetFolderPath('UserProfile')
+        $info.EnvironmentVariables['APPDATA']=[Environment]::GetFolderPath('ApplicationData')
+        $info.EnvironmentVariables['LOCALAPPDATA']=[Environment]::GetFolderPath('LocalApplicationData')
+        $p=[Diagnostics.Process]::Start($info)
         try{if(-not $p.WaitForExit(12000)){throw 'LeopardWM start request timed out; check the daemon before retrying.'};if($p.ExitCode -ne 0){throw 'LeopardWM start request failed.'}}finally{$p.Dispose()}
     }
     Command $lwm 'status' 4000|Out-Null
+    $effective=Command $lwm 'query hotkeys' 4000
+    if(& (Join-Path $PSScriptRoot 'Test-EffectiveHotkeys.ps1') -ConfigText $expected -HotkeyText $effective){return}
+    # Reload is asynchronous; give it a bounded opportunity before one restart.
+    Command $lwm 'reload' 4000|Out-Null
+    for($check=0;$check -lt 6;$check++){
+        Start-Sleep -Milliseconds 250
+        $effective=Command $lwm 'query hotkeys' 4000
+        if(& (Join-Path $PSScriptRoot 'Test-EffectiveHotkeys.ps1') -ConfigText $expected -HotkeyText $effective){return}
+    }
+    if($attempt -eq 0){
+        Add-Content -LiteralPath (Join-Path $runtime 'startup.log') -Value ((Get-Date -Format o)+' Effective hotkeys differ from the saved config; restarting the owned daemon once.')
+        Stop-Leopard
+    }
+    }
+    throw 'LeopardWM is running with unexpected hotkeys. See runtime/startup.log and lwm doctor; no further restart attempted.'
 }
 function Stop-Ui {
     if(@(Owned $yasb).Count){Command $yasbCli 'stop' 8000|Out-Null;Wait-Stopped $yasb}

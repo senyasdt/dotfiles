@@ -24,6 +24,7 @@ foreach($file in @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1')+@(G
     if($errors){throw ('PowerShell parse error in '+$file.FullName+': '+($errors.Message -join '; '))}
 }
 & (Join-Path $source 'provision\tests\Test-Appearance.ps1')
+& (Join-Path $source 'provision\tests\Test-SessionStartup.ps1')
 & (Join-Path $source 'provision\tests\Test-WindowManager.ps1') -DownloadRelease:$DownloadRelease -ReleaseArchive $ReleaseArchive
 $build=Join-Path ([IO.Path]::GetTempPath()) ('desktop-source-check-'+[Guid]::NewGuid().ToString('N'))
 [IO.Directory]::CreateDirectory($build)|Out-Null
