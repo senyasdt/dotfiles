@@ -32,7 +32,7 @@ function Write-Atomic([string]$path,[string]$text,[byte[]]$expected){
     }finally{if(Test-Path -LiteralPath $temp){Remove-Item -LiteralPath $temp}}
 }
 function Map-Apps($catalog,$layout){
-    if($layout.version -ne 1 -or !$layout.defaultGroup -or !$layout.entries){throw 'Invalid Launchpad layout'}
+    if($layout.version -ne 1 -or ($null -eq $layout.defaultGroup) -or !$layout.entries){throw 'Invalid Launchpad layout'}
     $exact=@{};$families=@{}
     foreach($entry in $layout.entries){
         if(!$entry.title -or $null -eq $entry.group){throw 'Layout entries require title and group'}
@@ -71,7 +71,7 @@ if($Action -eq 'Export'){
         $seen[$key]=$true
         [ordered]@{title=[string]$item.title;group=[string]$item.group;order=$order++}
     }
-    $layout=[ordered]@{version=1;defaultGroup='Служебное';entries=@($entries)}
+    $layout=[ordered]@{version=1;defaultGroup='';entries=@($entries)}
     $old=if(Test-Path -LiteralPath $LayoutPath){[IO.File]::ReadAllBytes($LayoutPath)}else{[byte[]]@()}
     if($PSCmdlet.ShouldProcess($LayoutPath,'Save portable folder layout')){Write-Atomic $LayoutPath ($layout|ConvertTo-Json -Depth 8) $old}
     return
