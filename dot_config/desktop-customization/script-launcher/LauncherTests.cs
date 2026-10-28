@@ -121,6 +121,29 @@ internal static class LauncherTests
             host.Close("Game.exe");engine.Step(now.AddSeconds(24),true);engine.Step(now.AddSeconds(50),true);
             Assert(!engine.GlobalEnabled&&!host.Has(A)&&!host.Has(B),"Game exit undid explicit global off");
 
+            host=new FakeHost();engine=Engine(host,Config(Group(new[]{A,B},"Game.exe")));
+            engine.CurrentLogonId=delegate{return "boot1:login1";};
+            engine.Control("disable","all");engine.Control("pause","all");engine.Control("login","all");engine.Step(now,true);
+            Assert(engine.GlobalEnabled&&!engine.Suspended&&host.Has(A)&&host.Has(B),"New Windows login did not enable all configured scripts");
+            int loginStarts=host.Starts;engine.Control("login","all");engine.Step(now.AddSeconds(1),true);
+            Assert(host.Starts==loginStarts,"Repeated login initialization duplicated AHK");
+            engine.Control("disable","all");engine.Control("login","all");engine.Step(now.AddSeconds(2),true);
+            Assert(!engine.GlobalEnabled&&!host.Has(A)&&!host.Has(B),"Repeated startup undid manual OFF in the same login");
+            recovered=Engine(host,Config(Group(new[]{A,B},"Game.exe")));
+            recovered.Overrides=new Dictionary<string,bool>(engine.Overrides,StringComparer.OrdinalIgnoreCase);
+            recovered.LastEnabledLogonId=engine.LastEnabledLogonId;recovered.CurrentLogonId=delegate{return "boot1:login1";};
+            recovered.Control("login","all");recovered.Step(now.AddSeconds(3),true);
+            Assert(!recovered.GlobalEnabled&&!host.Has(A),"Guard restart forgot the saved login marker");
+            recovered.CurrentLogonId=delegate{return "boot1:login2";};host.Program("Game.exe");
+            recovered.Control("login","all");recovered.Step(now.AddSeconds(4),true);
+            Assert(recovered.GlobalEnabled&&!host.Has(A)&&!host.Has(B),"Login enable bypassed game blocking");
+            host.Close("Game.exe");recovered.Step(now.AddSeconds(5),true);recovered.Step(now.AddSeconds(19),true);
+            Assert(!host.Has(A)&&!host.Has(B),"Login enable bypassed the post-game delay");
+            recovered.Step(now.AddSeconds(20),true);Assert(host.Has(A)&&host.Has(B),"Login scripts did not resume after the game delay");
+            recovered.Control("disable","all");recovered.CurrentLogonId=delegate{return "boot2:login2";};recovered.Control("login","all");recovered.Step(now.AddSeconds(21),true);
+            Assert(recovered.GlobalEnabled&&host.Has(A)&&host.Has(B),"New boot with a reused authentication ID was not distinguished");
+            Assert(!String.IsNullOrEmpty(Native.CurrentLogonId())&&Native.CurrentLogonId()==Native.CurrentLogonId(),"Native Windows logon identity is missing or unstable");
+
             bool rejected=false;try{Configuration.Parse("{}");}catch{rejected=true;}Assert(rejected,"Invalid config accepted");
             rejected=false;try{Config(Group(new[]{"relative.ahk"}));}catch{rejected=true;}Assert(rejected,"Relative script accepted");
             rejected=false;try{Config(Group(new[]{A},"*.exe"));}catch{rejected=true;}Assert(rejected,"Wildcard process accepted");

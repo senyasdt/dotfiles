@@ -122,6 +122,8 @@ internal sealed class LauncherEngine
 {
     public Configuration Config;
     public bool Suspended;
+    public string LastEnabledLogonId;
+    public Func<string> CurrentLogonId=Native.CurrentLogonId;
     public Dictionary<string,bool> Overrides=new Dictionary<string,bool>(StringComparer.OrdinalIgnoreCase);
     public HashSet<string> Pending=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     readonly Dictionary<string,ScriptState> states=new Dictionary<string,ScriptState>(StringComparer.OrdinalIgnoreCase);
@@ -144,6 +146,14 @@ internal sealed class LauncherEngine
     }
     public void Control(string operation,string selector)
     {
+        string enableForLogon=null;
+        if(operation=="login") {
+            if(selector!="all")throw new ArgumentException("Login initialization requires all scripts.");
+            enableForLogon=CurrentLogonId();
+            if(String.IsNullOrEmpty(enableForLogon))throw new InvalidOperationException("Windows logon identity unavailable.");
+            if(enableForLogon==LastEnabledLogonId)return;
+            operation="enable";
+        }
         if(operation=="toggle-global") {
             if(selector!="all")throw new ArgumentException("Global switch requires all scripts.");
             operation=GlobalEnabled?"disable":"enable";
@@ -153,6 +163,7 @@ internal sealed class LauncherEngine
         var paths=Config.Scripts.Keys.Where(p=>selector=="all" || String.Equals(p,selector,StringComparison.OrdinalIgnoreCase) || String.Equals(System.IO.Path.GetFileName(p),selector,StringComparison.OrdinalIgnoreCase)).ToArray();
         if(paths.Length==0)throw new ArgumentException("No configured script matches "+selector);
         if(selector!="all" && paths.Length>1)throw new ArgumentException("Ambiguous filename; use the full script path.");
+        if(enableForLogon!=null) { Suspended=false; LastEnabledLogonId=enableForLogon; Log("Enabled configured scripts for a new Windows logon; game rules retained."); }
         foreach(string path in paths) {
             bool current; bool wanted=Config.Scripts[path].Enabled && (!Overrides.TryGetValue(path,out current) || current);
             // Restart never changes the owner's explicit enabled/disabled choice.
@@ -243,6 +254,26 @@ internal sealed class LauncherEngine
 
 internal static class Native
 {
+    [DllImport("advapi32.dll",SetLastError=true)] static extern bool GetTokenInformation(IntPtr token,int informationClass,IntPtr information,int length,out int returned);
+    static string cachedLogonId;
+    internal static string CurrentLogonId() {
+        if(cachedLogonId!=null)return cachedLogonId;
+        string authentication;
+        using(var identity=WindowsIdentity.GetCurrent()) {
+            IntPtr buffer=Marshal.AllocHGlobal(256);
+            try {
+                int returned;
+                if(!GetTokenInformation(identity.Token,10,buffer,256,out returned))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                // TOKEN_STATISTICS: TokenId LUID, followed by AuthenticationId LUID.
+                authentication=unchecked((ulong)Marshal.ReadInt64(buffer,8)).ToString("X16");
+            } finally { Marshal.FreeHGlobal(buffer); }
+        }
+        string boot=null;
+        using(var search=new ManagementObjectSearcher("SELECT LastBootUpTime FROM Win32_OperatingSystem"))
+        using(var rows=search.Get())foreach(ManagementObject row in rows) { using(row) { boot=ManagementDateTimeConverter.ToDateTime(Convert.ToString(row["LastBootUpTime"])).ToUniversalTime().Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture); } break; }
+        if(String.IsNullOrEmpty(boot))throw new InvalidOperationException("Windows boot identity unavailable.");
+        return cachedLogonId=boot+":"+authentication;
+    }
     [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)] internal struct Entry {
         public uint Size,Usage,Id; public IntPtr Heap; public uint Module,Threads,Parent; public int Priority; public uint Flags;
         [MarshalAs(UnmanagedType.ByValTStr,SizeConst=260)] public string Name;
@@ -410,7 +441,7 @@ internal static class ScriptLauncher
         } catch(Exception e) { if(!StopEvent.WaitOne(0)) { Log("Control: "+e.Message); Thread.Sleep(500); } }
         finally { activePipe=null; }
     }
-    static void Save(LauncherEngine engine) { Atomic(StatePath,new { suspended=engine.Suspended,overrides=engine.Overrides,resumeAfterBlock=engine.Pending.ToArray(),knownScripts=engine.KnownScripts.ToArray() }); }
+    static void Save(LauncherEngine engine) { Atomic(StatePath,new { suspended=engine.Suspended,overrides=engine.Overrides,resumeAfterBlock=engine.Pending.ToArray(),knownScripts=engine.KnownScripts.ToArray(),lastEnabledLogonId=engine.LastEnabledLogonId }); }
     static void Load(LauncherEngine engine)
     {
         if(!File.Exists(StatePath))return;
@@ -418,6 +449,7 @@ internal static class ScriptLauncher
         if(data==null)throw new InvalidDataException("Invalid state.json; saved state retained.");
         object value;
         if(data.TryGetValue("suspended",out value))engine.Suspended=Convert.ToBoolean(value);
+        if(data.TryGetValue("lastEnabledLogonId",out value))engine.LastEnabledLogonId=Convert.ToString(value);
         if(data.TryGetValue("overrides",out value))foreach(var entry in (Dictionary<string,object>)value)engine.Overrides[entry.Key]=Convert.ToBoolean(entry.Value);
         if(data.TryGetValue("resumeAfterBlock",out value))foreach(object path in (object[])value)engine.Pending.Add(Convert.ToString(path));
         if(data.TryGetValue("knownScripts",out value))foreach(object path in (object[])value)engine.Remembered.Add(Convert.ToString(path));
@@ -431,7 +463,7 @@ internal static class ScriptLauncher
         if(args.Length>0 && args[0]!="--run") {
             string op=args[0].TrimStart('-'); string selector=args.Length>1?args[1]:"all";
             if(op.EndsWith("-all"))op=op.Substring(0,op.Length-4);
-            if(!new string[]{"enable","disable","toggle","toggle-global","restart","pause","resume","stop"}.Contains(op))return 2;
+            if(!new string[]{"enable","disable","toggle","toggle-global","restart","pause","resume","login","stop"}.Contains(op))return 2;
             return Send(op,selector);
         }
         bool created;
@@ -455,7 +487,7 @@ internal static class ScriptLauncher
                         while(Requests.TryDequeue(out request)) {
                             try {
                                 if(request.Operation=="stop")StopEvent.Set();
-                                else if(!new string[]{"enable","disable","toggle","toggle-global","restart","pause","resume"}.Contains(request.Operation))throw new ArgumentException("Unsupported operation");
+                                else if(!new string[]{"enable","disable","toggle","toggle-global","restart","pause","resume","login"}.Contains(request.Operation))throw new ArgumentException("Unsupported operation");
                                 else engine.Control(request.Operation,request.Selector);
                             } catch(Exception e) { request.Error=e.Message; }
                             finally { request.Done.Set(); }
