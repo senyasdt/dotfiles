@@ -142,12 +142,6 @@ internal static class DesktopBridge {
             var groups=new Dictionary<string,ToolStripMenuItem>();
             foreach(var row in MenuServices()){string action=row[2];var item=Item(row[1],()=>Service(action));if(action=="ChatGPTRender")item.ToolTipText="Пересоздаёт графический слой; окно и чат остаются открыты.";if(row[0].Length==0){menu.Items.Add(item);continue;}ToolStripMenuItem group;if(!groups.TryGetValue(row[0],out group)){group=new ToolStripMenuItem(row[0]);groups.Add(row[0],group);menu.Items.Add(group);}group.DropDownItems.Add(item);}
             groups["AHK"].DropDownItems.Add(new ToolStripSeparator());groups["AHK"].DropDownItems.Add(Item("Отдельные скрипты и правила…",()=>Run(Path.Combine(Root,"DesktopBridge.exe"),"--menu ahk")));
-            string popupSettings=Path.Combine(Root,"floating-popups.json");
-            var popupToggle=Item("Всплывающие окна поверх ленты",()=>FloatingPopupGuard.Toggle(popupSettings));
-            popupToggle.Checked=FloatingPopupGuard.Enabled(popupSettings);
-            var windowManager=groups[LeopardSelected?"LeopardWM":"Komorebi"];
-            windowManager.DropDownItems.Add(new ToolStripSeparator());windowManager.DropDownItems.Add(popupToggle);
-            windowManager.DropDownItems.Add(Item("Настроить всплывающие окна…",()=>Open(popupSettings)));
         }else{
             menu.Items.Add(Item("Библиотека Windows",()=>Run("explorer.exe","shell:AppsFolder")));
             menu.Items.Add(Item("Настройки Windows",()=>Open("ms-settings:")));
@@ -291,13 +285,12 @@ internal static class DesktopBridge {
             if(args.Length>0&&args[0]=="--stop"){try{using(var e=EventWaitHandle.OpenExisting(EventName))e.Set();}catch(WaitHandleCannotBeOpenedException){}return 0;}
             if(args.Length>0&&args[0]=="--show-taskbar"){NativeTaskbar(true);return 0;}
             if(args.Length>0&&args[0]=="--test-scroll-hook")return ScrollingMouseNavigation.TestHook()?0:7;
-            if(args.Length>0&&args[0]=="--test-floating")return FloatingPopupGuard.SelfTest()?0:9;
             if(args.Length>0&&args[0]=="--test-motion")return TestDockMotion()?0:5;
-            if(args.Length>0&&(args[0]=="--test-dock-popup"||args[0]=="--test")){if(!TestDockPopup())return 8;if(args[0]=="--test-dock-popup")return 0;if(!FloatingPopupGuard.SelfTest())return 9;}
+            if(args.Length>0&&(args[0]=="--test-dock-popup"||args[0]=="--test")){if(!TestDockPopup())return 8;if(args[0]=="--test-dock-popup")return 0;}
             if(args.Length>0&&args[0]=="--test"){if(!ScrollingMouseNavigation.SelfTest()||!KomorebiFeed.TestScrollContext())return 6;if(!TestDockEasing())return 5;var bounds=new Rectangle(0,0,2560,1440);if(!IsDockGeometry(new Rectangle(1245,1366,70,64),bounds)||IsDockGeometry(new Rectangle(0,0,2560,40),bounds)||IsDockGeometry(new Rectangle(0,1300,10,64),bounds)||IsDockGeometry(new Rectangle(0,1100,300,300),bounds))return 3;if(!AtDockEdge(0,1439,bounds)||!AtDockEdge(2559,1439,bounds)||AtDockEdge(1280,1400,bounds)||AtDockEdge(-1,1439,bounds)||AtDockEdge(2560,1439,bounds))return 4;var now=new DateTime(2026,10,24,0,0,10,DateTimeKind.Utc);if(ShouldRestoreTaskbar(true,now.AddSeconds(-20),now)||ShouldRestoreTaskbar(false,now.AddSeconds(-2),now)||!ShouldRestoreTaskbar(false,now.AddSeconds(-8),now)||!ShouldRestoreTaskbar(false,DateTime.MinValue,now))return 2;if(!DockShouldShow(false,false,false,false,false)||DockShouldShow(true,false,false,false,false)||!DockShouldShow(true,true,false,false,false)||DockShouldShow(false,true,true,true,true))return 1;return 0;}
             bool created;using(var mutex=new Mutex(true,@"Local\Druzh.CatppuccinDesktop",out created)){if(!created)return 0;Directory.CreateDirectory(Runtime);Application.EnableVisualStyles();using(var stop=new EventWaitHandle(false,EventResetMode.ManualReset,EventName)){
                 komorebi=LeopardSelected?null:new KomorebiFeed(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"));
-                try{using(var popups=new FloatingPopupGuard(Path.Combine(Root,"floating-popups.json"),Path.Combine(LauncherRoot,"config.json"),Runtime))using(var mouse=komorebi==null?null:new ScrollingMouseNavigation(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"),komorebi.ScrollingContext,Path.Combine(LauncherRoot,@"runtime\status.json"),Runtime)){int n=0;while(!stop.WaitOne(400)){try{Tick();}catch(Exception e){if(n++%20==0){string log=Path.Combine(Runtime,"bridge.log");if(File.Exists(log)&&new FileInfo(log).Length>262144)File.WriteAllText(log,"");File.AppendAllText(log,DateTime.Now.ToString("o")+" "+e.Message+"\n");}}}}}
+                try{using(var mouse=komorebi==null?null:new ScrollingMouseNavigation(Path.Combine(Home,@"scoop\apps\komorebi\current\komorebic.exe"),komorebi.ScrollingContext,Path.Combine(LauncherRoot,@"runtime\status.json"),Runtime)){int n=0;while(!stop.WaitOne(400)){try{Tick();}catch(Exception e){if(n++%20==0){string log=Path.Combine(Runtime,"bridge.log");if(File.Exists(log)&&new FileInfo(log).Length>262144)File.WriteAllText(log,"");File.AppendAllText(log,DateTime.Now.ToString("o")+" "+e.Message+"\n");}}}}}
                 finally{if(komorebi!=null)komorebi.Dispose();NativeTaskbar(true);}
             }mutex.ReleaseMutex();}return 0;
         }catch(Exception e){try{Directory.CreateDirectory(Runtime);File.AppendAllText(Path.Combine(Runtime,"bridge.log"),e.ToString()+"\n");}catch{}return 1;}
