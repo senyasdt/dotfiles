@@ -113,7 +113,9 @@ function Start-Profile {
     if($failures.Count){throw ($failures -join [Environment]::NewLine)}
 }
 function Restore-Current {
-    $s=Snapshot;Stop-Yasb;Stop-Bridge;Stop-Dock
+    $s=Snapshot
+    & (Join-Path $root 'Set-LaunchpadSync.ps1') -Action Disable | Out-Null
+    Stop-Yasb;Stop-Bridge;Stop-Dock
     foreach($name in @('yasb-config.yaml','yasb-styles.css','win-hotkeys.ahk','mydock-config.ini')){Restore-File $s $name}
     # Keep komorebi IPC, BSP, current AHK game rules and manual states intact.
     Restore-Startup $s
@@ -188,7 +190,9 @@ if($Action -eq 'ImportApps'){& (Join-Path $root 'Import-Apps.ps1') -Refresh;retu
 if($Action -eq 'RestoreCurrent'){Restore-Current;return}
 if($Action -eq 'RestorePreDock'){
     if(!(Test-Path -LiteralPath (Join-Path $root 'config-predock.yaml'))){throw 'No pre-MyDockFinder layout supplied; use RestoreCurrent'}
-    $s=Snapshot;Stop-Yasb;Stop-Bridge;Stop-Dock
+    $s=Snapshot
+    & (Join-Path $root 'Set-LaunchpadSync.ps1') -Action Disable | Out-Null
+    Stop-Yasb;Stop-Bridge;Stop-Dock
     Copy-Item -LiteralPath (Join-Path $root 'styles-predock.css') -Destination (Join-Path $yasbRoot 'styles.css') -Force
     Write-Utf8 (Join-Path $yasbRoot 'config.yaml') (Expand-Template (Join-Path $root 'config-predock.yaml'))
     # The old layout is restored; the broken legacy daemon/startup chain is not.
@@ -222,6 +226,7 @@ if($Action -eq 'Apply'){
         if(!(Owned-Processes 'yasb' $yasb).Count -or !(Owned-Processes 'DesktopBridge' $bridge).Count){throw 'Profile health check failed'}
         $dockState=Get-Content -LiteralPath (Join-Path $root 'runtime\dock-status.json') -Raw|ConvertFrom-Json
         if($dockState.docks -lt 1){throw 'YASB did not create its dock. Complete first-run/font setup and retry Apply.'}
+        & (Join-Path $root 'Set-LaunchpadSync.ps1') -Action Enable | Out-Null
         $menu=Join-Path ([Environment]::GetFolderPath('Programs')) 'Desktop Profiles';[IO.Directory]::CreateDirectory($menu)|Out-Null
         foreach($entry in @(@('Catppuccin','Apply'),@('Restore previous desktop','RestoreCurrent'),@('Restore YASB before MyDockFinder','RestorePreDock'))){$link=$shell.CreateShortcut((Join-Path $menu ($entry[0]+'.lnk')));$link.TargetPath=Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe';$link.Arguments='-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "'+$PSCommandPath+'" -Action '+$entry[1];$link.WorkingDirectory=$root;$link.Save()}
         Write-Output 'Catppuccin profile active. Rollback: Restore Previous.cmd / Restore Before MyDock.cmd.'

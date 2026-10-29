@@ -1,0 +1,6 @@
+[
+  {"title":"AHK Script Launcher","path":"__DESKTOP__\\script-launcher\\ScriptLauncher.exe","group":"Автоматизация"},
+  {"title":"Stellaris","path":"C:\\Games\\Stellaris\\stellaris.exe","group":"Игры"},
+  {"title":"Age of Wonders 4","path":"%ProgramFiles(x86)%\\Age of Wonders 4\\AOW4.exe","group":"Игры"},
+  {"title":"Stronghold Crusader Definitive Edition","path":"%ProgramFiles(x86)%\\Stronghold Crusader Definitive Edition\\Stronghold Crusader Definitive Edition.exe","group":"Игры"}
+]
