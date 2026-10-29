@@ -94,6 +94,8 @@ CHEZMOI_PROFILES=full,desktop "$(chezmoi source-path)/provision/update.sh"
 **master: LeopardWM + YASB Cold Grey.** The `komorebi` branch keeps the same
 panel and helpers with stock komorebi/whkd. MyDockFinder is retired.
 
+Personal English/Russian Technical AltGr keyboards: [simple manual setup](provision/windows/keyboard-layouts/README.md).
+
 ```powershell
 chezmoi init https://github.com/senyasdt/dotfiles.git
 $src = chezmoi source-path
