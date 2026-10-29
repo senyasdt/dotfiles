@@ -25,6 +25,7 @@ foreach($file in @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1')+@(G
 }
 & (Join-Path $source 'provision\tests\Test-Appearance.ps1')
 & (Join-Path $source 'provision\tests\Test-SessionStartup.ps1')
+& (Join-Path $source 'provision\tests\Test-LayoutGuardStartup.ps1')
 & (Join-Path $source 'provision\tests\Test-StartupPolicy.ps1')
 & (Join-Path $source 'provision\tests\Test-WindowManager.ps1') -DownloadRelease:$DownloadRelease -ReleaseArchive $ReleaseArchive
 $build=Join-Path ([IO.Path]::GetTempPath()) ('desktop-source-check-'+[Guid]::NewGuid().ToString('N'))
