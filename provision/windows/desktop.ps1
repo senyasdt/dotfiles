@@ -12,7 +12,7 @@ foreach($relative in $required){if(-not(Test-Path -LiteralPath (Join-Path $rootP
 $settings=Get-Content -LiteralPath (Join-Path $rootPath 'desktop.json') -Raw|ConvertFrom-Json
 if($settings.bar -notin @('none','yasb')){throw 'desktop.json bar must be none or yasb'}
 if($Action -eq 'Status'){
-    [pscustomobject]@{Root=$rootPath;Bar=$settings.bar;StartupReady=(Test-Path -LiteralPath (Join-Path $rootPath 'script-launcher\ScriptLauncher.exe'));VialInstalled=(Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'Programs\vial-helper\run-hidden.ps1'));ZmkInstalled=(Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'Programs\zmk-yasb\zmk-helperd.exe'));LayoutGuard='Optional; requires approved custom layouts installed separately'}|ConvertTo-Json
+    [pscustomobject]@{Root=$rootPath;Bar=$settings.bar;StartupReady=(Test-Path -LiteralPath (Join-Path $rootPath 'script-launcher\ScriptLauncher.exe'));VialInstalled=(Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'Programs\vial-helper\run-hidden.ps1'));ZmkInstalled=(Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'Programs\zmk-yasb\zmk-helperd.exe'));LayoutGuard='Automatic at login when both approved Technical AltGr layouts are registered; startLayoutGuard=false disables it'}|ConvertTo-Json
     return
 }
 # Do not take ownership from a helper running in another checkout.
