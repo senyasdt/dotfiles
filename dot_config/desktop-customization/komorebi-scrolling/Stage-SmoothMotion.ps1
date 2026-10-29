@@ -38,7 +38,7 @@ if($existing.Previous){
 $trial=Join-Path $runtime ("motion-"+$Kind.ToLowerInvariant()+"-$stamp")
 [IO.Directory]::CreateDirectory($trial)|Out-Null
 foreach($file in @('komorebi.exe','komorebic.exe','build-info.json')){Copy-Item -LiteralPath (Join-Path $BundleDirectory $file) -Destination $trial}
-$inputs=@('DesktopBridge.cs','KomorebiFeed.cs','ScrollingMouseNavigation.cs')|ForEach-Object{Join-Path $bridgeRoot $_}
+$inputs=@('DesktopBridge.cs','KomorebiFeed.cs','ScrollingMouseNavigation.cs','FloatingPopupGuard.cs')|ForEach-Object{Join-Path $bridgeRoot $_}
 & (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll ('/out:'+(Join-Path $trial 'DesktopBridge.exe')) @inputs
 if($LASTEXITCODE -ne 0){throw 'Bridge trial build failed; nothing switched.'}
 $test=Start-Process -FilePath (Join-Path $trial 'DesktopBridge.exe') -ArgumentList '--test' -WindowStyle Hidden -PassThru
