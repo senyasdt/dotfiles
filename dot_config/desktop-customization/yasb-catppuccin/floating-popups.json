@@ -1,9 +1,0 @@
-{
-  "enabled": true,
-  "applications": [
-    { "executable": "AmneziaVPN.exe", "windowClass": "^Qt[0-9]+QWindowIcon$" }
-  ],
-  "suspendWhileRunning": [],
-  "maximumWidthFraction": 0.8,
-  "maximumHeightFraction": 0.95
-}

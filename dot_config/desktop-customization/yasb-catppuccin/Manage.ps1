@@ -137,7 +137,7 @@ if($Action -eq 'Build'){
     # readers' owner before replacing it, then restore the original run state.
     Stop-Yasb;Stop-Bridge
     try{
-        & (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll ('/out:'+$bridge) (Join-Path $root 'DesktopBridge.cs') (Join-Path $root 'KomorebiFeed.cs') (Join-Path $root 'ScrollingMouseNavigation.cs') (Join-Path $root 'FloatingPopupGuard.cs')
+        & (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll ('/out:'+$bridge) (Join-Path $root 'DesktopBridge.cs') (Join-Path $root 'KomorebiFeed.cs') (Join-Path $root 'ScrollingMouseNavigation.cs')
         if($LASTEXITCODE -ne 0){throw 'Build failed'};Run-Wait $bridge '--test'
         # A later WM switch must retain the freshly built controller as well.
         $leopardRuntime=Join-Path (Split-Path $root) 'leopardwm-test\runtime'

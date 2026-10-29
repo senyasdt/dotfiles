@@ -49,7 +49,7 @@ if($DownloadRelease -or $ReleaseArchive){
     $portableBridge=Join-Path $portable 'yasb-catppuccin'
     foreach($dir in @((Join-Path $portableLeopard 'runtime'),$portableBridge)){[void][IO.Directory]::CreateDirectory($dir)}
     Copy-Item (Join-Path $desktop 'leopardwm-test\Install-LeopardWM.ps1') $portableLeopard
-    foreach($file in @('DesktopBridge.cs','KomorebiFeed.cs','ScrollingMouseNavigation.cs','FloatingPopupGuard.cs')){Copy-Item (Join-Path $desktop ('yasb-catppuccin\'+$file)) $portableBridge}
+    foreach($file in @('DesktopBridge.cs','KomorebiFeed.cs','ScrollingMouseNavigation.cs')){Copy-Item (Join-Path $desktop ('yasb-catppuccin\'+$file)) $portableBridge}
     if($ReleaseArchive){Copy-Item -LiteralPath $ReleaseArchive -Destination (Join-Path $portableLeopard 'runtime\LeopardWM-0.3.4-x86_64-windows.zip')}
     & (Join-Path $portableLeopard 'Install-LeopardWM.ps1')
     $manifest=Get-Content (Join-Path $portableLeopard 'runtime\release.json') -Raw|ConvertFrom-Json

@@ -34,7 +34,7 @@ $csc=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if($LASTEXITCODE -ne 0){throw 'Launcher tests failed to compile'}
 & (Join-Path $build 'LauncherTests.exe')
 if($LASTEXITCODE -ne 0){throw 'Launcher tests failed'}
-& $csc /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll ('/out:'+(Join-Path $build 'DesktopBridge.exe')) (Join-Path $desktop 'yasb-catppuccin\DesktopBridge.cs') (Join-Path $desktop 'yasb-catppuccin\KomorebiFeed.cs') (Join-Path $desktop 'yasb-catppuccin\ScrollingMouseNavigation.cs') (Join-Path $desktop 'yasb-catppuccin\FloatingPopupGuard.cs')
+& $csc /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll ('/out:'+(Join-Path $build 'DesktopBridge.exe')) (Join-Path $desktop 'yasb-catppuccin\DesktopBridge.cs') (Join-Path $desktop 'yasb-catppuccin\KomorebiFeed.cs') (Join-Path $desktop 'yasb-catppuccin\ScrollingMouseNavigation.cs')
 if($LASTEXITCODE -ne 0){throw 'Desktop bridge failed to compile'}
 $bridgeTest=Start-Process -FilePath (Join-Path $build 'DesktopBridge.exe') -ArgumentList '--test' -WindowStyle Hidden -PassThru -Wait
 if($bridgeTest.ExitCode -ne 0){throw 'Desktop bridge policy checks failed'}
