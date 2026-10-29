@@ -26,7 +26,7 @@ $bin=Join-Path $runtime $name
 if(Test-Path -LiteralPath $bin){throw 'Trial already staged. Keep its manifest; do not overwrite running binaries.'}
 Expand-Archive -LiteralPath $archive -DestinationPath $runtime
 $bridgeRoot=Join-Path (Split-Path $PSScriptRoot) 'yasb-catppuccin'
-$inputs=@('DesktopBridge.cs','KomorebiFeed.cs','ScrollingMouseNavigation.cs')|ForEach-Object{Join-Path $bridgeRoot $_}
+$inputs=@('DesktopBridge.cs','KomorebiFeed.cs','ScrollingMouseNavigation.cs','FloatingPopupGuard.cs')|ForEach-Object{Join-Path $bridgeRoot $_}
 $controller=Join-Path $runtime 'DesktopBridge.exe'
 & (Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe') /nologo /target:winexe /platform:x64 /optimize+ /codepage:65001 /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Web.Extensions.dll ('/out:'+$controller) @inputs
 if($LASTEXITCODE -ne 0){throw 'Trial controller build failed.'}
