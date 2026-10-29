@@ -1,4 +1,10 @@
 $ErrorActionPreference = 'Stop'
+$desktopConfig=Join-Path (Split-Path $PSScriptRoot) 'desktop.json'
+if(Test-Path -LiteralPath $desktopConfig){
+    $settings=Get-Content -LiteralPath $desktopConfig -Raw|ConvertFrom-Json
+    $settings|Add-Member -NotePropertyName startLayoutGuard -NotePropertyValue $false -Force
+    $settings|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $desktopConfig -Encoding UTF8
+}
 $executable = Join-Path $PSScriptRoot 'TechnicalAltGrLayoutGuard.exe'
 $runPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $valueName = 'TechnicalAltGrLayoutGuard'

@@ -1,7 +1,7 @@
 $ErrorActionPreference='Stop'
 $source=Split-Path (Split-Path $PSScriptRoot)
 $root=Join-Path ([IO.Path]::GetTempPath()) ('session-startup-check-'+[Guid]::NewGuid().ToString('N'))
-foreach($relative in @('script-launcher','komorebi-support','yasb-catppuccin\runtime')){[void][IO.Directory]::CreateDirectory((Join-Path $root $relative))}
+foreach($relative in @('script-launcher','komorebi-support','keyboard-layout-guard','yasb-catppuccin\runtime')){[void][IO.Directory]::CreateDirectory((Join-Path $root $relative))}
 Copy-Item -LiteralPath (Join-Path $source 'dot_config\desktop-customization\Start-Session.ps1') -Destination $root
 function Write-Fixture($relative,$text){[IO.File]::WriteAllText((Join-Path $root $relative),$text)}
 Write-Fixture 'desktop.json' '{"theme":"catppuccin","bar":"yasb","startAhk":true,"startWindowManager":true}'
@@ -14,6 +14,7 @@ if(@(Get-Content $counter).Count -eq 1){throw 'Simulated login dependency not re
 'ready'
 '@
 Write-Fixture 'yasb-catppuccin\Manage.ps1' 'param($Action); Add-Content (Join-Path $PSScriptRoot "actions.txt") $Action'
+Write-Fixture 'keyboard-layout-guard\Start.ps1' 'Add-Content (Join-Path $PSScriptRoot "calls.txt") "start"'
 $savedTheme=$env:WINDOWS_DESKTOP_THEME
 try{
     $env:WINDOWS_DESKTOP_THEME='catppuccin'
@@ -30,6 +31,15 @@ try{
     Write-Fixture 'desktop.json' '{"theme":"catppuccin","bar":"yasb","startAhk":true,"enableAhkOnLogin":true,"startWindowManager":false}'
     & (Join-Path $root 'Start-Session.ps1')
     if(@(Get-Content (Join-Path $root 'script-launcher\actions.txt'))[-1] -ne 'Login'){throw 'Login-enabled profile did not use the once-per-logon guard command'}
+    if(Test-Path (Join-Path $root 'keyboard-layout-guard\calls.txt')){throw 'Optional layout cleanup ran without opt-in'}
+    Write-Fixture 'desktop.json' '{"theme":"catppuccin","bar":"yasb","startAhk":true,"startLayoutGuard":true}'
+    & (Join-Path $root 'Start-Session.ps1')
+    if(@(Get-Content (Join-Path $root 'keyboard-layout-guard\calls.txt')).Count -ne 1){throw 'Enabled layout cleanup was skipped'}
+    Write-Fixture 'keyboard-layout-guard\Start.ps1' "throw 'Simulated layout guard failure'"
+    $ahkBefore=@(Get-Content (Join-Path $root 'script-launcher\actions.txt')).Count
+    $rejected=$false
+    try{& (Join-Path $root 'Start-Session.ps1')}catch{$rejected=$true}
+    if(-not $rejected -or @(Get-Content (Join-Path $root 'script-launcher\actions.txt')).Count -ne ($ahkBefore+1)){throw 'Layout guard failure must be reported without preventing AHK startup'}
     & {
         param($source,$root)
         $fixture=Join-Path $root 'manage-fixture';[void][IO.Directory]::CreateDirectory($fixture)
@@ -64,4 +74,4 @@ try{
         if(-not $failed -or -not $script:bridgeStarted){throw 'YASB preflight failure must be reported after starting the independent dock helper'}
     } $definition $root
 }finally{$env:WINDOWS_DESKTOP_THEME=$savedTheme}
-Write-Host 'Session startup checks passed: retry, independent dock startup, diagnostics and AHK Start/Login dispatch. No desktop process was started.'
+Write-Host 'Session startup checks passed: retry, independent dock/layout/AHK startup, optional layout cleanup, diagnostics and AHK Start/Login dispatch. No desktop process was started.'

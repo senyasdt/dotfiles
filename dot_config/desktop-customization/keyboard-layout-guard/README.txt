@@ -16,7 +16,21 @@ Russian - Technical AltGr: a0020419 / RUTECH.dll / HKL F0020419
 Другие раскладки не затрагиваются. Настройки языков, системные DLL и игра
 не изменяются. Нет перехвата клавиш, внедрения в игру или сетевых запросов.
 
-Автозапуск: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+Общий автозапуск (рекомендуется с 29 октября 2026):
+После установки обеих кастомных раскладок развернуть Windows desktop targets,
+затем выполнить provision/windows/desktop.ps1 -Action Install -IncludeLayoutGuard
+с -Root, указывающим на развёрнутый desktop-customization. Это собирает помощник
+и ставит startLayoutGuard: true в desktop.json. Start-Session.ps1 запускает его
+независимо от AHK, панели и менеджера окон. Start.ps1 можно вызвать вручную:
+повторный запуск сохраняет существующий процесс, чужая копия не останавливается.
+Сборка с -Action Build сама по себе не включает очистку при входе.
+Перед повторной сборкой работающего помощника вызвать его exe с --stop.
+После повторного применения desktop.json через chezmoi опцию нужно включить снова:
+по умолчанию она false, так как кастомные раскладки устанавливаются отдельно.
+Uninstall.ps1 отключает опцию и останавливает помощник; раскладки сохраняются.
+
+Старый самостоятельный автозапуск через Install.ps1 (legacy):
+HKCU\Software\Microsoft\Windows\CurrentVersion\Run
 Значение: TechnicalAltGrLayoutGuard
 Программа: TechnicalAltGrLayoutGuard.exe в этой папке.
 Не перемещайте папку, пока помощник установлен.
