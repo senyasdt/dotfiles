@@ -1,0 +1,11 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\a0010409]
+"Layout File"="ENTECH.dll"
+"Layout Id"="a001"
+"Layout Text"="English - Technical AltGr"
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Keyboard Layouts\a0020419]
+"Layout File"="RUTECH.dll"
+"Layout Id"="a002"
+"Layout Text"="Russian - Technical AltGr"

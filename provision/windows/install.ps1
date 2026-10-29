@@ -142,7 +142,7 @@ if($OnlyPackages.Count){
     $scoopPackages=@()
     $powershellModules=@()
 }
-if($Plan){[pscustomobject]@{Profiles=$activeProfiles;Bar=$Bar;Scoop=$scoopPackages;Winget=$wingetPackages;Modules=$powershellModules;Manual=@('Vial/ZMK helpers: install from their source releases','Custom keyboard layouts: restore approved installers')}|ConvertTo-Json -Depth 5;return}
+if($Plan){[pscustomobject]@{Profiles=$activeProfiles;Bar=$Bar;Scoop=$scoopPackages;Winget=$wingetPackages;Modules=$powershellModules;Manual=@('Vial/ZMK helpers: install from their source releases','Technical AltGr keyboards: follow provision/windows/keyboard-layouts/README.md (manual setup)')}|ConvertTo-Json -Depth 5;return}
 if($wingetPackages.Count -and -not(Test-Command winget)){throw 'winget is required for the selected profile packages'}
 if($scoopPackages.Count){Install-Scoop}
 if($desktop -and -not $OnlyPackages.Count){
