@@ -1,6 +1,8 @@
 # Keep Windows entry points usable and diffs stable across native/WSL checkouts.
 *.cmd text eol=crlf
 *.ahk text eol=crlf
+provision/windows/keyboard-layouts/source/*.klc -text whitespace=cr-at-eol
+provision/windows/keyboard-layouts/**/*.dll -text
 komorebi.json text eol=lf
 dot_config/desktop-customization/** text eol=lf
 dot_config/yasb/config.yaml.tmpl text eol=lf
