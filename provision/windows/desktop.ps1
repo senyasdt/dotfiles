@@ -46,4 +46,9 @@ $apps=$shell.CreateShortcut($appLinkPath)
 $explorer=Join-Path $env:WINDIR 'explorer.exe'
 if((Test-Path -LiteralPath $appLinkPath) -and ($apps.TargetPath -ine $explorer -or $apps.Arguments -ne 'shell:AppsFolder')){throw 'Existing All Applications shortcut belongs to another application'}
 $apps.TargetPath=$explorer;$apps.Arguments='shell:AppsFolder';$apps.Description='Installed applications, independent of AHK and desktop panels';$apps.Save()
+if($IncludeLayoutGuard){
+    # The common Desktop Session owns login startup; no separate HKCU Run entry.
+    $settings|Add-Member -NotePropertyName startLayoutGuard -NotePropertyValue $true -Force
+    $settings|ConvertTo-Json -Depth 10|Set-Content -LiteralPath (Join-Path $rootPath 'desktop.json') -Encoding UTF8
+}
 Write-Host 'Desktop startup installed. Sign in again or run Start-Session.ps1 explicitly.'
