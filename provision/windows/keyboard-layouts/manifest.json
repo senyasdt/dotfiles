@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "layouts": [
+    {
+      "klid": "a0010409",
+      "layoutId": "a001",
+      "name": "English - Technical AltGr",
+      "dll": "ENTECH.dll",
+      "source": "source/en-technical-altgr.klc",
+      "sourceSha256": "0c49980aa8de9d28a440638e048207ab5f9bb3bcb0ac7a17f9c98d9c07aa634e",
+      "files": [
+        {
+          "architecture": "x64",
+          "path": "x64/ENTECH.dll",
+          "sha256": "bd193c6a063b03108ce436c408eea10f3ae7528beeeadac925b74aa3680e23dc",
+          "machine": 34404
+        },
+        {
+          "architecture": "wow64",
+          "path": "wow64/ENTECH.dll",
+          "sha256": "31946eaedb3631e7f0e693f5fb7eb8824dbe0eec8dfacf243da43b53790b0984",
+          "machine": 332
+        }
+      ]
+    },
+    {
+      "klid": "a0020419",
+      "layoutId": "a002",
+      "name": "Russian - Technical AltGr",
+      "dll": "RUTECH.dll",
+      "source": "source/ru-technical-altgr.klc",
+      "sourceSha256": "7221c6f08c31cd17a50edd520edd5af7eea19e96238da6c057b31eae3a39ae61",
+      "files": [
+        {
+          "architecture": "x64",
+          "path": "x64/RUTECH.dll",
+          "sha256": "4d6086b4342633d1eac0e2a5714f39aaa05138ffe59e25a00740644f018cbc2c",
+          "machine": 34404
+        },
+        {
+          "architecture": "wow64",
+          "path": "wow64/RUTECH.dll",
+          "sha256": "be17277686b8763e858f345c3f5f7fee2d4eda58226309e6ba98a5cdcf875548",
+          "machine": 332
+        }
+      ]
+    }
+  ]
+}

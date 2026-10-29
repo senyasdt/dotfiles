@@ -3,7 +3,8 @@ param(
     [ValidateSet('none','yasb')][string]$Bar,
     [ValidateSet('classic','catppuccin')][string]$Theme,
     [ValidateSet('Leopard','Komorebi')][string]$WindowManager,
-    [switch]$Apply
+    [switch]$Apply,
+    [switch]$SkipTechnicalLayouts
 )
 $ErrorActionPreference='Stop'
 # PowerShell callers and update.ps1 may pass either an array or comma text.
@@ -20,7 +21,8 @@ if($WindowManager -eq 'Leopard' -and (-not $desktop -or $Theme -ne 'catppuccin' 
 if(-not $Apply){
     & (Join-Path $PSScriptRoot 'install.ps1') -Profiles $Profiles -Bar $Bar -Theme $Theme -Plan
     Write-Host ('Desktop: '+$WindowManager+' / '+$Bar+' / '+$Theme+'. LeopardWM is pinned to 0.3.4 and verified with SHA256; existing choices are preserved until Apply.')
-    Write-Host 'Plan only. Apply will provision packages, apply chezmoi files, build helpers and register desktop startup. No game/Steam, HID-helper or custom-layout installer is run automatically.'
+    Write-Host 'Plan only. Apply will provision packages, apply chezmoi files, build helpers and register desktop startup. No game/Steam or HID-helper installer is run automatically.'
+    if($desktop -and -not $SkipTechnicalLayouts){Write-Host 'Desktop Apply also installs the verified English/Russian Technical AltGr layouts; machine changes may request Windows administrator consent. Sign out/in after a new installation.'}
     return
 }
 if(-not(Get-Command chezmoi -ErrorAction SilentlyContinue)){throw 'Install chezmoi and initialize the dotfiles repository first.'}
@@ -35,6 +37,10 @@ $env:WINDOWS_DESKTOP_WM=$WindowManager
 chezmoi --source $source apply --exclude externals
 if($LASTEXITCODE -ne 0){throw 'chezmoi apply failed; desktop activation was not attempted.'}
 if($profileText.Split(',') -contains 'desktop'){
+    if(-not $SkipTechnicalLayouts){
+        & (Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Install-TechnicalLayouts.ps1') -Action Apply -Root $managedRoot
+        if($LASTEXITCODE -ne 0){throw 'Technical AltGr installation failed; desktop activation was not attempted. See Install-TechnicalLayouts.ps1 -Action Plan.'}
+    }
     & (Join-Path $PSScriptRoot 'desktop.ps1') -Action Install
     if($Theme -eq 'catppuccin'){
         $themeRoot=Join-Path ([Environment]::GetFolderPath('UserProfile')) '.config\desktop-customization\yasb-catppuccin'
